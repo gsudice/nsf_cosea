@@ -1,4 +1,4 @@
-# research-project
+# Research-project
 Welcome to our innovative research project! This web application has been specifically designed for Georgia high school teachers to actively contribute to the identification of areas with low student exposure to computer science (CS) education. Here's a step-by-step guide on what is expected from participants in this survey:
 
 1. Select District and School: Begin by choosing your district and school from the provided options.
