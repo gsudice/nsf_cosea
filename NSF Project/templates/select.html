@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select School</title>
+    <!-- Include Leaflet CSS (Folium uses Leaflet) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        /* Define the size of the map container */
+        #map {
+            height: 400px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Select School</h1>
+    
+    <!-- Display the generated Folium map -->
+    <div id="map">
+        {{ map_html | safe }}
+    </div>
+
+    <!-- Optional: Display selected district and school -->
+    {% if selected_district and selected_school %}
+    <p>Selected District: {{ selected_district }}</p>
+    <p>Selected School: {{ selected_school }}</p>
+    {% endif %}
+
+    <!-- Optional: Display error message if any -->
+    {% if error_message %}
+    <p style="color: red;">{{ error_message }}</p>
+    {% endif %}
+
+    <!-- Include Leaflet JS (required for Folium map) -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+</body>
+</html>

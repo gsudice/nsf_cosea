@@ -1,16 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>GSU CS Department Research Survey</title>
-        <link rel="icon" href="{{ url_for('static', filename='Gsulogo.png') }}">
-        <link rel="stylesheet" href="static/styling.css">
-    </head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GSU CS Department Research Survey</title>
+    <link rel="icon" href="{{ url_for('static', filename='Gsulogo.png') }}">
+    <link rel="stylesheet" href="static/styling.css">
+</head>
 <body>
-
-     <div class="district_menu"> 
-        <form action="/district" method="GET">
+    <div class="district_menu"> 
+        <form action="/select" method="POST">
             <label for="district-dropdown" id="dropdown-label">Select District:</label>
             <select id="district-dropdown" name="district" class="dropdown">
                 <option value="none" selected disabled hidden>Select an Option</option>
@@ -24,9 +23,9 @@
                 <option value="none" selected disabled hidden>Select an Option</option>
             </select>
             <br>
-            <button type="submit">Submit</button>
+            <button id="submit" type="submit">Submit</button>
         </form>
-     </div> 
-     <script src="{{ url_for('static', filename='retrieveSchools.js') }}"></script>
+    </div> 
+    <script src="{{ url_for('static', filename='retrieveSchools.js') }}"></script>
 </body>
 </html>
