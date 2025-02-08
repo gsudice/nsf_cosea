@@ -1,42 +1,39 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GSU CS Department Research Survey</title>
-    <link rel="icon" image src="Gsulogo.png">
-    <link rel="stylesheet" href="static/styling.css">
+    <link rel="icon" href="{{ url_for('static', filename='Gsulogo.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styling.css') }}">
 </head>
 <body>
     <div class="home">
         <h1 id="topic">The Teacher Feedback Portal!</h1>
-        <h1 id=" intro">Project Survey Instructions</h1>
-        <div id = "intro_para">
-        <p>This portal is designed to enable Georgia high school teachers to identify areas they perceive have low student exposure to computer science (CS) education.</p>
+        <h1 id="intro">Project Survey Instructions</h1>
+        <div id="intro_para">
+            <p>This portal is designed to enable Georgia high school teachers to identify areas they perceive have low student exposure to computer science (CS) education.</p>
 
-        <p>Your are asked to:</p>
+            <p>You are asked to:</p>
+            
+            <ol>
+                <li>Select their district and school,</li>
+                <li>Displays a map of the surrounding areas, based on established school zones boundaries, along with main roads and landmarks.</li>
+            </ol>
         
-        <ol>
-            <li>Select their district and school,</li>
-            <li>Displays a map of the surrounding areas, based on established school zones boundaries, along with main roads and landmarks.</li>
-        </ol>
-    
-        <p>Participants can then:</p>
+            <p>Participants can then:</p>
+            
+            <ul>
+                <li>Mark regions that they identify with low CS exposure through either block-specific clicks or freehand shape drawing, capturing their assessment.</li>
+                <li>Express confidence levels in their evaluations (low, medium, or high).</li>
+                <li>Articulate influencing factors from a predefined list, with an option to add custom factors.</li>
+            </ul>
         
-        <ul>
-            <li>Mark regions that they identify with low CS exposure through either block-specific clicks or freehand shape drawing, capturing their assessment.</li>
-            <li>Express confidence levels in their evaluations (low, medium, or high).</li>
-            <li>Articulate influencing factors from a predefined list, with an option to add custom factors.</li>
-        </ul>
-    
-        <p>The objective is to empower educators to collaboratively pinpoint areas lacking CS exposure, fostering a deeper understanding of the challenges involved.</p>
-    
-        <p>The resulting data will be used to validate the Co-SEA Risk Index, a metric to score census block groups with their risk of access to CS education. By scoring census block groups in this way, stakeholders can strategically place interventions where most needed to broaden participation in computing.</p> </div>
-        <a href="/district"><button id="next">Go to Next Page</button></a>
+            <p>The objective is to empower educators to collaboratively pinpoint areas lacking CS exposure, fostering a deeper understanding of the challenges involved.</p>
+        
+            <p>The resulting data will be used to validate the Co-SEA Risk Index, a metric to score census block groups with their risk of access to CS education. By scoring census block groups in this way, stakeholders can strategically place interventions where most needed to broaden participation in computing.</p> 
+        </div>
+        <a href="{{ url_for('district') }}"><button id="next">Go to Next Page</button></a>
     </div>
-    
-    
-
-    
 </body>
-</html> 
+</html>

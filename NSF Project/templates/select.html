@@ -4,36 +4,59 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Select School</title>
-    <!-- Include Leaflet CSS (Folium uses Leaflet) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
-        /* Define the size of the map container */
+        #map-container {
+            width: 80%;
+            height: 600px;
+            margin: 20px auto;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
         #map {
-            height: 400px;
+            height: 100%;
             width: 100%;
+        }
+
+        .info-panel {
+            margin: 20px auto;
+            width: 80%;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .error-message {
+            color: #dc3545;
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #f8d7da;
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
-    <h1>Select School</h1>
-    
-    <!-- Display the generated Folium map -->
-    <div id="map">
-        {{ map_html | safe }}
+    <div class="info-panel">
+        {% if selected_district and selected_school %}
+            <h2>Selected Location</h2>
+            <p><strong>District:</strong> {{ selected_district }}</p>
+            <p><strong>School:</strong> {{ selected_school }}</p>
+        {% endif %}
+
+        {% if error_message %}
+            <div class="error-message">
+                {{ error_message }}
+            </div>
+        {% endif %}
     </div>
 
-    <!-- Optional: Display selected district and school -->
-    {% if selected_district and selected_school %}
-    <p>Selected District: {{ selected_district }}</p>
-    <p>Selected School: {{ selected_school }}</p>
+    {% if map_html %}
+    <div id="map-container">
+        <div id="map">
+            {{ map_html | safe }}
+        </div>
+    </div>
     {% endif %}
-
-    <!-- Optional: Display error message if any -->
-    {% if error_message %}
-    <p style="color: red;">{{ error_message }}</p>
-    {% endif %}
-
-    <!-- Include Leaflet JS (required for Folium map) -->
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </body>
 </html>
