@@ -37,17 +37,23 @@
     </style>
 </head>
 <body>
+    <!-- Display the instructions here -->
+    <div class="info-panel">
+        <div>
+            {{ instructions|safe }} <!-- Render the instructions passed from the view -->
+        </div>
+    </div>
     <div class="info-panel">
         {% if selected_district and selected_school %}
-            <h2>Selected Location</h2>
-            <p><strong>District:</strong> {{ selected_district }}</p>
-            <p><strong>School:</strong> {{ selected_school }}</p>
+        <h2>Selected Location</h2>
+        <p><strong>District:</strong> {{ selected_district }}</p>
+        <p><strong>School:</strong> {{ selected_school }}</p>
         {% endif %}
 
         {% if error_message %}
-            <div class="error-message">
-                {{ error_message }}
-            </div>
+        <div class="error-message">
+            {{ error_message }}
+        </div>
         {% endif %}
     </div>
 

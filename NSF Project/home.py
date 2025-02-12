@@ -149,8 +149,10 @@ def get_block_groups(latitude, longitude, radius_miles=3):
         return []
 
 @app.route("/select", methods=["GET", "POST"])
+    
 def render_select():
     if request.method == "POST":
+       
         selected_district = request.form.get('district')
         selected_school = request.form.get('school')
         
@@ -243,16 +245,23 @@ def render_select():
                 # Get and add block groups
                 block_groups = get_block_groups(latitude, longitude)
                 logger.debug(f"Retrieved {len(block_groups)} block groups")
-                
+               
                 if block_groups:
                     blocks_layer = folium.FeatureGroup(name='Block Groups')
                     
                     for block in block_groups:
                         try:
+                            popUp_html = render_template("popUp.html", block={
+                                "geoid": block["geoid"],
+                                "tractce": block["tractce"],
+                                "blkgrpce": block["blkgrpce"]
+                            })
+                            logger.debug(f"Generated popup HTML: {popUp_html}")
                             # Log the geometry type and coordinates for the first block
                             if block == block_groups[0]:
                                 logger.debug(f"First block geometry: {block['geometry']}")
-                            
+                            iframe = folium.IFrame(popUp_html, width=300, height=200)
+                            popup = folium.Popup(iframe, min_width=200, max_width=300)
                             folium.GeoJson(
                                 {
                                     'type': 'Feature',
@@ -276,18 +285,7 @@ def render_select():
                                     'fillOpacity': 0.5
                                 },
                                 # @TIFFANY possibly look at this for the selection of reason popup.
-                                popup=folium.Popup(
-                                    f"""
-                                    <div style="font-family: Arial, sans-serif; padding: 10px;">
-                                        <h4 style="margin: 0 0 10px 0;">Census Block Group</h4>
-                                        <p style="margin: 5px 0;"><b>GEOID:</b> {block['geoid']}</p>
-                                        <p style="margin: 5px 0;"><b>Tract:</b> {block['tractce']}</p>
-                                        <p style="margin: 5px 0;"><b>Block Group:</b> {block['blkgrpce']}</p>
-                                    </div>
-                                    """,
-                                    min_width=200,
-                                    max_width=300
-                                )
+                                popup = popup
                             ).add_to(blocks_layer)
                         except Exception as e:
                             logger.error(f"Error adding block to map: {str(e)}")
@@ -322,13 +320,15 @@ def render_select():
                 # Inject custom CSS into the map HTML
                 map_html = m._repr_html_()
                 # map_html = custom_css + map_html
-
+               
                 return render_template(
+              
                     'select.html',
+                    instructions= render_template("selectInstructions.html"),
                     map_html=map_html,
                     selected_district=selected_district,
                     selected_school=selected_school
-                )
+                    )
 
         except Exception as e:
             logger.error(f"Error: {str(e)}")
