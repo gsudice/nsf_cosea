@@ -1,0 +1,47 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Census Block Group</title>
+</head>
+<body style="font-family: Arial, sans-serif; padding: 10px;">
+    <h4 style="margin: 0 0 10px 0;">Census Block Group</h4>
+    <p style="margin: 5px 0;"><b>GEOID:</b> {{ block.geoid }}</p>
+    <p style="margin: 5px 0;"><b>Tract:</b> {{ block.tractce }}</p>
+    <p style="margin: 5px 0;"><b>Block Group:</b> {{ block.blkgrpce }}</p>
+
+    <label for="option-select-{{ block.geoid }}"><b>Select an Option:</b></label>
+    <select id="option-select-{{ block.geoid }}" onchange="toggleCustomInput('{{ block.geoid }}')">
+        <option value="unqualified_teachers">Limited Access to Qualified Teachers</option>
+        <option value="resource_constraints">Resource Constraints</option>
+        <option value="curriculum_integration">Curriculum Integration</option>
+        <option value="awareness_and_interest">Awareness and Interest</option>
+        <option value="policy_and_support">Policy and Support</option>
+        <option value="equity">Equity and Access to Opportunities</option>
+        <option value="diversity">Diversity and Inclusion</option>
+        <option value="technology">Technological Infrastructure Challenges</option>
+        <option value="grant">Grant and Funding Opportunities</option>
+        <option value="other">Other (please specify)</option>
+    </select>
+
+    <div id="custom-input-container-{{ block.geoid }}" style="display:none;">
+        <label for="custom-input-{{ block.geoid }}">Please specify:</label>
+        <input type="text" id="custom-input-{{ block.geoid }}" placeholder="Enter your option">
+        <input type="submit" value="Submit" />
+    </div>
+
+    <script>
+        function toggleCustomInput(geoid) {
+            var select = document.getElementById("option-select-" + geoid);
+            var customInputContainer = document.getElementById("custom-input-container-" + geoid);
+
+            if (select.value === "other") {
+                customInputContainer.style.display = "block"; // Show input
+            } else {
+                customInputContainer.style.display = "none"; // Hide input
+            }
+        }
+    </script>
+</body>
+</html>
