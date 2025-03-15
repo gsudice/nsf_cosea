@@ -11,37 +11,69 @@
     <p style="margin: 5px 0;"><b>Tract:</b> {{ block.tractce }}</p>
     <p style="margin: 5px 0;"><b>Block Group:</b> {{ block.blkgrpce }}</p>
 
-    <label for="option-select-{{ block.geoid }}"><b>Select an Option:</b></label>
-    <select id="option-select-{{ block.geoid }}" onchange="toggleCustomInput('{{ block.geoid }}')">
-        <option value="unqualified_teachers">Limited Access to Qualified Teachers</option>
-        <option value="resource_constraints">Resource Constraints</option>
-        <option value="curriculum_integration">Curriculum Integration</option>
-        <option value="awareness_and_interest">Awareness and Interest</option>
-        <option value="policy_and_support">Policy and Support</option>
-        <option value="equity">Equity and Access to Opportunities</option>
-        <option value="diversity">Diversity and Inclusion</option>
-        <option value="technology">Technological Infrastructure Challenges</option>
-        <option value="grant">Grant and Funding Opportunities</option>
-        <option value="other">Other (please specify)</option>
-    </select>
-
-    <div id="custom-input-container-{{ block.geoid }}" style="display:none;">
-        <label for="custom-input-{{ block.geoid }}">Please specify:</label>
-        <input type="text" id="custom-input-{{ block.geoid }}" placeholder="Enter your option">
-        <input type="submit" value="Submit" />
-    </div>
+    <label><b>Select Options:</b></label>
+    <div id="checkbox-container-{{ block.geoid }}"></div>
 
     <script>
-        function toggleCustomInput(geoid) {
-            var select = document.getElementById("option-select-" + geoid);
-            var customInputContainer = document.getElementById("custom-input-container-" + geoid);
+        const options = [
+            { value: "student_demographics", label: "Student demographics (race/ethnicity, gender, etc.)" },
+            { value: "economic_barriers", label: "Economic barriers (household income, financial hardship)" },
+            { value: "language_barriers", label: "Language barriers (English is not primary language at home)" },
+            { value: "parent_education", label: "Parental education level (low exposure to CS at home)" },
+            { value: "no_computer_home", label: "Limited or no access to a computer at home" },
+            { value: "no_internet_home", label: "Limited or no access to reliable internet at home" },
+            { value: "distance_issues", label: "Long commute to school or CS-related programs" },
+            { value: "lack_cs_intro_courses", label: "No or limited introductory CS courses available at school" },
+            { value: "lack_cs_advanced_courses", label: "No or limited advanced CS courses available at school" },
+            { value: "other", label: "Other (please specify)" }
+        ];
 
-            if (select.value === "other") {
-                customInputContainer.style.display = "block"; // Show input
+        // Function to generate checkboxes
+        function generateCheckboxes(geoid) {
+            const container = document.getElementById("checkbox-container-" + geoid);
+
+            options.forEach(option => {
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.name = "barriers";
+                checkbox.value = option.value;
+                checkbox.id = option.value + "-" + geoid;
+                checkbox.onchange = function() { toggleCustomInput(geoid); };
+
+                const label = document.createElement("label");
+                label.htmlFor = checkbox.id;
+                label.textContent = " " + option.label;
+
+                container.appendChild(checkbox);
+                container.appendChild(label);
+                container.appendChild(document.createElement("br"));
+            });
+
+            // Create custom input field (hidden by default)
+            const customInput = document.createElement("input");
+            customInput.type = "text";
+            customInput.id = "custom-input-" + geoid;
+            customInput.name = "other_specify";
+            customInput.placeholder = "Enter your option";
+            customInput.style.display = "none"; // Initially hidden
+
+            container.appendChild(customInput);
+        }
+
+        // Function to show/hide custom input field
+        function toggleCustomInput(geoid) {
+            const otherCheckbox = document.getElementById("other-" + geoid);
+            const customInput = document.getElementById("custom-input-" + geoid);
+
+            if (otherCheckbox.checked) {
+                customInput.style.display = "block";
             } else {
-                customInputContainer.style.display = "none"; // Hide input
+                customInput.style.display = "none";
             }
         }
+
+        // Run function to generate checkboxes dynamically
+        generateCheckboxes("{{ block.geoid }}");
     </script>
 </body>
 </html>
