@@ -5,6 +5,7 @@ import folium
 from folium import plugins
 import os
 import logging
+import json  # Added missing import
 
 # Set up logging
 logging.basicConfig(
@@ -38,23 +39,15 @@ except Exception as e:
 def home():
     return render_template('home.html')
 
-#Fetching districts for the selection page
+# Fetching districts for the selection page
 @app.route("/district")
 def district():
     try:
         with engine.connect() as connection:
             districts_query = text("""
-                SELECT DISTINCT nmcnty 
-                FROM (
-                    SELECT nmcnty 
-                    FROM nces_schools.publicschools 
-                    WHERE state = 'GA'
-                    UNION
-                    SELECT nmcnty 
-                    FROM nces_schools.privateschools 
-                    WHERE state = 'GA'
-                ) AS combined_districts
-                ORDER BY nmcnty
+                SELECT DISTINCT "SYSTEM_NAME" 
+                FROM "2024".tbl_approvedschools 
+                ORDER BY "SYSTEM_NAME"
             """)
             districts = [row[0] for row in connection.execute(districts_query).fetchall()]
             return render_template('district.html', districts=districts)
@@ -62,97 +55,73 @@ def district():
         logger.error(f"Error fetching districts: {e}")
         return render_template('district.html', error_message="Error fetching districts")
 
-#Fetching schools upon district selection
+# Fetching schools upon district selection
 @app.route("/get_schools")
 def get_schools():
     district = request.args.get('district')
     try:
         with engine.connect() as connection:
             schools_query = text("""
-                SELECT name 
-                FROM (
-                    SELECT name 
-                    FROM nces_schools.publicschools 
-                    WHERE state = 'GA' AND nmcnty = :district
-                    UNION
-                    SELECT name 
-                    FROM nces_schools.privateschools 
-                    WHERE state = 'GA' AND nmcnty = :district
-                ) AS combined_schools
-                ORDER BY name
+                SELECT "SCHOOL_NAME" 
+                FROM "2024".tbl_approvedschools 
+                WHERE "SYSTEM_NAME" = :district
+                ORDER BY "SCHOOL_NAME"
             """)
             schools = [row[0] for row in connection.execute(schools_query, {"district": district}).fetchall()]
             return jsonify(schools)
     except Exception as e:
         logger.error(f"Error fetching schools: {e}")
         return jsonify([])
-
-def get_block_groups(latitude, longitude, radius_miles=3):
-    """Fetch block groups within a radius using Georgia State Plane East projection"""
-    radius_feet = radius_miles * 5280  # Convert miles to feet
     
-    logger.debug(f"Fetching block groups for: lat={latitude}, lon={longitude}, radius={radius_miles} miles")
-    
-    query = text("""
-    WITH point_geom AS (
-        SELECT ST_Transform(ST_SetSRID(ST_MakePoint(:lon, :lat), 4326), 2239) as geom
-    )
-    SELECT 
-        bg.geoid,
-        ST_AsGeoJSON(ST_Transform(bg.geom, 4326))::json as geometry,
-        bg.statefp,
-        bg.countyfp,
-        bg.tractce,
-        bg.blkgrpce
-    FROM uscensus_tigerline_2023.blockgroups bg
-    CROSS JOIN point_geom
-    WHERE bg.statefp = '13'  -- Georgia's FIPS code
-    AND ST_DWithin(
-        ST_Transform(bg.geom, 2239),
-        point_geom.geom,
-        :radius
-    );
-    """)
-    
+@app.route("/get_school_id")
+def get_school_id():
+    school_name = request.args.get('school_name')
+    district = request.args.get('district')
     try:
-        with engine.connect() as conn:
-            # Execute the main query
-            logger.debug("Executing block groups query...")
-            result = conn.execute(query, {
-                "lat": latitude,
-                "lon": longitude,
-                "radius": radius_feet
-            })
-            
-            # Explicitly create dictionaries with the correct keys
-            rows = []
-            for row in result:
-                block_dict = {
-                    'geoid': row.geoid,
-                    'geometry': row.geometry,
-                    'statefp': row.statefp,
-                    'countyfp': row.countyfp,
-                    'tractce': row.tractce,
-                    'blkgrpce': row.blkgrpce
-                }
-                rows.append(block_dict)
-            
-            logger.debug(f"Found {len(rows)} block groups")
-            if rows:
-                logger.debug(f"Sample block group data: {rows[0]['geoid']}")
-                logger.debug(f"Sample geometry: {rows[0]['geometry']}")
-            
-            return rows
-            
+        with engine.connect() as connection:
+            school_id_query = text("""
+                SELECT "UNIQUESCHOOLID"
+                FROM "2024".tbl_approvedschools 
+                WHERE "SCHOOL_NAME" = :school_name 
+                AND "SYSTEM_NAME" = :district
+            """)
+            school_id = connection.execute(school_id_query, {"school_name": school_name, "district": district}).fetchone()
+            if school_id:
+                return jsonify({"UNIQUESCHOOLID": school_id[0]})
+            else:
+                return jsonify({"error": "School not found"})
     except Exception as e:
-        logger.error(f"Error in get_block_groups: {str(e)}")
+        logger.error(f"Error fetching school ID: {e}")
+        return jsonify({"error": "Error fetching school ID"})
+
+# Function to retrieve block groups for the given school
+def get_block_groups(school_id):
+    try:
+        with engine.connect() as connection:
+            block_groups_query = text("""
+                SELECT 
+                    ST_AsGeoJSON(ST_Transform(cbgpolygeom, 4326))::json AS geometry
+                FROM "2024".tbl_cbg_finalassignment
+                WHERE "UNIQUESCHOOLID" = :school_id
+            """)
+            result = connection.execute(block_groups_query, {"school_id": school_id}).fetchall()
+            
+            if result:
+                block_groups = []
+                for row in result:
+                    block_groups.append({
+                        "geometry": row.geometry,
+                    })
+                return block_groups
+            else:
+                return []
+    except Exception as e:
+        logger.error(f"Error fetching block groups: {str(e)}")
         return []
 
 @app.route("/select", methods=["GET", "POST"])
-    
 def render_select():
     if request.method == "POST":
-       
         selected_district = request.form.get('district')
         selected_school = request.form.get('school')
         
@@ -166,19 +135,12 @@ def render_select():
         try:
             with engine.connect() as connection:
                 query_location = text("""
-                    SELECT lat, lon
-                    FROM (
-                        SELECT lat, lon
-                        FROM nces_schools.publicschools
-                        WHERE state = 'GA' AND nmcnty = :district AND name = :school
-                        UNION ALL
-                        SELECT lat, lon
-                        FROM nces_schools.privateschools
-                        WHERE state = 'GA' AND nmcnty = :district AND name = :school
-                    ) AS combined_schools
+                    SELECT lon, lat, "UNIQUESCHOOLID"
+                    FROM "2024".tbl_approvedschools
+                    WHERE "SYSTEM_NAME" = :district AND "SCHOOL_NAME" = :school
                     LIMIT 1
                 """)
-                
+
                 result = connection.execute(query_location, {
                     "district": selected_district, 
                     "school": selected_school
@@ -190,51 +152,17 @@ def render_select():
                         error_message="School location not found."
                     )
 
-                latitude, longitude = result
+                longitude, latitude, school_id = result
 
                 logger.debug(f"School coordinates: lat={latitude}, lon={longitude}")
-
-                #  TAI : CHANGE THIS (approximately 3 miles)
-                lat_offset = 3/69.0
-                lon_offset = 3/55.0
-                
-                bounds = [
-                    [latitude - lat_offset, longitude - lon_offset],
-                    [latitude + lat_offset, longitude + lon_offset]
-                ]
 
                 # Create the map
                 m = folium.Map(
                     location=[latitude, longitude],
-                    zoom_start=18,
-                    tiles='OpenStreetMap',
-                    min_zoom=12,
-                    max_zoom=16
+                    zoom_start=12,
+                    tiles='OpenStreetMap'
                 )
                 
-                # Create a mask for areas outside the boundary
-                #COMMENTED OUT PER DR TIWARI SUGGESTION.
-                # mask_coordinates = [
-                #     [[90, -180],
-                #      [90, 180],
-                #      [-90, 180],
-                #      [-90, -180]],  # Outer ring (whole world)
-                #     [[bounds[0][0], bounds[0][1]],
-                #      [bounds[0][0], bounds[1][1]],
-                #      [bounds[1][0], bounds[1][1]],
-                #      [bounds[1][0], bounds[0][1]]]  # Inner ring (boundary box)
-                # ]
-
-                # Add the mask as a polygon
-                # folium.Polygon(
-                #     locations=mask_coordinates,
-                #     color='white',
-                #     fill=True,
-                #     fill_color='white',
-                #     fill_opacity=1,
-                #     weight=0
-                # ).add_to(m)
-
                 # Add school marker
                 folium.Marker(
                     [latitude, longitude],
@@ -243,7 +171,7 @@ def render_select():
                 ).add_to(m)
 
                 # Get and add block groups
-                block_groups = get_block_groups(latitude, longitude)
+                block_groups = get_block_groups(school_id)
                 logger.debug(f"Retrieved {len(block_groups)} block groups")
                
                 if block_groups:
@@ -251,27 +179,22 @@ def render_select():
                     
                     for block in block_groups:
                         try:
+                            # Ensure geometry is a valid GeoJSON
+                            if not block.get('geometry'):
+                                logger.warning(f"Skipping block group with no geometry: {block}")
+                                continue
+
                             popUp_html = render_template("popUp.html", block={
-                                "geoid": block["geoid"],
-                                "tractce": block["tractce"],
-                                "blkgrpce": block["blkgrpce"]
+                                "geoid": block.get("geoid", "N/A"),
+                                "tractce": block.get("tractce", "N/A"),
+                                "blkgrpce": block.get("blkgrpce", "N/A")
                             })
-                            logger.debug(f"Generated popup HTML: {popUp_html}")
-                            # Log the geometry type and coordinates for the first block
-                            if block == block_groups[0]:
-                                logger.debug(f"First block geometry: {block['geometry']}")
+                            
                             iframe = folium.IFrame(popUp_html, width=300, height=200)
                             popup = folium.Popup(iframe, min_width=200, max_width=300)
+                            
                             folium.GeoJson(
-                                {
-                                    'type': 'Feature',
-                                    'geometry': block['geometry'],
-                                    'properties': {
-                                        'geoid': block['geoid'],
-                                        'tract': block['tractce'],
-                                        'block_group': block['blkgrpce']
-                                    }
-                                },
+                                block['geometry'],
                                 style_function=lambda x: {
                                     'fillColor': '#ffcccb',
                                     'color': '#000000',
@@ -284,8 +207,7 @@ def render_select():
                                     'weight': 2,
                                     'fillOpacity': 0.5
                                 },
-                                # @TIFFANY possibly look at this for the selection of reason popup.
-                                popup = popup
+                                popup=popup
                             ).add_to(blocks_layer)
                         except Exception as e:
                             logger.error(f"Error adding block to map: {str(e)}")
@@ -293,51 +215,24 @@ def render_select():
                     
                     blocks_layer.add_to(m)
                 else:
-                    logger.warning("No block groups found for the given coordinates")
-
-                # Add boundary rectangle
-                folium.Rectangle(
-                    bounds=bounds,
-                    color='blue',
-                    weight=2,
-                    fill=False,
-                ).add_to(m)
-
-                # Set map bounds
-                m.fit_bounds(bounds)
-                m.options['maxBounds'] = bounds
-                m.options['maxBoundsViscosity'] = 1.0
-
-                # Add custom CSS to ensure the mask works properly
-                # custom_css = """
-                # <style>
-                #     .leaflet-container {
-                #         background-color: white !important;
-                #     }
-                # </style>
-                # """
+                    logger.warning("No block groups found for the given school")
 
                 # Inject custom CSS into the map HTML
                 map_html = m._repr_html_()
-                # map_html = custom_css + map_html
                
                 return render_template(
-              
                     'select.html',
-                    instructions= render_template("selectInstructions.html"),
+                    instructions=render_template("selectInstructions.html"),
                     map_html=map_html,
                     selected_district=selected_district,
                     selected_school=selected_school
-                    )
+                )
 
         except Exception as e:
-            logger.error(f"Error: {str(e)}")
-            return render_template(
-                'select.html',
-                error_message=f"Error retrieving data: {str(e)}"
-            )
-
+            logger.error(f"Error fetching school data: {str(e)}")
+            return render_template('select.html', error_message="Error fetching school data")
+    
     return render_template('select.html')
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
