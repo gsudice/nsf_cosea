@@ -19,14 +19,17 @@ conn = psycopg2.connect(
 )
 
 # load school data and logic classifications
-school_query = """SELECT "UNIQUESCHOOLID", lat, lon FROM "allhsgrades24"."tbl_approvedschools" """
+school_query = """SELECT "UNIQUESCHOOLID", lat, lon FROM "allhsgrades24"."tbl_approvedschools" WHERE "GRADE_RANGE" LIKE '%9-%' OR "GRADE_RANGE" LIKE '10-%' OR "GRADE_RANGE" LIKE '11-%' OR "GRADE_RANGE" LIKE '12-%' """
 school_df = pd.read_sql(school_query, conn)
 logic_query = """SELECT "UNIQUESCHOOLID", "LOGIC_CLASS" FROM census.gadoe2024_389"""
 logic_df = pd.read_sql(logic_query, conn)
 conn.close()
 
+print(school_df.shape, logic_df.shape)
+
 # merge and classify
 merged = school_df.merge(logic_df, on="UNIQUESCHOOLID", how="inner").dropna(subset=["lat", "lon", "LOGIC_CLASS"])
+print(merged.shape)
 
 def combined_category(logic_class):
     prefix = logic_class[:2]
@@ -162,5 +165,5 @@ for _, row in city_gdf.iterrows():
 # save figure
 plt.tight_layout()
 plt.subplots_adjust(bottom=0.18)
-fig.savefig("/home/ctiwari/.conda/envs/cosea/_mycode/nsf_cosea/output/map14_county_389.png", dpi=300, bbox_inches='tight', bbox_extra_artists=[leg1, leg2])
+fig.savefig("/home/ctiwari/.conda/envs/cosea/_mycode/nsf_cosea/output/map14_county_366.png", dpi=300, bbox_inches='tight', bbox_extra_artists=[leg1, leg2])
 #plt.show()
