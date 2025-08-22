@@ -328,7 +328,7 @@ for var_name, meta in variables.items():
                              edgecolor='gray', linewidth=0.5))
     plt.tight_layout()
     plt.subplots_adjust(left=0.15)
-    plt.savefig(f'/home/ctiwari/.conda/envs/cosea/_mycode/nsf_cosea/output/violin_locale_{var_name.lower().replace(" ", "_")}_389.png')
+    plt.savefig(f'/output/violin_locale_{var_name.lower().replace(" ", "_")}_394.png')
     plt.close()
 
 print("All plots have been generated successfully.")
