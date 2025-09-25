@@ -1,11 +1,12 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 import folium
 from folium import plugins
 import os
 import logging
-import json  # Added missing import
+import uuid
+from datetime import datetime
 
 # Set up logging
 logging.basicConfig(
@@ -72,7 +73,7 @@ def get_schools():
     except Exception as e:
         logger.error(f"Error fetching schools: {e}")
         return jsonify([])
-    
+
 @app.route("/get_school_id")
 def get_school_id():
     school_name = request.args.get('school_name')
@@ -116,7 +117,7 @@ def get_block_groups(school_id):
             else:
                 return []
     except Exception as e:
-        logger.error(f"Error fetching block groups: {str(e)}")
+        logger.error(f"Error fetching block groups: {e}")
         return []
 
 @app.route("/select", methods=["GET", "POST"])
@@ -183,7 +184,6 @@ def render_select():
                             if not block.get('geometry'):
                                 logger.warning(f"Skipping block group with no geometry: {block}")
                                 continue
-
                             popUp_html = render_template("popUp.html", block={
                                 "geoid": block.get("geoid", "N/A"),
                                 "tractce": block.get("tractce", "N/A"),
@@ -233,6 +233,42 @@ def render_select():
             return render_template('select.html', error_message="Error fetching school data")
     
     return render_template('select.html')
+
+# Endpoint to handle form submission with hardcoded test data THIS IS FOR TESTING PURPOSES ONLY, NIK CAN 
+# EDIT IT AS REQUIRED
+@app.route("/saveData", methods=["POST"])
+def submit_barriers():
+    try:
+        school_unique_id = "000000000"
+        teacher_id = str(uuid.uuid4())
+        block_group_geoID = "140010201001"
+        reason_code = "R005"
+        comment = "This is a test by Tiffany"
+        submitted_at = datetime.utcnow()
+
+        with engine.begin() as connection:
+            insert_query = text("""
+                INSERT INTO "2024".teacher_reason_submissions
+                ("UNIQUESCHOOLID", teacher_id, geoid, reason_code, comment, submitted_at)
+                VALUES (:school_id, :teacher_id, :geoid, :reason_code, :comment, :submitted_at)
+            """)
+            
+            connection.execute(insert_query, {
+                "school_id": school_unique_id,
+                "teacher_id": teacher_id,
+                "geoid": block_group_geoID,
+                "reason_code": reason_code,
+                "comment": comment,
+                "submitted_at": submitted_at
+            })
+
+        return jsonify({"success": True, "message": "Hardcoded test row inserted successfully"})
+
+    except Exception as e:
+        import traceback
+        app.logger.error(f"Error: {str(e)}")
+        app.logger.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({"success": False, "message": str(e)}), 500 
 
 if __name__ == "__main__":
     app.run(debug=True)
