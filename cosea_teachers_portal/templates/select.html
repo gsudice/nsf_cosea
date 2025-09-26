@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select School</title>
+    <style>
+        #map-container {
+            width: 80%;
+            height: 600px;
+            margin: 20px auto;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .info-panel {
+            margin: 20px auto;
+            width: 80%;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .error-message {
+            color: #dc3545;
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #f8d7da;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Display the instructions here -->
+    <div class="info-panel">
+        <div>
+            {{ instructions|safe }} <!-- Render the instructions passed from the view -->
+        </div>
+    </div>
+    <div class="info-panel">
+        {% if selected_district and selected_school %}
+        <h2>Selected Location</h2>
+        <p><strong>District:</strong> {{ selected_district }}</p>
+        <p><strong>School:</strong> {{ selected_school }}</p>
+        {% endif %}
+
+        {% if error_message %}
+        <div class="error-message">
+            {{ error_message }}
+        </div>
+        {% endif %}
+    </div>
+
+    {% if map_html %}
+    <div id="map-container">
+        <div id="map">
+            {{ map_html | safe }}
+        </div>
+    </div>
+    {% endif %}
+</body>
+</html>

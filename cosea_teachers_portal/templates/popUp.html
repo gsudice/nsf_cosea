@@ -1,0 +1,76 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Census Block Group</title>
+</head>
+<body style="font-family: Arial, sans-serif; padding: 10px;">
+    <!-- popUp.html -->
+    <h4 style="margin: 0 0 10px 0;">Census Block Group</h4>
+    <label><b>Select Options:</b></label>
+    <form id="barriers-form">
+        <input type="hidden" name="block_geoid" value="{{ block.geoid }}">
+        <input type="hidden" name="school" value="{{ selected_school }}">
+        <input type="hidden" name="district" value="{{ selected_district }}">
+        {% set options = [
+        {"value": "student_demographics", "label": "Student demographics (race/ethnicity, gender, etc.)"},
+        {"value": "economic_barriers", "label": "Economic barriers (household income, financial hardship)"},
+        {"value": "language_barriers", "label": "Language barriers (English is not primary language at home)"},
+        {"value": "parent_education", "label": "Parental education level (low exposure to CS at home)"},
+        {"value": "no_computer_home", "label": "Limited or no access to a computer at home"},
+        {"value": "no_internet_home", "label": "Limited or no access to reliable internet at home"},
+        {"value": "distance_issues", "label": "Long commute to school or CS-related programs"},
+        {"value": "lack_cs_intro_courses", "label": "No or limited introductory CS courses available at school"},
+        {"value": "lack_cs_advanced_courses", "label": "No or limited advanced CS courses available at school"},
+        {"value": "other", "label": "Other (please specify)"}
+        ] %}
+        {% for option in options %}
+        <input type="checkbox" name="barriers" value="{{ option.value }}" id="{{ option.value }}-{{ block.geoid }}"
+               onchange="if(this.value=='other' && this.checked){document.getElementById('custom-input-{{ block.geoid }}').style.display='block'}else if(this.value=='other'){document.getElementById('custom-input-{{ block.geoid }}').style.display='none'}">
+        <label for="{{ option.value }}-{{ block.geoid }}">{{ option.label }}</label><br>
+        {% endfor %}
+        <input type="text" id="custom-input-{{ block.geoid }}" name="other_specify" placeholder="Enter your option" style="display: none; margin-top: 5px;">
+        <br><br>
+        <button type="submit">Submit</button>
+    </form>
+    <div id="form-message" style="margin-top:10px; font-weight:bold;"></div>
+    <script>
+    document.getElementById("barriers-form").addEventListener("submit", async function(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+
+        console.log("Submitting form data:");
+        for (let pair of formData.entries()) {
+            console.log(pair[0] + ': ' + pair[1]);
+        }
+
+        try {
+            const response = await fetch("http://127.0.0.1:5000/saveData", { // ← updated line
+                method: "POST",
+                body: formData
+            });
+
+            let responseText = await response.text();
+            console.log("Raw response:", responseText);
+
+            const result = JSON.parse(responseText);
+            console.log("Parsed response:", result);
+
+            const messageDiv = document.getElementById("form-message");
+            if (result.success) {
+                messageDiv.innerText = "✅ Thank you! Your submission has been received.";
+                form.reset();
+                document.getElementById("custom-input-{{ block.geoid }}").style.display = "none";
+            } else {
+                messageDiv.innerText = "❌ Error: " + (result.message || "Unknown error");
+            }
+        } catch (error) {
+            console.error("Error processing response:", error);
+            document.getElementById("form-message").innerText = "❌ There was an error processing your submission.";
+        }
+    });
+    </script>
+</body>
+</html>
