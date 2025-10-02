@@ -1,0 +1,80 @@
+/* =================== HOME PAGE =================== */
+#app-container {
+  display: flex;
+  flex-direction: row;
+  height: 100vh;
+  padding-left: 7px;
+  padding-right: 7px;
+  overflow: auto;
+}
+
+#home-container {
+  max-width: 80%;
+  margin: 40px auto;
+  padding: 24px;
+}
+.tool-gif {
+  display: block;
+  margin: 16px auto 16px auto;
+  max-width: 80%;
+  width: 600px;
+  height: auto;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+}
+.home-title {
+  text-align: center;
+  font-size: 3rem;
+  margin-bottom: 18px;
+  margin-top: 15px;
+}
+.home-intro {
+  text-align: center;
+  font-size: 1.4rem;
+  margin-bottom: 24px;
+}
+.home-section-title {
+  margin-top: 32px;
+  font-size: 1.8rem;
+  color: #0039a6;
+  padding-bottom: 8px;
+}
+.home-about {
+  margin-bottom: 18px;
+}
+.tools-section {
+  display: flex;
+  flex-direction: row;
+  gap: 32px;
+  margin-bottom: 32px;
+  justify-content: center;
+}
+.tool-block {
+  background: #f7faff;
+  border-radius: 8px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  flex: 1 1 0;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.data-sources {
+  max-width: none;
+  width: 100%;
+}
+.tool-title {
+  margin-bottom: 8px;
+  color: #0071ce;
+  font-size: 1.4rem;
+}
+.tool-desc {
+  margin-bottom: 0;
+  font-size: 1.1rem;
+}
+.home-footer {
+  text-align: center;
+  margin-top: 32px;
+  color: #555;
+}
