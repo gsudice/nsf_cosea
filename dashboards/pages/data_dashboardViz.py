@@ -151,32 +151,40 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown):
         hoverinfo="skip"
     ))
 
-    if triggered_id != 'map-options-toggle':
-        # Add underlay if selected
-        if underlay_dropdown != DEFAULT_UNDERLAY_OPTION:
-            geojson = data_loader.CBGDATA['geojson']
-            locations = data_loader.CBGDATA['locations']
-            z_values = data_loader.CBGDATA['z_values']
-            custom_greys = [
-                [0, '#f0f0f0'],  # lightest
-                [0.25, '#bdbdbd'],
-                [0.5, '#969696'],
-                [0.75, '#636363'],
-                [1, '#252525']   # darkest
-            ]
-            fig.add_trace(go.Choroplethmapbox(
-                geojson=geojson,
-                locations=locations,
-                z=z_values,
-                colorscale=custom_greys,
-                zmin=0,
-                zmax=4,
-                showscale=False,
-                marker_opacity=0.55,
-                marker_line_width=0,
-                marker_line_color='rgba(0,0,0,0)',
-                hoverinfo='skip'
-            ))
+    # Add underlay if selected
+    if underlay_dropdown != DEFAULT_UNDERLAY_OPTION:
+        geojson = data_loader.CBGDATA['geojson']
+        locations = data_loader.CBGDATA['locations']
+        z_values = data_loader.CBGDATA['z_values']
+        fig.add_trace(go.Choroplethmapbox(
+            geojson=geojson,
+            locations=locations,
+            z=z_values,
+            colorscale=UNDERLAY_COLOR_SCALE,
+            zmin=0,
+            zmax=4,
+            showscale=False,
+            marker_opacity=1,
+            marker_line_width=0,
+            marker_line_color='rgba(0,0,0,0)',
+            hoverinfo='skip'
+        ))
+
+    underlay_legend = None
+    if underlay_dropdown != DEFAULT_UNDERLAY_OPTION and "show_legend" in map_options:
+        underlay_label = next((opt['label'] for opt in UNDERLAY_OPTIONS if opt['value'] == underlay_dropdown), underlay_dropdown)
+        underlay_items = []
+        labels = ["Lowest 20%", "20–40%", "40–60%", "60–80%", "Highest 20%"]
+        for color, label in zip(UNDERLAY_COLORS, labels):
+            underlay_items.append(html.Div([
+                html.Span(style={"backgroundColor": color, "width": "12px", "height": "12px", "display": "inline-block",
+                          "marginRight": "8px", "border": "1px solid #000" if color == UNDERLAY_COLORS[0] else "none"}),
+                html.Span(label, className="legend-dot-label")
+            ], className="legend-dot-row"))
+        underlay_legend = html.Div([
+            html.Div(underlay_label, className="legend-title"),
+            html.Div(underlay_items, className="legend-dot-row-wrap")
+        ], className="legend-block legend-underlay-block")
 
     if "counties" in map_options:
         all_lon = []
@@ -479,19 +487,17 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown):
                 className="legend-block legend-overlay-block"
             )
 
-    legend_combined = None
-    if legend_html and overlay_legend:
-        legend_combined = [
-            html.Div(legend_html, className="legend-flex-8"),
-            html.Div(overlay_legend, className="legend-flex-2")
-        ]
-    elif legend_html:
-        legend_combined = [
-            html.Div(legend_html, className="legend-full-width")]
-    elif overlay_legend:
-        legend_combined = [
-            html.Div(overlay_legend, className="legend-full-width")]
-    else:
+    legend_combined = []
+    if legend_html:
+        legend_combined.append(
+            html.Div(legend_html, className="legend-flex-8"))
+    if overlay_legend:
+        legend_combined.append(
+            html.Div(overlay_legend, className="legend-flex-2"))
+    if underlay_legend:
+        legend_combined.append(
+            html.Div(underlay_legend, className="underlay-legend"))
+    if not legend_combined:
         legend_combined = None
     return fig, legend_combined
 
@@ -542,7 +548,7 @@ def update_course_list(hoverData):
         for course in APPROVED_COURSES:
             course_items.append(
                 html.Li([html.Span("[0] ", style={"color": "red"}), course.title()]))
-        return html.Div([html.Strong("Offered Courses:"), html.Ul(course_items)])
+        return html.Div([html.Strong("Offered CS Courses:"), html.Ul(course_items)])
 
     point = hoverData['points'][0]
     if 'customdata' not in point or len(point['customdata']) < 2:
@@ -557,7 +563,6 @@ def update_course_list(hoverData):
     total_offered = 0
     total_v = 0
     total_i = 0
-    total_b = 0
     for course in APPROVED_COURSES:
         counts = courses_counts.get(course, {'virtual': 0, 'inperson': 0})
         virtual = counts.get('virtual', 0)
@@ -567,10 +572,8 @@ def update_course_list(hoverData):
             total_offered += 1
             total_v += virtual
             total_i += inperson
-            if virtual > 0 and inperson > 0:
-                total_b += 1
 
-    summary = f"[{total_offered}] [{total_v} V, {total_i} I, {total_b} B]"
+    summary = f"[Total: {total_offered} ({total_v + total_i})] [{total_i} In-Person (IP), {total_v} Virtual (V)]"
 
     course_items = []
     for course in APPROVED_COURSES:
@@ -581,22 +584,15 @@ def update_course_list(hoverData):
         if total == 0:
             count_str = "[0] "
             style = {"color": "red"}
-            indicator = ""
         else:
-            if virtual > 0 and inperson > 0:
-                indicator = "B"
-            elif virtual > 0:
-                indicator = "V"
-            else:
-                indicator = "I"
-            count_str = f"[{total}] "
-            indicator_str = f"[{indicator}] "
+            parts = []
+            if inperson > 0:
+                parts.append(f"{inperson} IP")
+            if virtual > 0:
+                parts.append(f"{virtual} V")
+            count_str = f"[{', '.join(parts)}] "
             style = {"font-weight": "bold"}
-        if total == 0:
-            course_items.append(
-                html.Li([html.Span(count_str, style=style), course.title()]))
-        else:
-            course_items.append(
-                html.Li([html.Span(count_str, style=style), html.Span(indicator_str, style=style), course.title()]))
+        course_items.append(
+            html.Li([html.Span(count_str, style=style), course.title()]))
 
-    return html.Div([html.Strong(f"Courses at {school_name}:"), html.Div(summary), html.Ul(course_items)])
+    return html.Div([html.Strong(f"CS Courses at {school_name}:"), html.Div(summary), html.Ul(course_items)])

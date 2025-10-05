@@ -151,7 +151,6 @@
   font-size: 15px;
   vertical-align: middle;
 }
-/* Modality color dots (override with inline style in app.py for color) */
 .legend-dot {
   display: inline-block;
   width: 16px;
@@ -256,9 +255,20 @@
   margin: 0 0 12px 0;
 }
 
+.legend-underlay-block {
+  padding: 8px 18px 6px 18px;
+  margin: 0 0 12px 0;
+}
+
+.underlay-legend {
+  position: fixed;
+  bottom: 10px;
+  left: 45px;
+  max-width: 180px;
+  z-index: 1000;
+}
 
 
-/* Modality color dots (override with inline style in app.py for color) */
 .legend-dot {
   display: inline-block;
   width: 16px;
@@ -286,7 +296,7 @@
 /* Sidebar styles */
 .sidebar {
   height: 100vh;
-  width: 320px;
+  width: 350px;
   background: #f8f8f8;
   box-shadow: -2px 0 8px rgba(0, 0, 0, 0.08);
   padding: 30px 20px 20px 20px;

@@ -34,6 +34,13 @@ def build_modality_hover(row, modality_type, HOVER_TEMPLATES):
             row['inperson_course_count']) else 0
         approved = row['approved_course_count'] if pd.notnull(
             row['approved_course_count']) else 0
+    
+    # Calculate unique courses and total sections
+    school_id = str(row['UNIQUESCHOOLID'])
+    courses_counts = SCHOOLDATA["courses"].get(school_id, {})
+    unique = sum(1 for c in courses_counts if courses_counts[c]['virtual'] + courses_counts[c]['inperson'] > 0)
+    total_sections = sum(courses_counts[c]['virtual'] + courses_counts[c]['inperson'] for c in courses_counts)
+    
     return HOVER_TEMPLATES["modality"].format(
         SCHOOL_NAME=row['SCHOOL_NAME'],
         district=row['SYSTEM_NAME'] if pd.notnull(row['SYSTEM_NAME']) else "",
@@ -41,7 +48,8 @@ def build_modality_hover(row, modality_type, HOVER_TEMPLATES):
         locale=row['Locale'] if pd.notnull(row['Locale']) else "",
         GRADE_RANGE=row['GRADE_RANGE'] if pd.notnull(
             row['GRADE_RANGE']) else "",
-        approved=approved,
+        unique=unique,
+        total_sections=total_sections,
         virtual=virtual,
         inperson=inperson,
         CS_Enrollment=row['CS_Enrollment'],

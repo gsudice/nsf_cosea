@@ -107,13 +107,13 @@ HOVER_TEMPLATES = {
         "City: {city}<br>"
         "Locale Type: {locale}<br>"
         "Grades: {GRADE_RANGE}<br>"
-        "---<br>"
-        "Approved Courses: {approved}<br>"
-        "Virtual: {virtual} | In-Person: {inperson}<br>"
+        # "---<br>"
+        # "CS Courses Offered: {unique} ({total_sections})<br>"
+        # "In-Person: {inperson} | Virtual: {virtual}<br>"
         "---<br>"
         "CS Students: {CS_Enrollment}<br>"
-        "Certified Teachers: {Certified_Teachers}<br>"
-        "Student-Teacher Ratio: {ratio_display}"
+        "Certified CS Teachers: {Certified_Teachers}<br>"
+        "CS Student-Teacher Ratio: {ratio_display}"
     ),
     "disparity_female": (
         "<u>{SCHOOL_NAME}</u><br>"
@@ -199,4 +199,14 @@ UNDERLAY_OPTIONS = [
     {"label": "None", "value": "none"},
     {"label": "Black Population Ratio",
      "value": "black_population_ratio"}
+]
+
+UNDERLAY_COLORS = ['#f7f7f7', '#d9d9d9', '#bdbdbd', '#969696', '#636363']
+
+UNDERLAY_COLOR_SCALE = [
+    [0, UNDERLAY_COLORS[0]],
+    [0.25, UNDERLAY_COLORS[1]],
+    [0.5, UNDERLAY_COLORS[2]],
+    [0.75, UNDERLAY_COLORS[3]],
+    [1, UNDERLAY_COLORS[4]]
 ]
