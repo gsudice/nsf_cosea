@@ -212,7 +212,7 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown):
         modality_type = dots_dropdown
         merged = data_loader.SCHOOLDATA["gadoe"].copy()
         coords = data_loader.SCHOOLDATA["approved_all"][[
-            "UNIQUESCHOOLID", "SCHOOL_NAME", "lat", "lon"]]
+            "UNIQUESCHOOLID", "SCHOOL_NAME", "lat", "lon", "SYSTEM_NAME", "School City", "Locale"]]
         merged = merged.merge(coords, on="UNIQUESCHOOLID", how="left")
         # Merge in precomputed modality info (grade range, course counts)
         modality_info = data_loader.SCHOOLDATA["school_modality_info"][[
@@ -324,7 +324,7 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown):
         schools = data_loader.SCHOOLDATA["approved_all"][[
             "UNIQUESCHOOLID", "SCHOOL_NAME", "lat", "lon", "GRADE_RANGE",
             "Race: Asian", "Race: Black", "Ethnicity: Hispanic", "Race: White",
-            "Total Student Count", "Female", "Male"
+            "Total Student Count", "Female", "Male", "SYSTEM_NAME", "School City", "Locale"
         ]].copy()
         disparity = data_loader.SCHOOLDATA["disparity"]
         schools = schools.merge(disparity, on="UNIQUESCHOOLID", how="inner")
@@ -554,12 +554,49 @@ def update_course_list(hoverData):
 
     courses_counts = data_loader.SCHOOLDATA["courses"].get(school_id, {})
 
+    total_offered = 0
+    total_v = 0
+    total_i = 0
+    total_b = 0
+    for course in APPROVED_COURSES:
+        counts = courses_counts.get(course, {'virtual': 0, 'inperson': 0})
+        virtual = counts.get('virtual', 0)
+        inperson = counts.get('inperson', 0)
+        total = virtual + inperson
+        if total > 0:
+            total_offered += 1
+            total_v += virtual
+            total_i += inperson
+            if virtual > 0 and inperson > 0:
+                total_b += 1
+
+    summary = f"[{total_offered}] [{total_v} V, {total_i} I, {total_b} B]"
+
     course_items = []
     for course in APPROVED_COURSES:
-        count = courses_counts.get(course, 0)
-        count_str = f"[{count}] "
-        style = {"font-weight": "bold"} if count > 0 else {"color": "red"}
-        course_items.append(
-            html.Li([html.Span(count_str, style=style), course.title()]))
+        counts = courses_counts.get(course, {'virtual': 0, 'inperson': 0})
+        virtual = counts.get('virtual', 0)
+        inperson = counts.get('inperson', 0)
+        total = virtual + inperson
+        if total == 0:
+            count_str = "[0] "
+            style = {"color": "red"}
+            indicator = ""
+        else:
+            if virtual > 0 and inperson > 0:
+                indicator = "B"
+            elif virtual > 0:
+                indicator = "V"
+            else:
+                indicator = "I"
+            count_str = f"[{total}] "
+            indicator_str = f"[{indicator}] "
+            style = {"font-weight": "bold"}
+        if total == 0:
+            course_items.append(
+                html.Li([html.Span(count_str, style=style), course.title()]))
+        else:
+            course_items.append(
+                html.Li([html.Span(count_str, style=style), html.Span(indicator_str, style=style), course.title()]))
 
-    return html.Div([html.Strong(f"Courses at {school_name}:"), html.Ul(course_items)])
+    return html.Div([html.Strong(f"Courses at {school_name}:"), html.Div(summary), html.Ul(course_items)])

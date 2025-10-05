@@ -103,7 +103,11 @@ LABELS = {
 HOVER_TEMPLATES = {
     "modality": (
         "<u>{SCHOOL_NAME}</u><br>"
+        "District: {district}<br>"
+        "City: {city}<br>"
+        "Locale Type: {locale}<br>"
         "Grades: {GRADE_RANGE}<br>"
+        "---<br>"
         "Approved Courses: {approved}<br>"
         "Virtual: {virtual} | In-Person: {inperson}<br>"
         "---<br>"
@@ -113,7 +117,11 @@ HOVER_TEMPLATES = {
     ),
     "disparity_female": (
         "<u>{SCHOOL_NAME}</u><br>"
+        "District: {district}<br>"
+        "City: {city}<br>"
+        "Locale Type: {locale}<br>"
         "Grades: {GRADE_RANGE}<br>"
+        "---<br>"
         "Total Student Count: {Total_Student_Count}<br>"
         "Total Female: {Female}<br>"
         "Total Male: {Male}<br>"
@@ -126,7 +134,11 @@ HOVER_TEMPLATES = {
     ),
     "disparity_race": (
         "<u>{SCHOOL_NAME}</u><br>"
+        "District: {district}<br>"
+        "City: {city}<br>"
+        "Locale Type: {locale}<br>"
         "Grades: {GRADE_RANGE}<br>"
+        "---<br>"
         "Total Student Count: {Total_Student_Count}<br>"
         "{total_race_vals}<br>"
         "---<br>"

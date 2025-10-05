@@ -36,6 +36,9 @@ def build_modality_hover(row, modality_type, HOVER_TEMPLATES):
             row['approved_course_count']) else 0
     return HOVER_TEMPLATES["modality"].format(
         SCHOOL_NAME=row['SCHOOL_NAME'],
+        district=row['SYSTEM_NAME'] if pd.notnull(row['SYSTEM_NAME']) else "",
+        city=row['School City'] if pd.notnull(row['School City']) else "",
+        locale=row['Locale'] if pd.notnull(row['Locale']) else "",
         GRADE_RANGE=row['GRADE_RANGE'] if pd.notnull(
             row['GRADE_RANGE']) else "",
         approved=approved,
@@ -64,6 +67,9 @@ def make_ri_hover(row, disparity_col, ri_cols, HOVER_TEMPLATES):
     if disparity_col == "RI_Female":
         return HOVER_TEMPLATES["disparity_female"].format(
             SCHOOL_NAME=row.get("SCHOOL_NAME", ""),
+            district=row.get("SYSTEM_NAME", ""),
+            city=row.get("School City", ""),
+            locale=row.get("Locale", ""),
             GRADE_RANGE=row.get("GRADE_RANGE", ""),
             Total_Student_Count=row.get("Total Student Count", ""),
             Female=row.get("Female", ""),
@@ -121,6 +127,9 @@ def make_ri_hover(row, disparity_col, ri_cols, HOVER_TEMPLATES):
                 ri_vals.append(safe_fmt(val, col.replace('RI_', '')))
         return HOVER_TEMPLATES["disparity_race"].format(
             SCHOOL_NAME=row.get("SCHOOL_NAME", ""),
+            district=row.get("SYSTEM_NAME", ""),
+            city=row.get("School City", ""),
+            locale=row.get("Locale", ""),
             GRADE_RANGE=row.get("GRADE_RANGE", ""),
             Total_Student_Count=total_students if total_students is not None else '',
             total_race_vals='<br>'.join(total_race_vals),
@@ -284,15 +293,21 @@ def load_all_school_data():
     # Load courses data
     approved_courses = course_logic[course_logic['approved_flag_2'] == 1]
     courses_grouped = approved_courses.groupby(
-        ['UNIQUESCHOOLID', 'COURSE_TITLE']).size().reset_index(name='count')
+        ['UNIQUESCHOOLID', 'COURSE_TITLE', 'is_virtual']).size().reset_index(name='count')
     courses_dict = {}
     for _, row in courses_grouped.iterrows():
         school_id = str(row['UNIQUESCHOOLID'])
         course = row['COURSE_TITLE'].lower()
+        is_virtual = row['is_virtual']
         count = row['count']
         if school_id not in courses_dict:
             courses_dict[school_id] = {}
-        courses_dict[school_id][course] = count
+        if course not in courses_dict[school_id]:
+            courses_dict[school_id][course] = {'virtual': 0, 'inperson': 0}
+        if is_virtual:
+            courses_dict[school_id][course]['virtual'] += count
+        else:
+            courses_dict[school_id][course]['inperson'] += count
 
     school_names = {str(k): v for k, v in zip(
         approved_all['UNIQUESCHOOLID'], approved_all['SCHOOL_NAME'])}
