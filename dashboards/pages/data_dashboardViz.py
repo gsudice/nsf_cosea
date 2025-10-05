@@ -19,6 +19,9 @@ engine = create_engine(DATABASE_URL)
 
 overlay_options = LABELS["overlay_options"]
 
+school_options = [{"label": row["SCHOOL_NAME"], "value": row["UNIQUESCHOOLID"]}
+                  for _, row in data_loader.SCHOOLDATA["approved_all"].iterrows()]
+
 layout = html.Div([
     html.Div([
         dcc.Loading(
@@ -53,6 +56,16 @@ layout = html.Div([
         )
     ], className="main-map-area"),
     html.Div([
+        html.Div([
+            dcc.Dropdown(
+                id="school-search",
+                options=school_options,
+                placeholder="Search for schools...",
+                searchable=True,
+                clearable=True,
+                className="school-search"
+            ),
+        ], className="sidebar-section"),
         html.H3("Map Options", className="sidebar-title"),
         dcc.Checklist(
             id="map-options-toggle",
@@ -126,9 +139,10 @@ def update_dots_dropdown(school):
         Input("school-toggles", "value"),
         Input("dots-dropdown", "value"),
         Input("underlay-dropdown", "value"),
+        Input("school-search", "value"),
     ]
 )
-def update_map(map_options, school, dots_dropdown, underlay_dropdown):
+def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_school):
 
     ctx = callback_context
     triggered = ctx.triggered if ctx else []
@@ -172,7 +186,8 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown):
 
     underlay_legend = None
     if underlay_dropdown != DEFAULT_UNDERLAY_OPTION and "show_legend" in map_options:
-        underlay_label = next((opt['label'] for opt in UNDERLAY_OPTIONS if opt['value'] == underlay_dropdown), underlay_dropdown)
+        underlay_label = next(
+            (opt['label'] for opt in UNDERLAY_OPTIONS if opt['value'] == underlay_dropdown), underlay_dropdown)
         underlay_items = []
         labels = ["Lowest 20%", "20–40%", "40–60%", "60–80%", "Highest 20%"]
         for color, label in zip(UNDERLAY_COLORS, labels):
@@ -448,10 +463,25 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown):
                 customdata=df[["SCHOOL_NAME", "UNIQUESCHOOLID"]].values
             ))
 
+    if selected_school:
+        school_row = data_loader.SCHOOLDATA["approved_all"][data_loader.SCHOOLDATA["approved_all"]
+                                                            ["UNIQUESCHOOLID"] == selected_school]
+        if not school_row.empty:
+            lat = school_row["lat"].iloc[0]
+            lon = school_row["lon"].iloc[0]
+            center = {"lat": lat, "lon": lon}
+            zoom = 12
+        else:
+            center = {"lat": 32.9, "lon": -83.5}
+            zoom = 6.5
+    else:
+        center = {"lat": 32.9, "lon": -83.5}
+        zoom = 6.5
+
     fig.update_layout(
         mapbox_style="white-bg",  # blank basemap
-        mapbox_zoom=6.5,
-        mapbox_center={"lat": 32.9, "lon": -83.5},
+        mapbox_zoom=zoom,
+        mapbox_center=center,
         margin={"l": 0, "r": 0, "t": 0, "b": 0},
         showlegend=False,
         xaxis=dict(visible=False),
