@@ -139,6 +139,14 @@
   min-width: 0;
   width: 100%;
 }
+.legend-dot-row-wrap-underlay {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px 0;
+  min-width: 0;
+  width: fit-content;
+}
 .legend-dot-row {
   display: inline-flex;
   align-items: center;
@@ -146,6 +154,14 @@
   margin-right: 8px;
   margin-bottom: 2px;
   white-space: nowrap;
+}
+.legend-dot-row-underlay {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  width: 100%;
 }
 .legend-dot-label {
   font-size: 15px;
@@ -258,13 +274,16 @@
 .legend-underlay-block {
   padding: 8px 18px 6px 18px;
   margin: 0 0 12px 0;
+  width: fit-content;
+  min-width: 0;
 }
 
 .underlay-legend {
   position: fixed;
   bottom: 10px;
   left: 45px;
-  max-width: 180px;
+  width: fit-content;
+  max-width: none;
   z-index: 1000;
 }
 

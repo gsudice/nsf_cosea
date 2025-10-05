@@ -410,6 +410,21 @@ def load_cbg_underlay(selected_field, bins=5):
         acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
         acs_df[selected_field] = acs_df['black_alone_non_hispanic'] / \
             acs_df['total_population']
+    elif selected_field == "median_household_income":
+        acs_query = 'SELECT geoid, median_household_income FROM census.acs2023_combined'
+        acs_df = pd.read_sql(acs_query, engine)
+        acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
+        acs_df[selected_field] = pd.to_numeric(acs_df[selected_field], errors='coerce')
+    elif selected_field == "edu_hs_or_more":
+        acs_query = 'SELECT geoid, edu_hs_or_more FROM census.acs2023_combined'
+        acs_df = pd.read_sql(acs_query, engine)
+        acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
+        acs_df[selected_field] = pd.to_numeric(acs_df[selected_field], errors='coerce')
+    elif selected_field == "households_with_subscription":
+        acs_query = 'SELECT geoid, households_with_subscription FROM census.acs2023_combined'
+        acs_df = pd.read_sql(acs_query, engine)
+        acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
+        acs_df[selected_field] = pd.to_numeric(acs_df[selected_field], errors='coerce')
     else:
         acs_query = f'SELECT geoid, "{selected_field}" FROM census.acs2023_combined'
         acs_df = pd.read_sql(acs_query, engine)
@@ -420,11 +435,21 @@ def load_cbg_underlay(selected_field, bins=5):
         acs_df, left_on='GEOID', right_on='geoid', how='left')
 
     # Bin the selected field for grayscale mapping
-    if block_groups[selected_field].notnull().sum() > 0:
-        block_groups['underlay_bin'] = pd.qcut(
-            block_groups[selected_field], bins, labels=False, duplicates='drop')
+    if selected_field == "median_household_income":
+        income_bins = [2499, 53240, 84175, 122700, 180134, 250001]
+        block_groups['underlay_bin'] = pd.cut(block_groups[selected_field], bins=income_bins, labels=False, include_lowest=True)
+    elif selected_field == "edu_hs_or_more":
+        edu_bins = [0, 508, 832, 1199, 1711, 3965]
+        block_groups['underlay_bin'] = pd.cut(block_groups[selected_field], bins=edu_bins, labels=False, include_lowest=True)
+    elif selected_field == "households_with_subscription":
+        internet_bins = [0, 288, 472, 679, 965, 2070]
+        block_groups['underlay_bin'] = pd.cut(block_groups[selected_field], bins=internet_bins, labels=False, include_lowest=True)
     else:
-        block_groups['underlay_bin'] = None
+        if block_groups[selected_field].notnull().sum() > 0:
+            block_groups['underlay_bin'] = pd.qcut(
+                block_groups[selected_field], bins, labels=False, duplicates='drop')
+        else:
+            block_groups['underlay_bin'] = None
 
     # Grayscale colors (light to dark)
     gray_colors = ["#f0f0f0", "#bdbdbd", "#969696", "#636363", "#252525"]
@@ -439,12 +464,15 @@ SCHOOLDATA = load_all_school_data()
 print("Loading geo data...")
 GEODATA = load_geodata()
 print("Loading CBG underlay data...")
-cbg_gdf = load_cbg_underlay("black_population_ratio")
-cbg_gdf = cbg_gdf.set_index('GEOID')
-CBGDATA = {
-    'geojson': json.loads(cbg_gdf.to_json()),
-    'locations': cbg_gdf.index.tolist(),
-    'z_values': cbg_gdf['underlay_bin'].fillna(-1).tolist()
-}
+CBGDATA = {}
+underlay_fields = ["black_population_ratio", "median_household_income", "edu_hs_or_more", "households_with_subscription"]
+for field in underlay_fields:
+    cbg_gdf = load_cbg_underlay(field)
+    cbg_gdf = cbg_gdf.set_index('GEOID')
+    CBGDATA[field] = {
+        'geojson': json.loads(cbg_gdf.to_json()),
+        'locations': cbg_gdf.index.tolist(),
+        'z_values': cbg_gdf['underlay_bin'].fillna(-1).tolist()
+    }
 
 print("Data loading complete.")

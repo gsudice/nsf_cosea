@@ -167,9 +167,9 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
 
     # Add underlay if selected
     if underlay_dropdown != DEFAULT_UNDERLAY_OPTION:
-        geojson = data_loader.CBGDATA['geojson']
-        locations = data_loader.CBGDATA['locations']
-        z_values = data_loader.CBGDATA['z_values']
+        geojson = data_loader.CBGDATA[underlay_dropdown]['geojson']
+        locations = data_loader.CBGDATA[underlay_dropdown]['locations']
+        z_values = data_loader.CBGDATA[underlay_dropdown]['z_values']
         fig.add_trace(go.Choroplethmapbox(
             geojson=geojson,
             locations=locations,
@@ -189,16 +189,25 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         underlay_label = next(
             (opt['label'] for opt in UNDERLAY_OPTIONS if opt['value'] == underlay_dropdown), underlay_dropdown)
         underlay_items = []
-        labels = ["Lowest 20%", "20–40%", "40–60%", "60–80%", "Highest 20%"]
+        if underlay_dropdown == "black_population_ratio":
+            labels = ["Lowest 20%", "20–40%", "40–60%", "60–80%", "Highest 20%"]
+        elif underlay_dropdown == "median_household_income":
+            labels = ["$2,499 - $53,240", "$53,240 - $84,175", "$84,175 - $122,700", "$122,700 - $180,134", "$180,134 - $250,001"]
+        elif underlay_dropdown == "edu_hs_or_more":
+            labels = ["0 - 508", "508 - 832", "832 - 1,199", "1,199 - 1,711", "1,711 - 3,965"]
+        elif underlay_dropdown == "households_with_subscription":
+            labels = ["0 - 288", "288 - 472", "472 - 679", "679 - 965", "965 - 2,070"]
+        else:
+            labels = ["Lowest 20%", "20–40%", "40–60%", "60–80%", "Highest 20%"]
         for color, label in zip(UNDERLAY_COLORS, labels):
             underlay_items.append(html.Div([
                 html.Span(style={"backgroundColor": color, "width": "12px", "height": "12px", "display": "inline-block",
                           "marginRight": "8px", "border": "1px solid #000" if color == UNDERLAY_COLORS[0] else "none"}),
                 html.Span(label, className="legend-dot-label")
-            ], className="legend-dot-row"))
+            ], className="legend-dot-row-underlay"))
         underlay_legend = html.Div([
             html.Div(underlay_label, className="legend-title"),
-            html.Div(underlay_items, className="legend-dot-row-wrap")
+            html.Div(underlay_items, className="legend-dot-row-wrap-underlay")
         ], className="legend-block legend-underlay-block")
 
     if "counties" in map_options:

@@ -198,7 +198,13 @@ DEFAULT_UNDERLAY_OPTION = "none"
 UNDERLAY_OPTIONS = [
     {"label": "None", "value": "none"},
     {"label": "Black Population Ratio",
-     "value": "black_population_ratio"}
+     "value": "black_population_ratio"},
+    {"label": "Median Household Income",
+     "value": "median_household_income"},
+    {"label": "High School or More Education",
+     "value": "edu_hs_or_more"},
+    {"label": "Internet Subscription",
+     "value": "households_with_subscription"}
 ]
 
 UNDERLAY_COLORS = ['#f7f7f7', '#d9d9d9', '#bdbdbd', '#969696', '#636363']
