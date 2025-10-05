@@ -1,4 +1,22 @@
-# ---------- LABELS ----------
+# ---------- APPROVED COURSES ----------
+APPROVED_COURSES = [
+    "advanced placement computer science a",
+    "advanced placement computer science principles",
+    "ib computer science, year one",
+    "ib computer science, year two",
+    "computer science principles",
+    "programming, games, apps, and society",
+    "web development",
+    "embedded computing",
+    "game design: animation and simulation",
+    "introduction to cybersecurity",
+    "advanced cybersecurity",
+    "coding for fintech",
+    "introduction to python",
+    "introduction to software technology",
+    "introduction to digital technology",
+    "introduction to hardware technology"
+]
 MODALITY_LABELS = {
     "Both": "In Person and Virtual",
     "In Person": "In Person Only",

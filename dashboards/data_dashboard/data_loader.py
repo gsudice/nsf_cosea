@@ -282,11 +282,17 @@ def load_all_school_data():
     gender = pd.read_sql(gender_query, engine)
 
     # Load courses data
-    approved_courses = course_logic[course_logic['approved_flag'] == 1]
+    approved_courses = course_logic[course_logic['approved_flag_2'] == 1]
     courses_grouped = approved_courses.groupby(
-        'UNIQUESCHOOLID')['COURSE_TITLE'].apply(list).reset_index()
-    courses_dict = {str(k): v for k, v in zip(
-        courses_grouped['UNIQUESCHOOLID'], courses_grouped['COURSE_TITLE'])}
+        ['UNIQUESCHOOLID', 'COURSE_TITLE']).size().reset_index(name='count')
+    courses_dict = {}
+    for _, row in courses_grouped.iterrows():
+        school_id = str(row['UNIQUESCHOOLID'])
+        course = row['COURSE_TITLE'].lower()
+        count = row['count']
+        if school_id not in courses_dict:
+            courses_dict[school_id] = {}
+        courses_dict[school_id][course] = count
 
     school_names = {str(k): v for k, v in zip(
         approved_all['UNIQUESCHOOLID'], approved_all['SCHOOL_NAME'])}

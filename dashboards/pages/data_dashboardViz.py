@@ -89,7 +89,6 @@ layout = html.Div([
             ),
         ], className="sidebar-section"),
         html.Div([
-            html.Strong("Courses Offered"),
             html.Div(id="course-list", className="course-list")
         ], className="sidebar-section"),
     ], className="sidebar"),
@@ -538,23 +537,29 @@ def update_loading_message(map_options, school, dots_dropdown, underlay_dropdown
 )
 def update_course_list(hoverData):
     if hoverData is None or not hoverData.get('points'):
-        return html.Div("Hover over a school to see courses.")
+        # Show full list with [0] in red
+        course_items = []
+        for course in APPROVED_COURSES:
+            course_items.append(
+                html.Li([html.Span("[0] ", style={"color": "red"}), course.title()]))
+        return html.Div([html.Strong("Offered Courses:"), html.Ul(course_items)])
+
     point = hoverData['points'][0]
     if 'customdata' not in point or len(point['customdata']) < 2:
         return html.Div("No course data available.")
+
     school_id = str(point['customdata'][1])
     school_name = data_loader.SCHOOLDATA["school_names"].get(
         school_id, f"School {school_id}")
-    courses = data_loader.SCHOOLDATA["courses"].get(school_id, [])
-    if not courses:
-        return html.Div(f"No approved courses found for {school_name}.")
-    from collections import Counter
-    course_counts = Counter(courses)
+
+    courses_counts = data_loader.SCHOOLDATA["courses"].get(school_id, {})
+
     course_items = []
-    for course, count in course_counts.items():
-        capitalized_course = course.title()
-        if count == 1:
-            course_items.append(html.Li(capitalized_course))
-        else:
-            course_items.append(html.Li(f"{capitalized_course} ({count})"))
-    return html.Div(html.Ul(course_items))
+    for course in APPROVED_COURSES:
+        count = courses_counts.get(course, 0)
+        count_str = f"[{count}] "
+        style = {"font-weight": "bold"} if count > 0 else {"color": "red"}
+        course_items.append(
+            html.Li([html.Span(count_str, style=style), course.title()]))
+
+    return html.Div([html.Strong(f"Courses at {school_name}:"), html.Ul(course_items)])
