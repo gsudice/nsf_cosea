@@ -8,6 +8,11 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styling.css') }}">
 </head>
 <body>
+    <!-- Header -->
+    <div class="header">
+        <h1>CoSea Teachers Portal</h1>
+    </div>
+
     <div class="home">
         <h1 id="topic">The Teacher Feedback Portal!</h1>
         <h1 id="intro">Project Survey Instructions</h1>
@@ -27,7 +32,7 @@
             <p>The objective is to empower educators to collaboratively pinpoint areas lacking CS exposure, fostering a deeper understanding of the challenges involved.</p>
             <p>The resulting data will be used to validate the Co-SEA Risk Index, a metric to score census block groups with their risk of access to CS education. By scoring census block groups in this way, stakeholders can strategically place interventions where most needed to broaden participation in computing.</p>
         </div>
-        <a href="{{ url_for('role_selection') }}"><button id="next">Get Started</button></a>
+        <button id="next" onclick="window.location.href='{{ url_for('role_selection') }}'">Get Started</button>
     </div>
 </body>
 </html>

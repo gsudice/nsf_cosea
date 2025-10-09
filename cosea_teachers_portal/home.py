@@ -363,7 +363,8 @@ def submit_barriers():
         
         # Generate a unique teacher ID
         teacher_id = str(uuid.uuid4())
-        submitted_at = datetime.now(ZoneInfo("America/New_York"))
+        eastern = ZoneInfo("America/New_York")
+        submitted_at = datetime.now(eastern).replace(tzinfo=None)
         
         logger.debug(f"About to insert with: teacher_id={teacher_id}, user_role={user_role}, user_subjects={user_subjects}, user_admin_level={user_admin_level}")
         
