@@ -35,7 +35,7 @@ document.getElementById('district-dropdown').addEventListener('change', function
     schoolDropdown.innerHTML = '<option value="none" selected disabled hidden>Select an Option</option>';
 
     // Fetch schools for the selected district
-    fetch('/get_schools?district=' + selectedDistrict)
+    fetch('/get_schools?district=' + encodeURIComponent(selectedDistrict))
         .then(response => response.json())
         .then(schools => {
             schools.forEach(school => {
@@ -46,6 +46,6 @@ document.getElementById('district-dropdown').addEventListener('change', function
             });
         })
         .catch(error => {
-            console.error('Error:', error);
+            console.error('Error fetching schools:', error);
         });
 });

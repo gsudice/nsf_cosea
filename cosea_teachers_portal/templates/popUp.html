@@ -6,13 +6,18 @@
     <title>Census Block Group</title>
 </head>
 <body style="font-family: Arial, sans-serif; padding: 10px;">
-    <!-- popUp.html -->
     <h4 style="margin: 0 0 10px 0;">Census Block Group</h4>
     <label><b>Select Options:</b></label>
     <form id="barriers-form">
         <input type="hidden" name="block_geoid" value="{{ block.geoid }}">
         <input type="hidden" name="school" value="{{ selected_school }}">
         <input type="hidden" name="district" value="{{ selected_district }}">
+        
+        <!-- Hidden fields for user role information -->
+        <input type="hidden" name="user_role" value="{{ user_info.role }}">
+        <input type="hidden" name="user_subjects" value="{{ user_info.subjects or '' }}">
+        <input type="hidden" name="user_admin_level" value="{{ user_info.admin_level or '' }}">
+        
         {% set options = [
         {"value": "student_demographics", "label": "Student demographics (race/ethnicity, gender, etc.)"},
         {"value": "economic_barriers", "label": "Economic barriers (household income, financial hardship)"},
@@ -25,50 +30,98 @@
         {"value": "lack_cs_advanced_courses", "label": "No or limited advanced CS courses available at school"},
         {"value": "other", "label": "Other (please specify)"}
         ] %}
+        
         {% for option in options %}
         <input type="checkbox" name="barriers" value="{{ option.value }}" id="{{ option.value }}-{{ block.geoid }}"
-               onchange="if(this.value=='other' && this.checked){document.getElementById('custom-input-{{ block.geoid }}').style.display='block'}else if(this.value=='other'){document.getElementById('custom-input-{{ block.geoid }}').style.display='none'}">
+               onchange="toggleOtherInput(this, '{{ block.geoid }}')">
         <label for="{{ option.value }}-{{ block.geoid }}">{{ option.label }}</label><br>
         {% endfor %}
+        
         <input type="text" id="custom-input-{{ block.geoid }}" name="other_specify" placeholder="Enter your option" style="display: none; margin-top: 5px;">
         <br><br>
         <button type="submit">Submit</button>
     </form>
     <div id="form-message" style="margin-top:10px; font-weight:bold;"></div>
+    
     <script>
+    function toggleOtherInput(checkbox, geoid) {
+        const customInput = document.getElementById('custom-input-' + geoid);
+        if (checkbox.value === 'other' && checkbox.checked) {
+            customInput.style.display = 'block';
+            customInput.required = true;
+        } else if (checkbox.value === 'other') {
+            customInput.style.display = 'none';
+            customInput.required = false;
+            customInput.value = '';
+        }
+    }
+    
     document.getElementById("barriers-form").addEventListener("submit", async function(event) {
         event.preventDefault();
         const form = event.target;
         const formData = new FormData(form);
-
+        const messageDiv = document.getElementById("form-message");
+        
+        // Check if at least one barrier is selected
+        const barriers = formData.getAll('barriers');
+        if (barriers.length === 0) {
+            messageDiv.innerText = "⚠️ Please select at least one option.";
+            messageDiv.style.color = "orange";
+            return;
+        }
+        
+        // If "other" is checked, make sure custom text is provided
+        if (barriers.includes('other') && !formData.get('other_specify').trim()) {
+            messageDiv.innerText = "⚠️ Please specify the 'Other' option.";
+            messageDiv.style.color = "orange";
+            return;
+        }
+        
         console.log("Submitting form data:");
         for (let pair of formData.entries()) {
             console.log(pair[0] + ': ' + pair[1]);
         }
-
+        
         try {
-            const response = await fetch("http://127.0.0.1:5000/saveData", { // ← updated line
+            console.log("Attempting to fetch: http://127.0.0.1:5000/saveData");
+            
+            const response = await fetch("http://127.0.0.1:5000/saveData", {
                 method: "POST",
-                body: formData
+                body: formData,
+                mode: 'cors'
             });
-
+            
+            console.log("Response status:", response.status);
+            console.log("Response ok:", response.ok);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
             let responseText = await response.text();
             console.log("Raw response:", responseText);
-
+            
             const result = JSON.parse(responseText);
             console.log("Parsed response:", result);
-
-            const messageDiv = document.getElementById("form-message");
+            
             if (result.success) {
-                messageDiv.innerText = "✅ Thank you! Your submission has been received.";
+                messageDiv.style.color = "green";
+                messageDiv.innerText = "✅ " + result.message;
                 form.reset();
-                document.getElementById("custom-input-{{ block.geoid }}").style.display = "none";
+                document.querySelectorAll('[id^="custom-input-"]').forEach(el => {
+                    el.style.display = 'none';
+                    el.required = false;
+                });
             } else {
+                messageDiv.style.color = "red";
                 messageDiv.innerText = "❌ Error: " + (result.message || "Unknown error");
             }
         } catch (error) {
-            console.error("Error processing response:", error);
-            document.getElementById("form-message").innerText = "❌ There was an error processing your submission.";
+            console.error("Full error object:", error);
+            console.error("Error message:", error.message);
+            console.error("Error stack:", error.stack);
+            messageDiv.style.color = "red";
+            messageDiv.innerText = "❌ Submission failed: " + error.message + " (Check browser console for details)";
         }
     });
     </script>
