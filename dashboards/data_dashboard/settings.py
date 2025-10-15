@@ -112,7 +112,7 @@ HOVER_TEMPLATES = {
         # "In-Person: {inperson} | Virtual: {virtual}<br>"
         "---<br>"
         "CS Students: {CS_Enrollment}<br>"
-        "Certified CS Teachers: {Certified_Teachers}<br>"
+        "CS Teachers: {approved_teachers}<br>Extra Certified Teachers: {extra_teachers}<br>"
         "CS Student-Teacher Ratio: {ratio_display}"
     ),
     "disparity_female": (

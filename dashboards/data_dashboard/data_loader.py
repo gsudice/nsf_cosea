@@ -55,7 +55,8 @@ def build_modality_hover(row, modality_type, HOVER_TEMPLATES):
         virtual=virtual,
         inperson=inperson,
         CS_Enrollment=row['CS_Enrollment'],
-        Certified_Teachers=row['Certified_Teachers'],
+        approved_teachers=row['approved_teachers'],
+        extra_teachers=row['extra_teachers'],
         ratio_display=row['ratio_display']
     )
 
@@ -241,7 +242,7 @@ def load_all_school_data():
     approved_all = pd.read_sql(
         'SELECT * FROM "allhsgrades24"."tbl_approvedschools"', engine)
 
-    approved_logic = course_logic[course_logic["approved_flag"] == True]
+    approved_logic = course_logic[(course_logic["approved_flag"] == True) & (course_logic["certified_flag"] == True)]
     modality_counts = approved_logic.groupby(
         ["UNIQUESCHOOLID", "is_virtual"]).size().unstack(fill_value=0).reset_index()
     modality_counts = modality_counts.rename(columns={
@@ -253,7 +254,7 @@ def load_all_school_data():
     if "inperson_course_count" not in modality_counts:
         modality_counts["inperson_course_count"] = 0
 
-    approved_logic2 = course_logic[course_logic["approved_flag_2"] == True]
+    approved_logic2 = course_logic[(course_logic["approved_flag_2"] == True) & (course_logic["certified_flag_2"] == True)]
     modality_counts2 = approved_logic2.groupby(
         ["UNIQUESCHOOLID", "is_virtual"]).size().unstack(fill_value=0).reset_index()
     modality_counts2 = modality_counts2.rename(columns={
@@ -286,7 +287,7 @@ def load_all_school_data():
 
     ri_cols = ["RI_Asian", "RI_Black", "RI_Hispanic", "RI_White", "RI_Female"]
     cs_race_cols = ["CS_Asian", "CS_Black", "CS_Hispanic", "CS_White"]
-    extra_cols = ["CS_Enrollment", "CS_Female", "CS_Male"] + cs_race_cols
+    extra_cols = ["CS_Enrollment", "CS_Female", "CS_Male", "Certified_Teachers"] + cs_race_cols
     all_cols = ri_cols + extra_cols
     disparity_query = f'SELECT "UNIQUESCHOOLID", {', '.join([f'"{col}"' for col in all_cols])
                                                   } FROM census.gadoe2024_389'
@@ -322,6 +323,18 @@ def load_all_school_data():
     school_names = {str(k): v for k, v in zip(
         approved_all['UNIQUESCHOOLID'], approved_all['SCHOOL_NAME'])}
 
+    # Compute extra teachers
+    extra_teachers = {}
+    approved_teachers_count = {}
+    extra_teachers_count = {}
+    for school_id in course_logic["UNIQUESCHOOLID"].unique():
+        school_courses = course_logic[course_logic["UNIQUESCHOOLID"] == school_id]
+        approved_certs = set(school_courses[school_courses["approved_flag_2"] == True]["CERTIFICATE_ID"].dropna())
+        all_certs = set(school_courses["CERTIFICATE_ID"].dropna())
+        extra_teachers[str(school_id)] = len(all_certs) > len(approved_certs)
+        approved_teachers_count[str(school_id)] = len(approved_certs)
+        extra_teachers_count[str(school_id)] = len(all_certs) - len(approved_certs)
+
     return {
         "gadoe": gadoe,
         "course_logic": course_logic,
@@ -330,7 +343,10 @@ def load_all_school_data():
         "disparity": disparity,
         "gender": gender,
         "courses": courses_dict,
-        "school_names": school_names
+        "school_names": school_names,
+        "extra_teachers": extra_teachers,
+        "approved_teachers_count": approved_teachers_count,
+        "extra_teachers_count": extra_teachers_count
     }
 
 

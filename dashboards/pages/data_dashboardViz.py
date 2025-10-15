@@ -1,6 +1,7 @@
 # keep this at the top to silence warning
 import data_dashboard.data_loader as data_loader
 from data_dashboard.settings import *
+from data_dashboard.settings import APPROVED_COURSES
 from sqlalchemy import create_engine
 import pandas as pd
 import plotly.graph_objs as go
@@ -21,6 +22,13 @@ overlay_options = LABELS["overlay_options"]
 
 school_options = [{"label": row["SCHOOL_NAME"], "value": row["UNIQUESCHOOLID"]}
                   for _, row in data_loader.SCHOOLDATA["approved_all"].iterrows()]
+
+school_locales = data_loader.SCHOOLDATA["approved_all"]["Locale"].dropna().unique()
+locale_options = [{"label": locale, "value": locale} for locale in sorted(school_locales)]
+
+courses_options = [{"label": course.title(), "value": course} for course in APPROVED_COURSES]
+
+modality_options = [{"label": "Virtual", "value": "Virtual"}, {"label": "In Person", "value": "In Person"}, {"label": "Both", "value": "Both"}, {"label": "None", "value": "No"}]
 
 layout = html.Div([
     html.Div([
@@ -101,6 +109,72 @@ layout = html.Div([
                 className="sidebar-underlay-dropdown"
             ),
         ], className="sidebar-section"),
+        html.H3("Filters", className="sidebar-title"),
+        html.Div([
+            html.Strong("Locale Type"),
+            dcc.Checklist(
+                id="locale-filter",
+                options=locale_options,
+                value=[],
+                className="sidebar-locale-checklist"
+            ),
+        ], className="sidebar-section"),
+        html.Div([
+            html.Strong("Courses Offered"),
+            dcc.Checklist(
+                id="courses-filter",
+                options=courses_options,
+                value=[],
+                className="sidebar-courses-checklist"
+            ),
+        ], className="sidebar-section"),
+        html.Div([
+            html.Strong("Modality"),
+            dcc.Checklist(
+                id="modality-filter",
+                options=modality_options,
+                value=[],
+                className="sidebar-modality-checklist"
+            ),
+        ], className="sidebar-section"),
+        html.Div([
+            html.Strong("Extra Teachers"),
+            dcc.Checklist(
+                id="extra-teachers-filter",
+                options=[{"label": "Has Extra Teachers", "value": "extra"}],
+                value=[],
+                className="sidebar-extra-teachers-checklist"
+            ),
+        ], className="sidebar-section"),
+        html.Div([
+            html.Strong("Student-Teacher Ratio"),
+            dcc.RangeSlider(
+                id="ratio-threshold",
+                min=0,
+                max=200,
+                value=[0, 200],
+                step=1,
+                marks={0: '0', 100: '100', 200: '200'},
+                tooltip={"placement": "bottom", "always_visible": True},
+                className="sidebar-ratio-slider"
+            ),
+        ], className="sidebar-section"),
+        html.Div([
+            html.Strong("RI Thresholds"),
+            dcc.RangeSlider(
+                id="ri-threshold",
+                min=-1.0,
+                max=1.0,
+                step=0.01,
+                value=[-1.0, 1.0],
+                marks={-1: '-1', -0.05: '-0.05', 0: '0', 0.05: '0.05', 1: '1'},
+                tooltip={"placement": "bottom", "always_visible": True},
+                className="sidebar-ri-slider"
+            ),
+        ], id="ri-threshold-container", className="sidebar-section"),
+        html.Div([
+            html.Button("Reset Filters", id="reset-filters", className="reset-button")
+        ], className="sidebar-section"),
         html.Div([
             html.Div(id="course-list", className="course-list")
         ], className="sidebar-section"),
@@ -130,9 +204,38 @@ def update_dots_dropdown(school):
 
 
 @callback(
+    Output("ri-threshold-container", "style"),
+    Input("school-toggles", "value")
+)
+def toggle_ri_threshold(school):
+    if school == "disparity":
+        return {"display": "block"}
+    else:
+        return {"display": "none"}
+
+
+@callback(
+    [
+        Output("locale-filter", "value"),
+        Output("courses-filter", "value"),
+        Output("modality-filter", "value"),
+        Output("extra-teachers-filter", "value"),
+        Output("ratio-threshold", "value"),
+        Output("ri-threshold", "value"),
+    ],
+    Input("reset-filters", "n_clicks"),
+    prevent_initial_call=True
+)
+def reset_filters(n_clicks):
+    return [], [], [], [], [0, 200], [-1.0, 1.0]
+
+
+@callback(
     [
         Output("main-map", "figure"),
         Output("custom-legend-container", "children"),
+        Output("ratio-threshold", "max"),
+        Output("ratio-threshold", "marks"),
     ],
     [
         Input("map-options-toggle", "value"),
@@ -140,9 +243,15 @@ def update_dots_dropdown(school):
         Input("dots-dropdown", "value"),
         Input("underlay-dropdown", "value"),
         Input("school-search", "value"),
+        Input("locale-filter", "value"),
+        Input("courses-filter", "value"),
+        Input("modality-filter", "value"),
+        Input("extra-teachers-filter", "value"),
+        Input("ratio-threshold", "value"),
+        Input("ri-threshold", "value"),
     ]
 )
-def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_school):
+def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_school, locale_filter, courses_filter, modality_filter, extra_teachers_filter, ratio_threshold, ri_threshold):
 
     ctx = callback_context
     triggered = ctx.triggered if ctx else []
@@ -251,6 +360,8 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
             "UNIQUESCHOOLID", "GRADE_RANGE", "virtual_course_count", "inperson_course_count", "virtual_course_count_2", "inperson_course_count_2", "approved_course_count", "approved_course_count_2"
         ]]
         merged = merged.merge(modality_info, on="UNIQUESCHOOLID", how="left")
+        merged["approved_teachers"] = merged["UNIQUESCHOOLID"].apply(lambda x: data_loader.SCHOOLDATA["approved_teachers_count"].get(str(x), 0))
+        merged["extra_teachers"] = merged["UNIQUESCHOOLID"].apply(lambda x: data_loader.SCHOOLDATA["extra_teachers_count"].get(str(x), 0))
         # Determine which column to use for logic classification
         if modality_type == "LOGIC_CLASS_2_TEACHERS":
             logic_col = "LOGIC_CLASS_2"
@@ -265,6 +376,34 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
             merged["Classification"] = merged[logic_col].apply(
                 data_loader.classify_modality)
 
+        # Override classification if no CS enrollment
+        merged.loc[merged['CS_Enrollment'] == 0, 'Classification'] = "No"
+
+        # Calculate student teacher ratio for filtering
+        merged["CS_Enrollment"] = merged["CS_Enrollment"].apply(lambda x: int(x) if pd.notnull(x) else 0)
+        merged["approved_teachers"] = merged["approved_teachers"].apply(lambda x: int(x) if pd.notnull(x) else 0)
+        merged["student_teacher_ratio"] = merged.apply(
+            lambda row: row["CS_Enrollment"] / row["approved_teachers"]
+            if row["approved_teachers"] not in [0, None, "", float('nan')] else 0.0,
+            axis=1
+        )
+
+        # Apply filters
+        if locale_filter:
+            merged = merged[merged['Locale'].isin(locale_filter)]
+
+        # Courses filter
+        if courses_filter:
+            merged = merged[merged['UNIQUESCHOOLID'].apply(lambda x: all(course.lower() in data_loader.SCHOOLDATA["courses"].get(str(x), {}) and (data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0) for course in courses_filter))]
+
+        if modality_filter:
+            merged = merged[merged['Classification'].isin(modality_filter)]
+
+        if extra_teachers_filter:
+            merged = merged[merged['UNIQUESCHOOLID'].apply(lambda x: data_loader.SCHOOLDATA["extra_teachers"].get(str(x), False))]
+
+        merged = merged[(merged['student_teacher_ratio'] >= ratio_threshold[0]) & (merged['student_teacher_ratio'] <= ratio_threshold[1])]
+
         modality_counts = merged["Classification"].value_counts()
         # Choose color map based on modality type
         if modality_type == "LOGIC_CLASS_2_TEACHERS":
@@ -276,12 +415,12 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
             df = merged[merged["Classification"] == modality].copy()
             df["CS_Enrollment"] = df["CS_Enrollment"].apply(
                 lambda x: int(x) if pd.notnull(x) else 0)
-            df["Certified_Teachers"] = df["Certified_Teachers"].apply(
+            df["approved_teachers"] = df["approved_teachers"].apply(
                 lambda x: int(x) if pd.notnull(x) else 0)
 
             df["student_teacher_ratio"] = df.apply(
-                lambda row: row["CS_Enrollment"] / row["Certified_Teachers"]
-                if row["Certified_Teachers"] not in [0, None, "", float('nan')] else 0.0,
+                lambda row: row["CS_Enrollment"] / row["approved_teachers"]
+                if row["approved_teachers"] not in [0, None, "", float('nan')] else 0.0,
                 axis=1
             )
 
@@ -360,6 +499,32 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         ]].copy()
         disparity = data_loader.SCHOOLDATA["disparity"]
         schools = schools.merge(disparity, on="UNIQUESCHOOLID", how="inner")
+
+        # Calculate student teacher ratio for filtering
+        schools["CS_Enrollment"] = schools["CS_Enrollment"].apply(lambda x: int(x) if pd.notnull(x) else 0)
+        schools["Certified_Teachers"] = schools["Certified_Teachers"].apply(lambda x: int(x) if pd.notnull(x) else 0)
+        schools["student_teacher_ratio"] = schools.apply(
+            lambda row: row["CS_Enrollment"] / row["Certified_Teachers"]
+            if row["Certified_Teachers"] not in [0, None, "", float('nan')] else 0.0,
+            axis=1
+        )
+
+        # Apply filters
+        if locale_filter:
+            schools = schools[schools['Locale'].isin(locale_filter)]
+
+        # Courses filter
+        if courses_filter:
+            schools = schools[schools['UNIQUESCHOOLID'].apply(lambda x: all(course.lower() in data_loader.SCHOOLDATA["courses"].get(str(x), {}) and (data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0) for course in courses_filter))]
+
+        # Modality filter not applied for disparity
+        # Extra teachers not applied for disparity
+
+        schools = schools[(schools['student_teacher_ratio'] >= ratio_threshold[0]) & (schools['student_teacher_ratio'] <= ratio_threshold[1])]
+
+        # RI thresholds
+        schools = schools[(schools[disparity_col] >= ri_threshold[0]) & (schools[disparity_col] <= ri_threshold[1])]
+
         ri_cols = ["RI_Asian", "RI_Black",
                    "RI_Hispanic", "RI_White", "RI_Female"]
 
@@ -454,6 +619,33 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         gender_col = dots_dropdown
         # Use preloaded data
         schools = data_loader.SCHOOLDATA["gender"]
+        schools = schools.merge(data_loader.SCHOOLDATA["approved_all"][["UNIQUESCHOOLID", "Locale"]], on="UNIQUESCHOOLID", how="left")
+        schools = schools.merge(data_loader.SCHOOLDATA["gadoe"][["UNIQUESCHOOLID", "CS_Enrollment", "Certified_Teachers"]], on="UNIQUESCHOOLID", how="left")
+
+        # Calculate student teacher ratio for filtering
+        schools["CS_Enrollment"] = schools["CS_Enrollment"].apply(lambda x: int(x) if pd.notnull(x) else 0)
+        schools["Certified_Teachers"] = schools["Certified_Teachers"].apply(lambda x: int(x) if pd.notnull(x) else 0)
+        schools["student_teacher_ratio"] = schools.apply(
+            lambda row: row["CS_Enrollment"] / row["Certified_Teachers"]
+            if row["Certified_Teachers"] not in [0, None, "", float('nan')] else 0.0,
+            axis=1
+        )
+
+        # Apply filters
+        if locale_filter:
+            schools = schools[schools['Locale'].isin(locale_filter)]
+
+        # Courses filter
+        if courses_filter:
+            schools = schools[schools['UNIQUESCHOOLID'].apply(lambda x: all(course.lower() in data_loader.SCHOOLDATA["courses"].get(str(x), {}) and (data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0) for course in courses_filter))]
+
+        # Modality and extra teachers not applied for gender
+
+        schools = schools[(schools['student_teacher_ratio'] >= ratio_threshold[0]) & (schools['student_teacher_ratio'] <= ratio_threshold[1])]
+
+        # RI thresholds
+        schools = schools[(schools[gender_col] >= ri_threshold[0]) & (schools[gender_col] <= ri_threshold[1])]
+
         color_bins = GENDER_COLOR_BINS
         legend_labels = [
             f'{low} to {high}' for (low, high, _) in color_bins
@@ -538,7 +730,18 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
             html.Div(underlay_legend, className="underlay-legend"))
     if not legend_combined:
         legend_combined = None
-    return fig, legend_combined
+
+    max_ratio = 0
+    if school == "modalities":
+        max_ratio = merged["student_teacher_ratio"].max()
+    elif school == "disparity":
+        max_ratio = schools["student_teacher_ratio"].max()
+    elif school == "gender":
+        max_ratio = schools["student_teacher_ratio"].max()
+    max_ratio = max(max_ratio, 1) if pd.notnull(max_ratio) else 200
+    marks = {0: '0', max_ratio//2: str(int(max_ratio//2)), max_ratio: str(int(max_ratio))}
+
+    return fig, legend_combined, max_ratio, marks
 
 
 @callback(
@@ -548,9 +751,15 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         Input("school-toggles", "value"),
         Input("dots-dropdown", "value"),
         Input("underlay-dropdown", "value"),
+        Input("locale-filter", "value"),
+        Input("courses-filter", "value"),
+        Input("modality-filter", "value"),
+        Input("extra-teachers-filter", "value"),
+        Input("ratio-threshold", "value"),
+        Input("ri-threshold", "value"),
     ]
 )
-def update_loading_message(map_options, school, dots_dropdown, underlay_dropdown):
+def update_loading_message(map_options, school, dots_dropdown, underlay_dropdown, locale_filter, courses_filter, modality_filter, extra_teachers_filter, ratio_threshold, ri_threshold):
     components = []
     messages = []
     if underlay_dropdown != DEFAULT_UNDERLAY_OPTION:
@@ -567,10 +776,10 @@ def update_loading_message(map_options, school, dots_dropdown, underlay_dropdown
         messages.append("Loading highways")
     if messages:
         components.append(" | ".join(messages))
-    if underlay_dropdown != DEFAULT_UNDERLAY_OPTION:
-        components.append(html.Br())
-        components.append(
-            html.Div("This might take a minute...", style={"textAlign": "center"}))
+    # if underlay_dropdown != DEFAULT_UNDERLAY_OPTION:
+    #     components.append(html.Br())
+    #     components.append(
+    #         html.Div("This might take a minute...", style={"textAlign": "center"}))
     if not components:
         components.append("Loading map")
     return components
