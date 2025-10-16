@@ -372,3 +372,48 @@
 .course-list li {
   margin-bottom: 2px;
 }
+
+/* Course list box styling */
+.course-list-section {
+  padding-bottom: 32px;
+}
+.course-list-box {
+    background: #fff;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    margin-top: 12px;
+    margin-bottom: 12px;
+    padding: 16px 18px 24px 18px;
+    min-height: 120px;
+}
+.course-list-title {
+  font-size: 1.1em;
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: block;
+}
+.course-list-summary {
+  font-size: 0.98em;
+  color: #444;
+  margin-bottom: 8px;
+}
+.course-list-ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.course-list-inner {
+  width: 100%;
+}
+
+/* Sidebar header style for collapsible filters */
+.sidebar-header {
+  font-size: 1.15em;
+  font-weight: 700;
+  color: #2a3b4c;
+  padding: 6px 0 6px 0;
+  border-bottom: 2px solid #e0e0e0;
+  margin-bottom: 8px;
+  background: #f7f7fa;
+  border-radius: 6px 6px 0 0;
+}

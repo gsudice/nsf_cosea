@@ -101,45 +101,17 @@ LABELS = {
 
 # ---------- HOVER INFO ----------
 HOVER_TEMPLATES = {
-    "modality": (
+    "unified": (
         "<u>{SCHOOL_NAME}</u><br>"
         "District: {district}<br>"
         "City: {city}<br>"
         "Locale Type: {locale}<br>"
         "Grades: {GRADE_RANGE}<br>"
-        # "---<br>"
-        # "CS Courses Offered: {unique} ({total_sections})<br>"
-        # "In-Person: {inperson} | Virtual: {virtual}<br>"
         "---<br>"
         "CS Students: {CS_Enrollment}<br>"
         "CS Teachers: {approved_teachers}<br>Extra Certified Teachers: {extra_teachers}<br>"
-        "CS Student-Teacher Ratio: {ratio_display}"
-    ),
-    "disparity_female": (
-        "<u>{SCHOOL_NAME}</u><br>"
-        "District: {district}<br>"
-        "City: {city}<br>"
-        "Locale Type: {locale}<br>"
-        "Grades: {GRADE_RANGE}<br>"
+        "CS Student-Teacher Ratio: {ratio_display}<br>"
         "---<br>"
-        "Total Student Count: {Total_Student_Count}<br>"
-        "Total Female: {Female}<br>"
-        "Total Male: {Male}<br>"
-        "---<br>"
-        "CS Students: {CS_Enrollment}<br>"
-        "CS Female: {CS_Female}<br>"
-        "CS Male: {CS_Male}<br>"
-        "---<br>"
-        "<b>RI Female: {RI_Female:.4f}</b>"
-    ),
-    "disparity_race": (
-        "<u>{SCHOOL_NAME}</u><br>"
-        "District: {district}<br>"
-        "City: {city}<br>"
-        "Locale Type: {locale}<br>"
-        "Grades: {GRADE_RANGE}<br>"
-        "---<br>"
-        "Total Student Count: {Total_Student_Count}<br>"
         "{total_race_vals}<br>"
         "---<br>"
         "CS Enrollment: {CS_Enrollment}<br>"

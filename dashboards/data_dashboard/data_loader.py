@@ -19,136 +19,138 @@ def ratio_fmt(val):
         return '0.0 students per teacher'
 
 
-def build_modality_hover(row, modality_type, HOVER_TEMPLATES):
-    if modality_type == "LOGIC_CLASS_2":
-        virtual = row['virtual_course_count_2'] if pd.notnull(
-            row['virtual_course_count_2']) else 0
-        inperson = row['inperson_course_count_2'] if pd.notnull(
-            row['inperson_course_count_2']) else 0
-        approved = row['approved_course_count_2'] if pd.notnull(
-            row['approved_course_count_2']) else 0
-    else:
-        virtual = row['virtual_course_count'] if pd.notnull(
-            row['virtual_course_count']) else 0
-        inperson = row['inperson_course_count'] if pd.notnull(
-            row['inperson_course_count']) else 0
-        approved = row['approved_course_count'] if pd.notnull(
-            row['approved_course_count']) else 0
+def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
+    # Common fields
+    school_name = row.get("SCHOOL_NAME", "")
+    district = row.get("SYSTEM_NAME", "") or row.get("district", "")
+    city = row.get("School City", "") or row.get("city", "")
+    locale = row.get("Locale", "") or row.get("locale", "")
+    grade_range = row.get("GRADE_RANGE", "")
+    cs_enrollment = row.get("CS_Enrollment", 0)
+    approved_teachers = row.get("approved_teachers", 0)
+    extra_teachers = row.get("extra_teachers", 0)
+    ratio_display = row.get("ratio_display", ratio_fmt(
+        cs_enrollment / approved_teachers if approved_teachers else 0))
 
-    # Calculate unique courses and total sections
-    school_id = str(row['UNIQUESCHOOLID'])
-    courses_counts = SCHOOLDATA["courses"].get(school_id, {})
-    unique = sum(
-        1 for c in courses_counts if courses_counts[c]['virtual'] + courses_counts[c]['inperson'] > 0)
-    total_sections = sum(
-        courses_counts[c]['virtual'] + courses_counts[c]['inperson'] for c in courses_counts)
+    # If not in row, fetch from data
+    if "approved_teachers" not in row:
+        school_id = str(row["UNIQUESCHOOLID"])
+        approved_teachers = SCHOOLDATA["approved_teachers_count"].get(
+            school_id, 0)
+        extra_teachers = SCHOOLDATA["extra_teachers_count"].get(school_id, 0)
+        ratio_display = ratio_fmt(
+            cs_enrollment / approved_teachers if approved_teachers else 0)
 
-    return HOVER_TEMPLATES["modality"].format(
-        SCHOOL_NAME=row['SCHOOL_NAME'],
-        district=row['SYSTEM_NAME'] if pd.notnull(row['SYSTEM_NAME']) else "",
-        city=row['School City'] if pd.notnull(row['School City']) else "",
-        locale=row['Locale'] if pd.notnull(row['Locale']) else "",
-        GRADE_RANGE=row['GRADE_RANGE'] if pd.notnull(
-            row['GRADE_RANGE']) else "",
-        unique=unique,
-        total_sections=total_sections,
-        virtual=virtual,
-        inperson=inperson,
-        CS_Enrollment=row['CS_Enrollment'],
-        approved_teachers=row['approved_teachers'],
-        extra_teachers=row['extra_teachers'],
-        ratio_display=row['ratio_display']
-    )
+    # Race and RI
+    total_race_vals = ""
+    cs_race_vals = ""
+    ri_vals = ""
 
-
-def make_ri_hover(row, disparity_col, ri_cols, HOVER_TEMPLATES):
-    def safe_fmt(val, label, bold=False):
-        if pd.isnull(val):
-            return None
-        txt = f"RI {label}: {val:.4f}"
-        return f"<b>{txt}</b>" if bold else txt
-
-    total_race_map = {
-        "RI_Asian": ("Race: Asian", "Total Asian"),
-        "RI_Black": ("Race: Black", "Total Black"),
-        "RI_Hispanic": ("Ethnicity: Hispanic", "Total Hispanic"),
-        "RI_White": ("Race: White", "Total White"),
-    }
-
-    if disparity_col == "RI_Female":
-        return HOVER_TEMPLATES["disparity_female"].format(
-            SCHOOL_NAME=row.get("SCHOOL_NAME", ""),
-            district=row.get("SYSTEM_NAME", ""),
-            city=row.get("School City", ""),
-            locale=row.get("Locale", ""),
-            GRADE_RANGE=row.get("GRADE_RANGE", ""),
-            Total_Student_Count=row.get("Total Student Count", ""),
-            Female=row.get("Female", ""),
-            Male=row.get("Male", ""),
-            CS_Enrollment=int(row.get("CS_Enrollment", 0)) if row.get(
-                "CS_Enrollment", None) is not None else '',
-            CS_Female=int(row.get("CS_Female", 0)) if row.get(
-                "CS_Female", None) is not None else '',
-            CS_Male=int(row.get("CS_Male", 0)) if row.get(
-                "CS_Male", None) is not None else '',
-            RI_Female=row.get("RI_Female", 0.0)
-        )
-    else:
-        race_cols = [c for c in ri_cols if c != "RI_Female"]
-        cs_race_cols = ["CS_Asian", "CS_Black", "CS_Hispanic", "CS_White"]
-        ri_to_cs = {"RI_Asian": "CS_Asian", "RI_Black": "CS_Black",
-                    "RI_Hispanic": "CS_Hispanic", "RI_White": "CS_White"}
-        cs_race_labels = {
-            "CS_Asian": "CS Asian",
-            "CS_Black": "CS Black",
-            "CS_Hispanic": "CS Hispanic",
-            "CS_White": "CS White"
+    if disparity_col and ri_cols:
+        # It's disparity view, data is in row
+        total_race_map = {
+            "RI_Asian": ("Race: Asian", "Total Asian"),
+            "RI_Black": ("Race: Black", "Total Black"),
+            "RI_Hispanic": ("Ethnicity: Hispanic", "Total Hispanic"),
+            "RI_White": ("Race: White", "Total White"),
         }
-        cs_race_vals = []
-        for cs_col in cs_race_cols:
-            val = row.get(cs_col, None)
-            label = cs_race_labels.get(cs_col, cs_col)
-            bold = (ri_to_cs.get(disparity_col) == cs_col)
-            if val is not None:
-                try:
-                    val_int = int(val)
-                except Exception:
-                    val_int = val
-                if bold:
-                    cs_race_vals.append(f"<b>{label}: {val_int}</b>")
-                else:
-                    cs_race_vals.append(f"{label}: {val_int}")
-        total_race_vals = []
-        for ri_key, (total_col, total_label) in total_race_map.items():
-            val = row.get(total_col, None)
-            bold = (ri_key == disparity_col)
-            if val is not None:
-                if bold:
-                    total_race_vals.append(f"<b>{total_label}: {val}</b>")
-                else:
-                    total_race_vals.append(f"{total_label}: {val}")
-        total_students = row.get("Total Student Count", None)
-        ri_vals = []
-        for col in race_cols:
-            val = row.get(col, None)
-            if col == disparity_col:
-                ri_vals.append(
-                    safe_fmt(val, col.replace('RI_', ''), bold=True))
-            else:
-                ri_vals.append(safe_fmt(val, col.replace('RI_', '')))
-        return HOVER_TEMPLATES["disparity_race"].format(
-            SCHOOL_NAME=row.get("SCHOOL_NAME", ""),
-            district=row.get("SYSTEM_NAME", ""),
-            city=row.get("School City", ""),
-            locale=row.get("Locale", ""),
-            GRADE_RANGE=row.get("GRADE_RANGE", ""),
-            Total_Student_Count=total_students if total_students is not None else '',
-            total_race_vals='<br>'.join(total_race_vals),
-            CS_Enrollment=int(row.get("CS_Enrollment", 0)) if row.get(
-                "CS_Enrollment", None) is not None else '',
-            cs_race_vals='<br>'.join(cs_race_vals),
-            ri_vals='<br>'.join([v for v in ri_vals if v])
-        )
+
+        if disparity_col == "RI_Female":
+            total_race_vals = f"Total Student Count: {row.get('Total Student Count', '')}<br>Total Female: {row.get('Female', '')}<br>Total Male: {row.get('Male', '')}"
+            cs_race_vals = f"CS Female: {int(row.get('CS_Female', 0))}<br>CS Male: {int(row.get('CS_Male', 0))}"
+            ri_vals = f"<b>RI Female: {row.get('RI_Female', 0):.4f}</b>"
+        else:
+            total_race_vals_list = []
+            for ri_key, (total_col, total_label) in total_race_map.items():
+                val = row.get(total_col, None)
+                if pd.notnull(val):
+                    total_race_vals_list.append(f"{total_label}: {int(val)}")
+            total_race_vals = "<br>".join(total_race_vals_list)
+
+            cs_race_cols = ["CS_Asian", "CS_Black", "CS_Hispanic", "CS_White"]
+            cs_race_labels = {
+                "CS_Asian": "CS Asian",
+                "CS_Black": "CS Black",
+                "CS_Hispanic": "CS Hispanic",
+                "CS_White": "CS White"
+            }
+            cs_race_vals_list = []
+            for cs_col in cs_race_cols:
+                val = row.get(cs_col, None)
+                if pd.notnull(val):
+                    cs_race_vals_list.append(
+                        f"{cs_race_labels[cs_col]}: {int(val)}")
+            cs_race_vals = "<br>".join(cs_race_vals_list)
+
+            ri_vals_list = []
+            for col in ri_cols:
+                if col in row:
+                    val = row[col]
+                    if pd.notnull(val):
+                        bold = "Female" in col or col == disparity_col
+                        txt = f"RI {col.replace('RI_', '')}: {val:.4f}"
+                        if bold:
+                            ri_vals_list.append(f"<b>{txt}</b>")
+                        else:
+                            ri_vals_list.append(txt)
+            ri_vals = "<br>".join(ri_vals_list)
+    else:
+        # Modality view, fetch disparity data
+        school_id = str(row["UNIQUESCHOOLID"])
+        disparity_row = SCHOOLDATA["disparity"][SCHOOLDATA["disparity"]
+                                                ["UNIQUESCHOOLID"] == school_id]
+        if not disparity_row.empty:
+            drow = disparity_row.iloc[0]
+            total_race_map = {
+                "RI_Asian": ("Race: Asian", "Total Asian"),
+                "RI_Black": ("Race: Black", "Total Black"),
+                "RI_Hispanic": ("Ethnicity: Hispanic", "Total Hispanic"),
+                "RI_White": ("Race: White", "Total White"),
+            }
+            total_race_vals_list = []
+            for ri_key, (total_col, total_label) in total_race_map.items():
+                val = drow.get(total_col, None)
+                if pd.notnull(val):
+                    total_race_vals_list.append(f"{total_label}: {int(val)}")
+            total_race_vals = "<br>".join(total_race_vals_list)
+
+            cs_race_cols = ["CS_Asian", "CS_Black", "CS_Hispanic", "CS_White"]
+            cs_race_labels = {
+                "CS_Asian": "CS Asian",
+                "CS_Black": "CS Black",
+                "CS_Hispanic": "CS Hispanic",
+                "CS_White": "CS White"
+            }
+            cs_race_vals_list = []
+            for cs_col in cs_race_cols:
+                val = drow.get(cs_col, None)
+                if pd.notnull(val):
+                    cs_race_vals_list.append(
+                        f"{cs_race_labels[cs_col]}: {int(val)}")
+            cs_race_vals = "<br>".join(cs_race_vals_list)
+
+            ri_vals_list = []
+            for col in ["RI_Asian", "RI_Black", "RI_Hispanic", "RI_White", "RI_Female"]:
+                val = drow.get(col, None)
+                if pd.notnull(val):
+                    txt = f"RI {col.replace('RI_', '')}: {val:.4f}"
+                    ri_vals_list.append(txt)
+            ri_vals = "<br>".join(ri_vals_list)
+
+    return template.format(
+        SCHOOL_NAME=school_name,
+        district=district,
+        city=city,
+        locale=locale,
+        GRADE_RANGE=grade_range,
+        CS_Enrollment=int(cs_enrollment) if cs_enrollment else '',
+        approved_teachers=int(approved_teachers),
+        extra_teachers=int(extra_teachers),
+        ratio_display=ratio_display,
+        total_race_vals=total_race_vals,
+        cs_race_vals=cs_race_vals,
+        ri_vals=ri_vals
+    )
 
 
 def classify_modality(logic_class):
@@ -242,7 +244,8 @@ def load_all_school_data():
     approved_all = pd.read_sql(
         'SELECT * FROM "allhsgrades24"."tbl_approvedschools"', engine)
 
-    approved_logic = course_logic[(course_logic["approved_flag"] == True) & (course_logic["certified_flag"] == True)]
+    approved_logic = course_logic[(course_logic["approved_flag"] == True) & (
+        course_logic["certified_flag"] == True)]
     modality_counts = approved_logic.groupby(
         ["UNIQUESCHOOLID", "is_virtual"]).size().unstack(fill_value=0).reset_index()
     modality_counts = modality_counts.rename(columns={
@@ -254,7 +257,8 @@ def load_all_school_data():
     if "inperson_course_count" not in modality_counts:
         modality_counts["inperson_course_count"] = 0
 
-    approved_logic2 = course_logic[(course_logic["approved_flag_2"] == True) & (course_logic["certified_flag_2"] == True)]
+    approved_logic2 = course_logic[(course_logic["approved_flag_2"] == True) & (
+        course_logic["certified_flag_2"] == True)]
     modality_counts2 = approved_logic2.groupby(
         ["UNIQUESCHOOLID", "is_virtual"]).size().unstack(fill_value=0).reset_index()
     modality_counts2 = modality_counts2.rename(columns={
@@ -287,7 +291,8 @@ def load_all_school_data():
 
     ri_cols = ["RI_Asian", "RI_Black", "RI_Hispanic", "RI_White", "RI_Female"]
     cs_race_cols = ["CS_Asian", "CS_Black", "CS_Hispanic", "CS_White"]
-    extra_cols = ["CS_Enrollment", "CS_Female", "CS_Male", "Certified_Teachers"] + cs_race_cols
+    extra_cols = ["CS_Enrollment", "CS_Female",
+                  "CS_Male", "Certified_Teachers"] + cs_race_cols
     all_cols = ri_cols + extra_cols
     disparity_query = f'SELECT "UNIQUESCHOOLID", {', '.join([f'"{col}"' for col in all_cols])
                                                   } FROM census.gadoe2024_389'
@@ -329,11 +334,13 @@ def load_all_school_data():
     extra_teachers_count = {}
     for school_id in course_logic["UNIQUESCHOOLID"].unique():
         school_courses = course_logic[course_logic["UNIQUESCHOOLID"] == school_id]
-        approved_certs = set(school_courses[school_courses["approved_flag_2"] == True]["CERTIFICATE_ID"].dropna())
+        approved_certs = set(
+            school_courses[school_courses["approved_flag_2"] == True]["CERTIFICATE_ID"].dropna())
         all_certs = set(school_courses["CERTIFICATE_ID"].dropna())
         extra_teachers[str(school_id)] = len(all_certs) > len(approved_certs)
         approved_teachers_count[str(school_id)] = len(approved_certs)
-        extra_teachers_count[str(school_id)] = len(all_certs) - len(approved_certs)
+        extra_teachers_count[str(school_id)] = len(
+            all_certs) - len(approved_certs)
 
     return {
         "gadoe": gadoe,
@@ -430,17 +437,20 @@ def load_cbg_underlay(selected_field, bins=5):
         acs_query = 'SELECT geoid, median_household_income FROM census.acs2023_combined'
         acs_df = pd.read_sql(acs_query, engine)
         acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
-        acs_df[selected_field] = pd.to_numeric(acs_df[selected_field], errors='coerce')
+        acs_df[selected_field] = pd.to_numeric(
+            acs_df[selected_field], errors='coerce')
     elif selected_field == "edu_hs_or_more":
         acs_query = 'SELECT geoid, edu_hs_or_more FROM census.acs2023_combined'
         acs_df = pd.read_sql(acs_query, engine)
         acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
-        acs_df[selected_field] = pd.to_numeric(acs_df[selected_field], errors='coerce')
+        acs_df[selected_field] = pd.to_numeric(
+            acs_df[selected_field], errors='coerce')
     elif selected_field == "households_with_subscription":
         acs_query = 'SELECT geoid, households_with_subscription FROM census.acs2023_combined'
         acs_df = pd.read_sql(acs_query, engine)
         acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
-        acs_df[selected_field] = pd.to_numeric(acs_df[selected_field], errors='coerce')
+        acs_df[selected_field] = pd.to_numeric(
+            acs_df[selected_field], errors='coerce')
     else:
         acs_query = f'SELECT geoid, "{selected_field}" FROM census.acs2023_combined'
         acs_df = pd.read_sql(acs_query, engine)
@@ -453,13 +463,16 @@ def load_cbg_underlay(selected_field, bins=5):
     # Bin the selected field for grayscale mapping
     if selected_field == "median_household_income":
         income_bins = [2499, 53240, 84175, 122700, 180134, 250001]
-        block_groups['underlay_bin'] = pd.cut(block_groups[selected_field], bins=income_bins, labels=False, include_lowest=True)
+        block_groups['underlay_bin'] = pd.cut(
+            block_groups[selected_field], bins=income_bins, labels=False, include_lowest=True)
     elif selected_field == "edu_hs_or_more":
         edu_bins = [0, 508, 832, 1199, 1711, 3965]
-        block_groups['underlay_bin'] = pd.cut(block_groups[selected_field], bins=edu_bins, labels=False, include_lowest=True)
+        block_groups['underlay_bin'] = pd.cut(
+            block_groups[selected_field], bins=edu_bins, labels=False, include_lowest=True)
     elif selected_field == "households_with_subscription":
         internet_bins = [0, 288, 472, 679, 965, 2070]
-        block_groups['underlay_bin'] = pd.cut(block_groups[selected_field], bins=internet_bins, labels=False, include_lowest=True)
+        block_groups['underlay_bin'] = pd.cut(
+            block_groups[selected_field], bins=internet_bins, labels=False, include_lowest=True)
     else:
         if block_groups[selected_field].notnull().sum() > 0:
             block_groups['underlay_bin'] = pd.qcut(
@@ -481,7 +494,8 @@ print("Loading geo data...")
 GEODATA = load_geodata()
 print("Loading CBG underlay data...")
 CBGDATA = {}
-underlay_fields = ["black_population_ratio", "median_household_income", "edu_hs_or_more", "households_with_subscription"]
+underlay_fields = ["black_population_ratio", "median_household_income",
+                   "edu_hs_or_more", "households_with_subscription"]
 for field in underlay_fields:
     cbg_gdf = load_cbg_underlay(field)
     cbg_gdf = cbg_gdf.set_index('GEOID')
