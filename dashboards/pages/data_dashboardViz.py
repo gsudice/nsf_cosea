@@ -86,7 +86,9 @@ layout = html.Div([
                 className="school-search"
             ),
         ], className="sidebar-section"),
-        html.H3("Map Options", className="sidebar-title"),
+        html.Div([
+            html.Strong("Map Options", style={'font-size': '1.17em', 'font-weight': '700', 'color': '#2a3b4c'})
+        ], className="sidebar-header"),
         dcc.Checklist(
             id="map-options-toggle",
             options=LABELS["map_options"],
@@ -102,7 +104,8 @@ layout = html.Div([
                     options=LABELS["school_toggles"],
                     value=DEFAULT_SCHOOL_TOGGLE,
                     className="sidebar-school-toggles",
-                    style={'display': 'flex', 'flex-direction': 'row', 'gap': '10px'}
+                    style={'display': 'flex',
+                           'flex-direction': 'row', 'gap': '10px'}
                 ),
                 html.Div([
                     html.Label(id="dots-dropdown-label",
@@ -130,8 +133,9 @@ layout = html.Div([
         html.Details([
             html.Summary([
                 html.Div([
-                    html.Span("", style={'font-size': '12px', 'margin-right': '5px'}),
-                    html.Strong("Filters")
+                    html.Span(
+                        "", style={'font-size': '12px', 'margin-right': '5px'}),
+                    html.Strong("Filters", style={'font-size': '1.17em', 'font-weight': '700', 'color': '#2a3b4c'})
                 ], style={'display': 'flex', 'align-items': 'center'}),
                 html.Button("Reset Filters", id="reset-filters",
                             className="reset-button")
@@ -159,7 +163,8 @@ layout = html.Div([
                     html.Strong("Extra Teachers"),
                     dcc.Checklist(
                         id="extra-teachers-filter",
-                        options=[{"label": "Has Extra Teachers", "value": "extra"}],
+                        options=[
+                            {"label": "Has Extra Teachers", "value": "extra"}],
                         value=[],
                         className="sidebar-extra-teachers-checklist"
                     ),
@@ -182,7 +187,8 @@ layout = html.Div([
                     max=200,
                     value=[0, 200],
                     step=1,
-                    marks={0: '0', 50: '50', 100: '100', 150: '150', 200: '200'},
+                    marks={0: '0', 50: '50', 100: '100',
+                           150: '150', 200: '200'},
                     tooltip={"placement": "bottom", "always_visible": True},
                     className="sidebar-ratio-slider"
                 ),
@@ -195,8 +201,7 @@ layout = html.Div([
                     max=1.0,
                     step=0.01,
                     value=[-1.0, 1.0],
-                    marks={-1: '-1', -0.05: '-0.05',
-                           0: '0', 0.05: '0.05', 1: '1'},
+                    marks={-1: '-1', -0.05: '-0.05', 0.05: '0.05', 1: '1'},
                     tooltip={"placement": "bottom", "always_visible": True},
                     className="sidebar-ri-slider"
                 ),
@@ -991,9 +996,10 @@ def update_loading_message(map_options, school, dots_dropdown, underlay_dropdown
 
 @callback(
     Output("course-list", "children"),
-    [Input("main-map", "hoverData"), Input("school-search", "value")]
+    [Input("main-map", "hoverData"), Input("school-search",
+                                           "value"), Input("school-toggles", "value")]
 )
-def update_course_list(hoverData, selected_school):
+def update_course_list(hoverData, selected_school, school_toggles):
     if hoverData is not None and hoverData.get('points'):
         point = hoverData['points'][0]
         if 'customdata' in point and len(point['customdata']) >= 2:
@@ -1013,7 +1019,14 @@ def update_course_list(hoverData, selected_school):
         for course in APPROVED_COURSES:
             course_items.append(
                 html.Li([html.Span("[0] ", style={"color": "red"}), course.title()]))
-        return html.Div([html.Strong("Offered CS Courses:"), html.Ul(course_items)])
+        return html.Div([
+            html.Div([
+                html.Strong("Offered CS Courses:", style={
+                            'margin-bottom': '8px', 'display': 'block', 'font-size': '1.17em', 'font-weight': '700', 'color': '#2a3b4c'}),
+            ], className="sidebar-header"),
+            html.Ul(course_items, style={
+                    'list-style': 'none', 'padding-left': '0'})
+        ])
 
     courses_counts = data_loader.SCHOOLDATA["courses"].get(school_id, {})
 
@@ -1032,6 +1045,17 @@ def update_course_list(hoverData, selected_school):
 
     summary = f"[Total: {total_offered} ({total_v + total_i})] [{total_i} In-Person (IP), {total_v} Virtual (V)]"
 
+    # Show total students for disparity view if available
+    show_total_students = (school_toggles == "disparity")
+    total_students = None
+    if show_total_students:
+        school_row = data_loader.SCHOOLDATA["approved_all"][data_loader.SCHOOLDATA["approved_all"]
+                                                            ["UNIQUESCHOOLID"] == school_id]
+        if not school_row.empty and "Total Student Count" in school_row:
+            total_students = school_row["Total Student Count"].iloc[0]
+        if total_students is not None:
+            summary += f" | Total Students: {total_students}"
+
     course_items = []
     for course in APPROVED_COURSES:
         counts = courses_counts.get(course, {'virtual': 0, 'inperson': 0})
@@ -1040,7 +1064,8 @@ def update_course_list(hoverData, selected_school):
         total = virtual + inperson
         if total == 0:
             count_str = "[0] "
-            style = {"color": "red"}
+            count_style = {"color": "red"}
+            name_style = {}
         else:
             parts = []
             if inperson > 0:
@@ -1048,8 +1073,17 @@ def update_course_list(hoverData, selected_school):
             if virtual > 0:
                 parts.append(f"{virtual} V")
             count_str = f"[{', '.join(parts)}] "
-            style = {"font-weight": "bold"}
+            count_style = {"font-weight": "bold"}
+            name_style = {"font-weight": "bold"}
         course_items.append(
-            html.Li([html.Span(count_str, style=style), course.title()]))
+            html.Li([html.Span(count_str, style=count_style), html.Span(course.title(), style=name_style)]))
 
-    return html.Div([html.Strong(f"CS Courses at {school_name}:"), html.Div(summary), html.Ul(course_items)])
+    return html.Div([
+        html.Div([
+            html.Strong(f"CS Courses at {school_name}:", style={
+                        'margin-bottom': '8px', 'display': 'block', 'font-size': '1.17em', 'font-weight': '700', 'color': '#2a3b4c'}),
+        ], className="sidebar-header"),
+        html.Div(summary, style={'margin-bottom': '12px'}),
+        html.Ul(course_items, style={
+                'list-style': 'none', 'padding-left': '0'})
+    ])

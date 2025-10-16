@@ -61,6 +61,10 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
             ri_vals = f"<b>RI Female: {row.get('RI_Female', 0):.4f}</b>"
         else:
             total_race_vals_list = []
+            # Add total students first
+            total_students = row.get("Total Student Count", None)
+            if pd.notnull(total_students):
+                total_race_vals_list.append(f"Total Students: {int(total_students)}")
             for ri_key, (total_col, total_label) in total_race_map.items():
                 val = row.get(total_col, None)
                 if pd.notnull(val):
