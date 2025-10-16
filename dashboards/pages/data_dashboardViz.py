@@ -187,6 +187,19 @@ layout = html.Div([
                 ),
             ], id="ri-threshold-container", className="sidebar-section"),
             html.Div([
+                html.Strong("Course Total Offered"),
+                dcc.RangeSlider(
+                    id="course-total-offered",
+                    min=0,
+                    max=16,
+                    value=[0, 16],
+                    step=1,
+                    marks={0: '0', 8: '8', 16: '16'},
+                    tooltip={"placement": "bottom", "always_visible": True},
+                    className="sidebar-course-slider"
+                ),
+            ], className="sidebar-section"),
+            html.Div([
                 html.Button("Reset Filters", id="reset-filters",
                             className="reset-button")
             ], className="sidebar-section"),
@@ -238,12 +251,13 @@ def toggle_ri_threshold(school):
         Output("extra-teachers-filter", "value"),
         Output("ratio-threshold", "value"),
         Output("ri-threshold", "value"),
+        Output("course-total-offered", "value"),
     ],
     Input("reset-filters", "n_clicks"),
     prevent_initial_call=True
 )
 def reset_filters(n_clicks):
-    return [], [], [], [], [0, 200], [-1.0, 1.0]
+    return [], [], [], [], [0, 200], [-1.0, 1.0], [0, 16]
 
 
 @callback(
@@ -265,9 +279,10 @@ def reset_filters(n_clicks):
         Input("extra-teachers-filter", "value"),
         Input("ratio-threshold", "value"),
         Input("ri-threshold", "value"),
+        Input("course-total-offered", "value"),
     ]
 )
-def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_school, locale_filter, courses_filter, modality_filter, extra_teachers_filter, ratio_threshold, ri_threshold):
+def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_school, locale_filter, courses_filter, modality_filter, extra_teachers_filter, ratio_threshold, ri_threshold, course_total_offered):
 
     ctx = callback_context
     triggered = ctx.triggered if ctx else []
@@ -435,6 +450,10 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         merged = merged[(merged['student_teacher_ratio'] >= ratio_threshold[0]) & (
             merged['student_teacher_ratio'] <= ratio_threshold[1])]
 
+        # Course total offered filter
+        merged["total_offered"] = merged['UNIQUESCHOOLID'].apply(lambda x: sum(1 for course in APPROVED_COURSES if course.lower() in data_loader.SCHOOLDATA["courses"].get(str(x), {}) and (data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0)))
+        merged = merged[(merged['total_offered'] >= course_total_offered[0]) & (merged['total_offered'] <= course_total_offered[1])]
+
         # Selected school/district/city filter and center/zoom
         if selected_school:
             if selected_school.startswith("school:"):
@@ -600,6 +619,10 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         # RI thresholds
         schools = schools[(schools[disparity_col] >= ri_threshold[0]) & (
             schools[disparity_col] <= ri_threshold[1])]
+
+        # Course total offered filter
+        schools["total_offered"] = schools['UNIQUESCHOOLID'].apply(lambda x: sum(1 for course in APPROVED_COURSES if course.lower() in data_loader.SCHOOLDATA["courses"].get(str(x), {}) and (data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0)))
+        schools = schools[(schools['total_offered'] >= course_total_offered[0]) & (schools['total_offered'] <= course_total_offered[1])]
 
         # Selected school/district/city filter and center/zoom
         if selected_school:
@@ -780,6 +803,10 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         schools = schools[(schools[gender_col] >= ri_threshold[0]) & (
             schools[gender_col] <= ri_threshold[1])]
 
+        # Course total offered filter
+        schools["total_offered"] = schools['UNIQUESCHOOLID'].apply(lambda x: sum(1 for course in APPROVED_COURSES if course.lower() in data_loader.SCHOOLDATA["courses"].get(str(x), {}) and (data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0)))
+        schools = schools[(schools['total_offered'] >= course_total_offered[0]) & (schools['total_offered'] <= course_total_offered[1])]
+
         # Selected school/district/city filter and center/zoom
         if selected_school:
             if selected_school.startswith("school:"):
@@ -917,9 +944,10 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         Input("extra-teachers-filter", "value"),
         Input("ratio-threshold", "value"),
         Input("ri-threshold", "value"),
+        Input("course-total-offered", "value"),
     ]
 )
-def update_loading_message(map_options, school, dots_dropdown, underlay_dropdown, locale_filter, courses_filter, modality_filter, extra_teachers_filter, ratio_threshold, ri_threshold):
+def update_loading_message(map_options, school, dots_dropdown, underlay_dropdown, locale_filter, courses_filter, modality_filter, extra_teachers_filter, ratio_threshold, ri_threshold, course_total_offered):
     components = []
     messages = []
     if underlay_dropdown != DEFAULT_UNDERLAY_OPTION:
