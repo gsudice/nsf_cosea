@@ -102,7 +102,7 @@ LABELS = {
 # ---------- HOVER INFO ----------
 HOVER_TEMPLATES = {
     "unified": (
-        "<u>{SCHOOL_NAME}</u><br>"
+        "<b><u>{SCHOOL_NAME}</u></b><br>"
         "District: {district}<br>"
         "City: {city}<br>"
         "Locale Type: {locale}<br>"

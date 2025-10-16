@@ -435,14 +435,45 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         merged = merged[(merged['student_teacher_ratio'] >= ratio_threshold[0]) & (
             merged['student_teacher_ratio'] <= ratio_threshold[1])]
 
-        # Selected school/district/city filter
+        # Selected school/district/city filter and center/zoom
         if selected_school:
-            if selected_school.startswith("district:"):
+            if selected_school.startswith("school:"):
+                school_id = selected_school.split(":", 1)[1]
+                school_row = data_loader.SCHOOLDATA["approved_all"][
+                    data_loader.SCHOOLDATA["approved_all"]["UNIQUESCHOOLID"] == school_id]
+                if not school_row.empty:
+                    center_lat = school_row["lat"].iloc[0]
+                    center_lon = school_row["lon"].iloc[0]
+                    center = {"lat": center_lat, "lon": center_lon}
+                    zoom = 11
+                else:
+                    center = {"lat": 32.9, "lon": -83.5}
+                    zoom = 6.5
+            elif selected_school.startswith("district:"):
                 district_name = selected_school.split(":", 1)[1]
                 merged = merged[merged['SYSTEM_NAME'] == district_name]
+                if merged.empty:
+                    center = {"lat": 32.9, "lon": -83.5}
+                    zoom = 6.5
+                else:
+                    center_lat = merged["lat"].mean()
+                    center_lon = merged["lon"].mean()
+                    center = {"lat": center_lat, "lon": center_lon}
+                    zoom = 10
             elif selected_school.startswith("city:"):
                 city_name = selected_school.split(":", 1)[1]
                 merged = merged[merged['School City'] == city_name]
+                if merged.empty:
+                    center = {"lat": 32.9, "lon": -83.5}
+                    zoom = 6.5
+                else:
+                    center_lat = merged["lat"].mean()
+                    center_lon = merged["lon"].mean()
+                    center = {"lat": center_lat, "lon": center_lon}
+                    zoom = 10
+        else:
+            center = {"lat": 32.9, "lon": -83.5}
+            zoom = 6.5
 
         modality_counts = merged["Classification"].value_counts()
         # Choose color map based on modality type
@@ -570,14 +601,58 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         schools = schools[(schools[disparity_col] >= ri_threshold[0]) & (
             schools[disparity_col] <= ri_threshold[1])]
 
-        # Selected school/district/city filter
+        # Selected school/district/city filter and center/zoom
         if selected_school:
-            if selected_school.startswith("district:"):
+            if selected_school.startswith("school:"):
+                school_id = selected_school.split(":", 1)[1]
+                school_row = data_loader.SCHOOLDATA["approved_all"][
+                    data_loader.SCHOOLDATA["approved_all"]["UNIQUESCHOOLID"] == school_id]
+                if not school_row.empty:
+                    center_lat = school_row["lat"].iloc[0]
+                    center_lon = school_row["lon"].iloc[0]
+                    center = {"lat": center_lat, "lon": center_lon}
+                    zoom = 12
+                else:
+                    center = {"lat": 32.9, "lon": -83.5}
+                    zoom = 6.5
+            elif selected_school.startswith("district:"):
                 district_name = selected_school.split(":", 1)[1]
                 schools = schools[schools['SYSTEM_NAME'] == district_name]
+                if schools.empty:
+                    center = {"lat": 32.9, "lon": -83.5}
+                    zoom = 6.5
+                else:
+                    center_lat = schools["lat"].mean()
+                    center_lon = schools["lon"].mean()
+                    center = {"lat": center_lat, "lon": center_lon}
+                    zoom = 10
             elif selected_school.startswith("city:"):
                 city_name = selected_school.split(":", 1)[1]
                 schools = schools[schools['School City'] == city_name]
+                if schools.empty:
+                    center = {"lat": 32.9, "lon": -83.5}
+                    zoom = 6.5
+                else:
+                    center_lat = schools["lat"].mean()
+                    center_lon = schools["lon"].mean()
+                    center = {"lat": center_lat, "lon": center_lon}
+                    zoom = 10
+        else:
+            center = {"lat": 32.9, "lon": -83.5}
+            zoom = 6.5
+
+        # Set center and zoom based on filtered data
+        if selected_school:
+            if schools.empty:
+                center = {"lat": 32.9, "lon": -83.5}
+                zoom = 6.5
+            else:
+                center_lat = schools["lat"].mean()
+                center_lon = schools["lon"].mean()
+                zoom = 12 if len(schools) == 1 else 10
+        else:
+            center = {"lat": 32.9, "lon": -83.5}
+            zoom = 6.5
 
         ri_cols = ["RI_Asian", "RI_Black",
                    "RI_Hispanic", "RI_White", "RI_Female"]
@@ -705,14 +780,45 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         schools = schools[(schools[gender_col] >= ri_threshold[0]) & (
             schools[gender_col] <= ri_threshold[1])]
 
-        # Selected school/district/city filter
+        # Selected school/district/city filter and center/zoom
         if selected_school:
-            if selected_school.startswith("district:"):
+            if selected_school.startswith("school:"):
+                school_id = selected_school.split(":", 1)[1]
+                school_row = data_loader.SCHOOLDATA["approved_all"][
+                    data_loader.SCHOOLDATA["approved_all"]["UNIQUESCHOOLID"] == school_id]
+                if not school_row.empty:
+                    center_lat = school_row["lat"].iloc[0]
+                    center_lon = school_row["lon"].iloc[0]
+                    center = {"lat": center_lat, "lon": center_lon}
+                    zoom = 12
+                else:
+                    center = {"lat": 32.9, "lon": -83.5}
+                    zoom = 6.5
+            elif selected_school.startswith("district:"):
                 district_name = selected_school.split(":", 1)[1]
                 schools = schools[schools['SYSTEM_NAME'] == district_name]
+                if schools.empty:
+                    center = {"lat": 32.9, "lon": -83.5}
+                    zoom = 6.5
+                else:
+                    center_lat = schools["lat"].mean()
+                    center_lon = schools["lon"].mean()
+                    center = {"lat": center_lat, "lon": center_lon}
+                    zoom = 10
             elif selected_school.startswith("city:"):
                 city_name = selected_school.split(":", 1)[1]
                 schools = schools[schools['School City'] == city_name]
+                if schools.empty:
+                    center = {"lat": 32.9, "lon": -83.5}
+                    zoom = 6.5
+                else:
+                    center_lat = schools["lat"].mean()
+                    center_lon = schools["lon"].mean()
+                    center = {"lat": center_lat, "lon": center_lon}
+                    zoom = 10
+        else:
+            center = {"lat": 32.9, "lon": -83.5}
+            zoom = 6.5
 
         color_bins = GENDER_COLOR_BINS
         legend_labels = [
@@ -731,22 +837,6 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
                 hovertemplate="%{customdata[0]}",
                 customdata=df[["SCHOOL_NAME", "UNIQUESCHOOLID"]].values
             ))
-
-    if selected_school and selected_school.startswith("school:"):
-        school_id = selected_school.split(":", 1)[1]
-        school_row = data_loader.SCHOOLDATA["approved_all"][data_loader.SCHOOLDATA["approved_all"]
-                                                            ["UNIQUESCHOOLID"] == school_id]
-        if not school_row.empty:
-            lat = school_row["lat"].iloc[0]
-            lon = school_row["lon"].iloc[0]
-            center = {"lat": lat, "lon": lon}
-            zoom = 12
-        else:
-            center = {"lat": 32.9, "lon": -83.5}
-            zoom = 6.5
-    else:
-        center = {"lat": 32.9, "lon": -83.5}
-        zoom = 6.5
 
     fig.update_layout(
         mapbox_style="white-bg",  # blank basemap
