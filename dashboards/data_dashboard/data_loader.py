@@ -95,25 +95,35 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
                             ri_vals_list.append(txt)
             ri_vals = "<br>".join(ri_vals_list)
     else:
-        # Modality view, fetch disparity data
+        # Modality view, use row data directly
+        total_race_vals_list = []
+        race_cols = ["Race: Asian", "Race: Black",
+                     "Ethnicity: Hispanic", "Race: White"]
+        race_labels = ["Total Asian", "Total Black",
+                       "Total Hispanic", "Total White"]
+        for col, label in zip(race_cols, race_labels):
+            val = row.get(col, None)
+            if pd.notnull(val):
+                total_race_vals_list.append(f"{label}: {int(val)}")
+        # Add total, female, male
+        total_students = row.get("Total Student Count", None)
+        if pd.notnull(total_students):
+            total_race_vals_list.insert(
+                0, f"Total Students: {int(total_students)}")
+        female = row.get("Female", None)
+        if pd.notnull(female):
+            total_race_vals_list.append(f"Female: {int(female)}")
+        male = row.get("Male", None)
+        if pd.notnull(male):
+            total_race_vals_list.append(f"Male: {int(male)}")
+        total_race_vals = "<br>".join(total_race_vals_list)
+
+        # Fetch disparity data for CS race and RI
         school_id = str(row["UNIQUESCHOOLID"])
         disparity_row = SCHOOLDATA["disparity"][SCHOOLDATA["disparity"]
                                                 ["UNIQUESCHOOLID"] == school_id]
         if not disparity_row.empty:
             drow = disparity_row.iloc[0]
-            total_race_map = {
-                "RI_Asian": ("Race: Asian", "Total Asian"),
-                "RI_Black": ("Race: Black", "Total Black"),
-                "RI_Hispanic": ("Ethnicity: Hispanic", "Total Hispanic"),
-                "RI_White": ("Race: White", "Total White"),
-            }
-            total_race_vals_list = []
-            for ri_key, (total_col, total_label) in total_race_map.items():
-                val = drow.get(total_col, None)
-                if pd.notnull(val):
-                    total_race_vals_list.append(f"{total_label}: {int(val)}")
-            total_race_vals = "<br>".join(total_race_vals_list)
-
             cs_race_cols = ["CS_Asian", "CS_Black", "CS_Hispanic", "CS_White"]
             cs_race_labels = {
                 "CS_Asian": "CS Asian",
@@ -136,6 +146,27 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
                     txt = f"RI {col.replace('RI_', '')}: {val:.4f}"
                     ri_vals_list.append(txt)
             ri_vals = "<br>".join(ri_vals_list)
+        else:
+            cs_race_vals = ""
+            ri_vals = ""
+
+    cs_enrollment_val = row.get("CS_Enrollment", 0)
+    if pd.notnull(cs_enrollment_val):
+        cs_enrollment_str = int(cs_enrollment_val)
+    else:
+        cs_enrollment_str = ''
+
+    approved_teachers_val = approved_teachers
+    if pd.notnull(approved_teachers_val):
+        approved_teachers_str = int(approved_teachers_val)
+    else:
+        approved_teachers_str = 0
+
+    extra_teachers_val = extra_teachers
+    if pd.notnull(extra_teachers_val):
+        extra_teachers_str = int(extra_teachers_val)
+    else:
+        extra_teachers_str = 0
 
     return template.format(
         SCHOOL_NAME=school_name,
@@ -143,9 +174,9 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
         city=city,
         locale=locale,
         GRADE_RANGE=grade_range,
-        CS_Enrollment=int(cs_enrollment) if cs_enrollment else '',
-        approved_teachers=int(approved_teachers),
-        extra_teachers=int(extra_teachers),
+        CS_Enrollment=cs_enrollment_str,
+        approved_teachers=approved_teachers_str,
+        extra_teachers=extra_teachers_str,
         ratio_display=ratio_display,
         total_race_vals=total_race_vals,
         cs_race_vals=cs_race_vals,

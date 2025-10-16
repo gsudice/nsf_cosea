@@ -20,13 +20,21 @@ engine = create_engine(DATABASE_URL)
 
 overlay_options = LABELS["overlay_options"]
 
-school_options = [{"label": row["SCHOOL_NAME"], "value": row["UNIQUESCHOOLID"]}
+school_options = [{"label": f"School: {row['SCHOOL_NAME']}", "value": f"school:{row['UNIQUESCHOOLID']}"}
                   for _, row in data_loader.SCHOOLDATA["approved_all"].iterrows()]
 
 school_locales = data_loader.SCHOOLDATA["approved_all"]["Locale"].dropna(
 ).unique()
 locale_options = [{"label": locale, "value": locale}
                   for locale in sorted(school_locales)]
+
+district_options = [{"label": f"District: {district}", "value": f"district:{district}"}
+                    for district in sorted(data_loader.SCHOOLDATA["approved_all"]["SYSTEM_NAME"].dropna().unique())]
+
+city_options = [{"label": f"City: {city}", "value": f"city:{city}"}
+                for city in sorted(data_loader.SCHOOLDATA["approved_all"]["School City"].dropna().unique())]
+
+all_search_options = school_options + district_options + city_options
 
 courses_options = [{"label": course.title(), "value": course}
                    for course in APPROVED_COURSES]
@@ -71,8 +79,8 @@ layout = html.Div([
         html.Div([
             dcc.Dropdown(
                 id="school-search",
-                options=school_options,
-                placeholder="Search for schools...",
+                options=all_search_options,
+                placeholder="Search for schools, districts, or cities...",
                 searchable=True,
                 clearable=True,
                 className="school-search"
@@ -366,7 +374,10 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         modality_type = dots_dropdown
         merged = data_loader.SCHOOLDATA["gadoe"].copy()
         coords = data_loader.SCHOOLDATA["approved_all"][[
-            "UNIQUESCHOOLID", "SCHOOL_NAME", "lat", "lon", "SYSTEM_NAME", "School City", "Locale"]]
+            "UNIQUESCHOOLID", "SCHOOL_NAME", "lat", "lon", "SYSTEM_NAME", "School City", "Locale",
+            "Race: Asian", "Race: Black", "Ethnicity: Hispanic", "Race: White",
+            "Total Student Count", "Female", "Male"
+        ]]
         merged = merged.merge(coords, on="UNIQUESCHOOLID", how="left")
         # Merge in precomputed modality info (grade range, course counts)
         modality_info = data_loader.SCHOOLDATA["school_modality_info"][[
@@ -423,6 +434,15 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
 
         merged = merged[(merged['student_teacher_ratio'] >= ratio_threshold[0]) & (
             merged['student_teacher_ratio'] <= ratio_threshold[1])]
+
+        # Selected school/district/city filter
+        if selected_school:
+            if selected_school.startswith("district:"):
+                district_name = selected_school.split(":", 1)[1]
+                merged = merged[merged['SYSTEM_NAME'] == district_name]
+            elif selected_school.startswith("city:"):
+                city_name = selected_school.split(":", 1)[1]
+                merged = merged[merged['School City'] == city_name]
 
         modality_counts = merged["Classification"].value_counts()
         # Choose color map based on modality type
@@ -550,6 +570,15 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         schools = schools[(schools[disparity_col] >= ri_threshold[0]) & (
             schools[disparity_col] <= ri_threshold[1])]
 
+        # Selected school/district/city filter
+        if selected_school:
+            if selected_school.startswith("district:"):
+                district_name = selected_school.split(":", 1)[1]
+                schools = schools[schools['SYSTEM_NAME'] == district_name]
+            elif selected_school.startswith("city:"):
+                city_name = selected_school.split(":", 1)[1]
+                schools = schools[schools['School City'] == city_name]
+
         ri_cols = ["RI_Asian", "RI_Black",
                    "RI_Hispanic", "RI_White", "RI_Female"]
 
@@ -676,6 +705,15 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         schools = schools[(schools[gender_col] >= ri_threshold[0]) & (
             schools[gender_col] <= ri_threshold[1])]
 
+        # Selected school/district/city filter
+        if selected_school:
+            if selected_school.startswith("district:"):
+                district_name = selected_school.split(":", 1)[1]
+                schools = schools[schools['SYSTEM_NAME'] == district_name]
+            elif selected_school.startswith("city:"):
+                city_name = selected_school.split(":", 1)[1]
+                schools = schools[schools['School City'] == city_name]
+
         color_bins = GENDER_COLOR_BINS
         legend_labels = [
             f'{low} to {high}' for (low, high, _) in color_bins
@@ -694,9 +732,10 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
                 customdata=df[["SCHOOL_NAME", "UNIQUESCHOOLID"]].values
             ))
 
-    if selected_school:
+    if selected_school and selected_school.startswith("school:"):
+        school_id = selected_school.split(":", 1)[1]
         school_row = data_loader.SCHOOLDATA["approved_all"][data_loader.SCHOOLDATA["approved_all"]
-                                                            ["UNIQUESCHOOLID"] == selected_school]
+                                                            ["UNIQUESCHOOLID"] == school_id]
         if not school_row.empty:
             lat = school_row["lat"].iloc[0]
             lon = school_row["lon"].iloc[0]
@@ -818,24 +857,29 @@ def update_loading_message(map_options, school, dots_dropdown, underlay_dropdown
 
 @callback(
     Output("course-list", "children"),
-    Input("main-map", "hoverData")
+    [Input("main-map", "hoverData"), Input("school-search", "value")]
 )
-def update_course_list(hoverData):
-    if hoverData is None or not hoverData.get('points'):
+def update_course_list(hoverData, selected_school):
+    if hoverData is not None and hoverData.get('points'):
+        point = hoverData['points'][0]
+        if 'customdata' in point and len(point['customdata']) >= 2:
+            school_id = str(point['customdata'][1])
+            school_name = data_loader.SCHOOLDATA["school_names"].get(
+                school_id, f"School {school_id}")
+        else:
+            # Fallback if no customdata
+            return html.Div("No course data available.")
+    elif selected_school and selected_school.startswith("school:"):
+        school_id = selected_school.split(":", 1)[1]
+        school_name = data_loader.SCHOOLDATA["school_names"].get(
+            school_id, f"School {school_id}")
+    else:
         # Show full list with [0] in red
         course_items = []
         for course in APPROVED_COURSES:
             course_items.append(
                 html.Li([html.Span("[0] ", style={"color": "red"}), course.title()]))
         return html.Div([html.Strong("Offered CS Courses:"), html.Ul(course_items)])
-
-    point = hoverData['points'][0]
-    if 'customdata' not in point or len(point['customdata']) < 2:
-        return html.Div("No course data available.")
-
-    school_id = str(point['customdata'][1])
-    school_name = data_loader.SCHOOLDATA["school_names"].get(
-        school_id, f"School {school_id}")
 
     courses_counts = data_loader.SCHOOLDATA["courses"].get(school_id, {})
 
