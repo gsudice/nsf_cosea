@@ -184,11 +184,10 @@ layout = html.Div([
                 dcc.RangeSlider(
                     id="ratio-threshold",
                     min=0,
-                    max=200,
-                    value=[0, 200],
+                    max=185,
+                    value=[0, 185],
                     step=1,
-                    marks={0: '0', 50: '50', 100: '100',
-                           150: '150', 200: '200'},
+                    marks={0: '0', 50: '50', 100: '100', 150: '150', 185: '185'},
                     tooltip={"placement": "bottom", "always_visible": True},
                     className="sidebar-ratio-slider"
                 ),
@@ -273,7 +272,7 @@ def toggle_ri_threshold(school):
     prevent_initial_call=True
 )
 def reset_filters(n_clicks):
-    return [], [], [], [], [0, 200], [-1.0, 1.0], [0, 16]
+    return [], [], [], [], [0, 185], [-1.0, 1.0], [0, 16]
 
 
 @callback(
@@ -939,15 +938,8 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
     if not legend_combined:
         legend_combined = None
 
-    max_ratio = 0
-    if school == "modalities":
-        max_ratio = merged["student_teacher_ratio"].max()
-    elif school == "disparity":
-        max_ratio = schools["student_teacher_ratio"].max()
-    elif school == "gender":
-        max_ratio = schools["student_teacher_ratio"].max()
-    max_ratio = max(max_ratio, 1) if pd.notnull(max_ratio) else 200
-    marks = {0: '0', 50: '50', 100: '100', 150: '150', 200: '200'}
+    max_ratio = 185
+    marks = {0: '0', 50: '50', 100: '100', 150: '150', 185: '185'}
 
     return fig, legend_combined, max_ratio, marks
 
