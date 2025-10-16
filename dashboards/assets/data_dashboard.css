@@ -315,7 +315,7 @@
 /* Sidebar styles */
 .sidebar {
   height: 100vh;
-  width: 350px;
+  width: 595px;
   background: #f8f8f8;
   box-shadow: -2px 0 8px rgba(0, 0, 0, 0.08);
   padding: 30px 20px 20px 20px;
@@ -408,7 +408,7 @@
 
 /* Sidebar header style for collapsible filters */
 .sidebar-header {
-  font-size: 1.15em;
+  font-size: 1.17em;
   font-weight: 700;
   color: #2a3b4c;
   padding: 6px 0 6px 0;
@@ -416,4 +416,91 @@
   margin-bottom: 8px;
   background: #f7f7fa;
   border-radius: 6px 6px 0 0;
+}
+
+summary.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  list-style: none;
+}
+
+summary.sidebar-header span::before {
+  content: "▶";
+}
+
+details[open] summary.sidebar-header span::before {
+  content: "▼";
+}
+
+/* Focus and checked styles for buttons, inputs, checkboxes, radios */
+.dash-button:focus {
+  outline: 2px solid #0039a6 !important;
+}
+
+.dash-input:focus {
+  outline: 2px solid #0039a6 !important;
+}
+
+input[type="checkbox"]:checked {
+  accent-color: #0039a6 !important;
+}
+
+input[type="radio"]:checked {
+  accent-color: #0039a6 !important;
+}
+
+/* Dropdown focus */
+.Select-control:focus {
+  outline: 2px solid #0039a6 !important;
+}
+
+/* Courses checklist in 2 columns */
+.sidebar-courses-checklist {
+  column-count: 2;
+  column-gap: 20px;
+}
+
+/* Reset button styling */
+.reset-button {
+  background-color: #0039a6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.reset-button:hover {
+  background-color: #0050d4;
+}
+
+/* Force tooltip below for all sliders */
+.sidebar-ratio-slider .rc-slider-tooltip,
+.sidebar-ri-slider .rc-slider-tooltip,
+.sidebar-course-slider .rc-slider-tooltip {
+  bottom: -35px !important;
+  top: auto !important;
+}
+
+/* Style sliders with blue theme */
+.sidebar-ratio-slider .rc-slider-track,
+.sidebar-ri-slider .rc-slider-track,
+.sidebar-course-slider .rc-slider-track {
+  background-color: #0039a6;
+}
+
+.sidebar-ratio-slider .rc-slider-handle,
+.sidebar-ri-slider .rc-slider-handle,
+.sidebar-course-slider .rc-slider-handle {
+  background-color: white;
+  border: 2px solid #0039a6;
+}
+
+.sidebar-ratio-slider .rc-slider-dot,
+.sidebar-ri-slider .rc-slider-dot,
+.sidebar-course-slider .rc-slider-dot {
+  background-color: white;
+  border: 1px solid #0039a6;
 }

@@ -91,26 +91,32 @@ layout = html.Div([
             id="map-options-toggle",
             options=LABELS["map_options"],
             value=DEFAULT_MAP_OPTIONS,
-            className="sidebar-legend-toggle"
+            className="sidebar-legend-toggle",
+            style={'display': 'flex', 'flex-direction': 'row', 'gap': '10px'}
         ),
         html.Div([
             html.Strong(LABELS["school_dots"]),
-            dcc.RadioItems(
-                id="school-toggles",
-                options=LABELS["school_toggles"],
-                value=DEFAULT_SCHOOL_TOGGLE,
-                className="sidebar-school-toggles"
-            ),
-            html.Label(id="dots-dropdown-label",
-                       className="sidebar-dots-dropdown-label"),
-            dcc.Dropdown(
-                id="dots-dropdown",
-                options=[],
-                value=None,
-                clearable=False,
-                className="sidebar-dots-dropdown"
-            ),
-        ], className="sidebar-section"),
+            html.Div([
+                dcc.RadioItems(
+                    id="school-toggles",
+                    options=LABELS["school_toggles"],
+                    value=DEFAULT_SCHOOL_TOGGLE,
+                    className="sidebar-school-toggles",
+                    style={'display': 'flex', 'flex-direction': 'row', 'gap': '10px'}
+                ),
+                html.Div([
+                    html.Label(id="dots-dropdown-label",
+                               className="sidebar-dots-dropdown-label"),
+                    dcc.Dropdown(
+                        id="dots-dropdown",
+                        options=[],
+                        value=None,
+                        clearable=False,
+                        className="sidebar-dots-dropdown"
+                    ),
+                ], style={'margin-left': '20px', 'flex': '1'}),
+            ], style={'display': 'flex', 'align-items': 'center'}),
+        ], className="sidebar-section", style={'margin-bottom': '-6px'}),
         html.Div([
             html.Strong("Underlays"),
             dcc.Dropdown(
@@ -120,18 +126,45 @@ layout = html.Div([
                 clearable=False,
                 className="sidebar-underlay-dropdown"
             ),
-        ], className="sidebar-section"),
+        ], className="sidebar-section", style={'margin-bottom': '12px'}),
         html.Details([
-            html.Summary("Filters", className="sidebar-title"),
+            html.Summary([
+                html.Div([
+                    html.Span("", style={'font-size': '12px', 'margin-right': '5px'}),
+                    html.Strong("Filters")
+                ], style={'display': 'flex', 'align-items': 'center'}),
+                html.Button("Reset Filters", id="reset-filters",
+                            className="reset-button")
+            ], className="sidebar-header"),
             html.Div([
-                html.Strong("Locale Type"),
-                dcc.Checklist(
-                    id="locale-filter",
-                    options=locale_options,
-                    value=[],
-                    className="sidebar-locale-checklist"
-                ),
-            ], className="sidebar-section"),
+                html.Div([
+                    html.Strong("Locale Type"),
+                    dcc.Checklist(
+                        id="locale-filter",
+                        options=locale_options,
+                        value=[],
+                        className="sidebar-locale-checklist"
+                    ),
+                ], style={'flex': '1'}),
+                html.Div([
+                    html.Strong("Modality"),
+                    dcc.Checklist(
+                        id="modality-filter",
+                        options=modality_options,
+                        value=[],
+                        className="sidebar-modality-checklist"
+                    ),
+                ], style={'flex': '1'}),
+                html.Div([
+                    html.Strong("Extra Teachers"),
+                    dcc.Checklist(
+                        id="extra-teachers-filter",
+                        options=[{"label": "Has Extra Teachers", "value": "extra"}],
+                        value=[],
+                        className="sidebar-extra-teachers-checklist"
+                    ),
+                ], style={'flex': '1'}),
+            ], style={'display': 'flex', 'gap': '20px', 'margin-bottom': '24px'}),
             html.Div([
                 html.Strong("Courses Offered"),
                 dcc.Checklist(
@@ -142,24 +175,6 @@ layout = html.Div([
                 ),
             ], className="sidebar-section"),
             html.Div([
-                html.Strong("Modality"),
-                dcc.Checklist(
-                    id="modality-filter",
-                    options=modality_options,
-                    value=[],
-                    className="sidebar-modality-checklist"
-                ),
-            ], className="sidebar-section"),
-            html.Div([
-                html.Strong("Extra Teachers"),
-                dcc.Checklist(
-                    id="extra-teachers-filter",
-                    options=[{"label": "Has Extra Teachers", "value": "extra"}],
-                    value=[],
-                    className="sidebar-extra-teachers-checklist"
-                ),
-            ], className="sidebar-section"),
-            html.Div([
                 html.Strong("Student-Teacher Ratio"),
                 dcc.RangeSlider(
                     id="ratio-threshold",
@@ -167,7 +182,7 @@ layout = html.Div([
                     max=200,
                     value=[0, 200],
                     step=1,
-                    marks={0: '0', 100: '100', 200: '200'},
+                    marks={0: '0', 50: '50', 100: '100', 150: '150', 200: '200'},
                     tooltip={"placement": "bottom", "always_visible": True},
                     className="sidebar-ratio-slider"
                 ),
@@ -194,14 +209,10 @@ layout = html.Div([
                     max=16,
                     value=[0, 16],
                     step=1,
-                    marks={0: '0', 8: '8', 16: '16'},
+                    marks={0: '0', 4: '4', 8: '8', 12: '12', 16: '16'},
                     tooltip={"placement": "bottom", "always_visible": True},
                     className="sidebar-course-slider"
                 ),
-            ], className="sidebar-section"),
-            html.Div([
-                html.Button("Reset Filters", id="reset-filters",
-                            className="reset-button")
             ], className="sidebar-section"),
         ], open=True),
         html.Div([
@@ -451,8 +462,10 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
             merged['student_teacher_ratio'] <= ratio_threshold[1])]
 
         # Course total offered filter
-        merged["total_offered"] = merged['UNIQUESCHOOLID'].apply(lambda x: sum(1 for course in APPROVED_COURSES if course.lower() in data_loader.SCHOOLDATA["courses"].get(str(x), {}) and (data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0)))
-        merged = merged[(merged['total_offered'] >= course_total_offered[0]) & (merged['total_offered'] <= course_total_offered[1])]
+        merged["total_offered"] = merged['UNIQUESCHOOLID'].apply(lambda x: sum(1 for course in APPROVED_COURSES if course.lower() in data_loader.SCHOOLDATA["courses"].get(
+            str(x), {}) and (data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0)))
+        merged = merged[(merged['total_offered'] >= course_total_offered[0]) & (
+            merged['total_offered'] <= course_total_offered[1])]
 
         # Selected school/district/city filter and center/zoom
         if selected_school:
@@ -621,8 +634,10 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
             schools[disparity_col] <= ri_threshold[1])]
 
         # Course total offered filter
-        schools["total_offered"] = schools['UNIQUESCHOOLID'].apply(lambda x: sum(1 for course in APPROVED_COURSES if course.lower() in data_loader.SCHOOLDATA["courses"].get(str(x), {}) and (data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0)))
-        schools = schools[(schools['total_offered'] >= course_total_offered[0]) & (schools['total_offered'] <= course_total_offered[1])]
+        schools["total_offered"] = schools['UNIQUESCHOOLID'].apply(lambda x: sum(1 for course in APPROVED_COURSES if course.lower() in data_loader.SCHOOLDATA["courses"].get(
+            str(x), {}) and (data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0)))
+        schools = schools[(schools['total_offered'] >= course_total_offered[0]) & (
+            schools['total_offered'] <= course_total_offered[1])]
 
         # Selected school/district/city filter and center/zoom
         if selected_school:
@@ -804,8 +819,10 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
             schools[gender_col] <= ri_threshold[1])]
 
         # Course total offered filter
-        schools["total_offered"] = schools['UNIQUESCHOOLID'].apply(lambda x: sum(1 for course in APPROVED_COURSES if course.lower() in data_loader.SCHOOLDATA["courses"].get(str(x), {}) and (data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0)))
-        schools = schools[(schools['total_offered'] >= course_total_offered[0]) & (schools['total_offered'] <= course_total_offered[1])]
+        schools["total_offered"] = schools['UNIQUESCHOOLID'].apply(lambda x: sum(1 for course in APPROVED_COURSES if course.lower() in data_loader.SCHOOLDATA["courses"].get(
+            str(x), {}) and (data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0)))
+        schools = schools[(schools['total_offered'] >= course_total_offered[0]) & (
+            schools['total_offered'] <= course_total_offered[1])]
 
         # Selected school/district/city filter and center/zoom
         if selected_school:
@@ -925,8 +942,7 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
     elif school == "gender":
         max_ratio = schools["student_teacher_ratio"].max()
     max_ratio = max(max_ratio, 1) if pd.notnull(max_ratio) else 200
-    marks = {0: '0', max_ratio //
-             2: str(int(max_ratio//2)), max_ratio: str(int(max_ratio))}
+    marks = {0: '0', 50: '50', 100: '100', 150: '150', 200: '200'}
 
     return fig, legend_combined, max_ratio, marks
 
