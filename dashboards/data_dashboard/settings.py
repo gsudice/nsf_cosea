@@ -1,6 +1,6 @@
 # ---------- APPROVED COURSES ----------
 APPROVED_COURSES = [
-    "advanced placement computer science a",
+    "advanced placement, computer science a",
     "advanced placement computer science principles",
     "ib computer science, year one",
     "ib computer science, year two",

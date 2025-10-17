@@ -87,7 +87,8 @@ layout = html.Div([
             ),
         ], className="sidebar-section"),
         html.Div([
-            html.Strong("Map Options", style={'font-size': '1.17em', 'font-weight': '700', 'color': '#2a3b4c'})
+            html.Strong("Map Options", style={
+                        'font-size': '1.17em', 'font-weight': '700', 'color': '#2a3b4c'})
         ], className="sidebar-header"),
         dcc.Checklist(
             id="map-options-toggle",
@@ -135,7 +136,8 @@ layout = html.Div([
                 html.Div([
                     html.Span(
                         "", style={'font-size': '12px', 'margin-right': '5px'}),
-                    html.Strong("Filters", style={'font-size': '1.17em', 'font-weight': '700', 'color': '#2a3b4c'})
+                    html.Strong("Filters", style={
+                                'font-size': '1.17em', 'font-weight': '700', 'color': '#2a3b4c'})
                 ], style={'display': 'flex', 'align-items': 'center'}),
                 html.Button("Reset Filters", id="reset-filters",
                             className="reset-button")
@@ -187,7 +189,8 @@ layout = html.Div([
                     max=185,
                     value=[0, 185],
                     step=1,
-                    marks={0: '0', 50: '50', 100: '100', 150: '150', 185: '185'},
+                    marks={0: '0', 50: '50', 100: '100',
+                           150: '150', 185: '185'},
                     tooltip={"placement": "bottom", "always_visible": True},
                     className="sidebar-ratio-slider"
                 ),
