@@ -40,17 +40,21 @@ except Exception as e:
     logger.error(f"Database connection error: {str(e)}")
     engine = None
 
+@app.before_request
+def ensure_session_id():
+    """Create a unique session ID for each user if they don't have one"""
+    if 'session_id' not in session:
+        session['session_id'] = str(uuid.uuid4())
+        logger.info(f"New session created: {session['session_id']}")
+
 @app.route("/")
 def home():
     return render_template('home.html')
 
-# NEW: Role selection route
 @app.route("/role_selection", methods=["GET", "POST"])
 def role_selection():
     if request.method == "POST":
         role = request.form.get('role')
-        
-        # Store role information in session
         session['role'] = role
         
         if role == 'teacher':
@@ -59,7 +63,7 @@ def role_selection():
                 return render_template('role_selection.html', 
                                      error_message="Please select at least one subject.")
             session['subjects'] = subjects
-            session.pop('admin_level', None)  # Clear admin data if exists
+            session.pop('admin_level', None)
             
         elif role == 'administrator':
             admin_level = request.form.get('admin_level')
@@ -67,20 +71,15 @@ def role_selection():
                 return render_template('role_selection.html',
                                      error_message="Please select your administrative level.")
             session['admin_level'] = admin_level
-            session.pop('subjects', None)  # Clear teacher data if exists
+            session.pop('subjects', None)
         
-        logger.info(f"User role saved: {role}")
-        logger.info(f"Session data: {dict(session)}")
-        
-        # Redirect to district selection
+        logger.info(f"User role saved: {role}, Session ID: {session['session_id']}")
         return redirect(url_for('district'))
     
     return render_template('role_selection.html')
 
-# Fetching districts for the selection page
 @app.route("/district")
 def district():
-    # Check if user has completed role selection
     if 'role' not in session:
         logger.warning("User attempted to access district page without role selection")
         return redirect(url_for('role_selection'))
@@ -94,7 +93,6 @@ def district():
             """)
             districts = [row[0] for row in connection.execute(districts_query).fetchall()]
             
-            # Pass user info to template
             user_info = {
                 'role': session.get('role'),
                 'subjects': session.get('subjects'),
@@ -106,7 +104,6 @@ def district():
         logger.error(f"Error fetching districts: {e}")
         return render_template('district.html', error_message="Error fetching districts")
 
-# Fetching schools upon district selection
 @app.route("/get_schools")
 def get_schools():
     district = request.args.get('district')
@@ -145,13 +142,13 @@ def get_school_id():
         logger.error(f"Error fetching school ID: {e}")
         return jsonify({"error": "Error fetching school ID"})
 
-# Function to retrieve block groups for the given school
 def get_block_groups(school_id):
     try:
         with engine.connect() as connection:
             block_groups_query = text("""
                 SELECT 
-                    ST_AsGeoJSON(ST_Transform(cbgpolygeom, 4326))::json AS geometry, "GEOID" AS "geoid"
+                    ST_AsGeoJSON(ST_Transform(cbgpolygeom, 4326))::json AS geometry, 
+                    "GEOID" AS "geoid"
                 FROM "allhsgrades24".tbl_cbg_finalassignment
                 WHERE "UNIQUESCHOOLID" = :school_id
             """)
@@ -171,9 +168,116 @@ def get_block_groups(school_id):
         logger.error(f"Error fetching block groups: {e}")
         return []
 
+@app.route("/api/census_blocks/<int:school_id>")
+def get_census_blocks_api(school_id):
+    """API endpoint to fetch census blocks as GeoJSON for a given school"""
+    try:
+        with engine.connect() as connection:
+            block_groups_query = text("""
+                SELECT 
+                    ST_AsGeoJSON(ST_Transform(cbgpolygeom, 4326))::json AS geometry, 
+                    "GEOID" AS "geoid"
+                FROM "allhsgrades24".tbl_cbg_finalassignment
+                WHERE "UNIQUESCHOOLID" = :school_id
+            """)
+            result = connection.execute(block_groups_query, {"school_id": school_id}).fetchall()
+            
+            features = []
+            for row in result:
+                features.append({
+                    "type": "Feature",
+                    "properties": {
+                        "geoid": row.geoid
+                    },
+                    "geometry": row.geometry
+                })
+            
+            geojson = {
+                "type": "FeatureCollection",
+                "features": features
+            }
+            
+            logger.debug(f"Returning {len(features)} census blocks for school {school_id}")
+            return jsonify(geojson)
+            
+    except Exception as e:
+        logger.error(f"Error fetching census blocks: {e}")
+        return jsonify({"type": "FeatureCollection", "features": []}), 500
+
+@app.route("/api/save_session", methods=["POST"])
+def save_session_to_database():
+    """Save all session submissions to database when user clicks 'End Session'"""
+    try:
+        data = request.get_json()
+        school_id = data.get('school_id')
+        submissions = data.get('submissions', {})
+        
+        if not school_id or not submissions:
+            return jsonify({"success": False, "error": "Missing data"}), 400
+        
+        teacher_id = str(uuid.uuid4())
+        client_session_id = session.get('session_id')
+        eastern = ZoneInfo("America/New_York")
+        submitted_at = datetime.now(eastern).replace(tzinfo=None)
+        
+        user_role = session.get('role', 'unknown')
+        user_subjects = ','.join(session.get('subjects', [])) if session.get('role') == 'teacher' else None
+        user_admin_level = session.get('admin_level') if session.get('role') == 'administrator' else None
+        
+        saved_count = 0
+        
+        with engine.begin() as connection:
+            for geoid, data in submissions.items():
+                barriers = data.get('barriers', [])
+                notes = data.get('notes', '')
+                
+                # Delete any existing submissions for this block in this session
+                delete_query = text("""
+                    DELETE FROM "allhsgrades24".teacher_reason_submissions
+                    WHERE session_id = :session_id AND geoid = :geoid
+                """)
+                connection.execute(delete_query, {
+                    'session_id': client_session_id,
+                    'geoid': geoid
+                })
+                
+                # Insert new submissions
+                for barrier in barriers:
+                    reason_code = barrier.lower()[:50]
+                    comment = notes if barrier == 'other' else barrier
+                    
+                    insert_query = text("""
+                        INSERT INTO "allhsgrades24".teacher_reason_submissions
+                        ("UNIQUESCHOOLID", teacher_id, geoid, reason_code, comment, submitted_at, 
+                         user_role, user_subjects, user_admin_level, session_id)
+                        VALUES (:school_id, :teacher_id, :geoid, :reason_code, :comment, :submitted_at,
+                                :user_role, :user_subjects, :user_admin_level, :session_id)
+                    """)
+                    
+                    connection.execute(insert_query, {
+                        "school_id": school_id,
+                        "teacher_id": teacher_id,
+                        "geoid": geoid,
+                        "reason_code": reason_code,
+                        "comment": comment,
+                        "submitted_at": submitted_at,
+                        "user_role": user_role,
+                        "user_subjects": user_subjects,
+                        "user_admin_level": user_admin_level,
+                        "session_id": client_session_id
+                    })
+                    
+                    saved_count += 1
+        
+        logger.info(f"Successfully saved {saved_count} submissions for school {school_id}")
+        return jsonify({"success": True, "count": saved_count})
+        
+    except Exception as e:
+        logger.error(f"Error saving session: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route("/select", methods=["GET", "POST"])
 def render_select():
-    # Check if user has completed role selection
     if 'role' not in session:
         logger.warning("User attempted to access select page without role selection")
         return redirect(url_for('role_selection'))
@@ -182,12 +286,10 @@ def render_select():
         selected_district = request.form.get('district')
         selected_school = request.form.get('school')
         
-        # Store selections in session
         session['selected_district'] = selected_district
         session['selected_school'] = selected_school
         
-        logger.debug(f"Selected district: {selected_district}")
-        logger.debug(f"Selected school: {selected_school}")
+        logger.debug(f"Selected district: {selected_district}, school: {selected_school}")
         
         if not engine:
             logger.error("Database connection is not available")
@@ -210,137 +312,101 @@ def render_select():
                 if not result or result[0] is None or result[1] is None:
                     return render_template(
                         'select.html',
+                        instructions='',
+                        selected_district=selected_district,
+                        selected_school=selected_school,
+                        latitude=0,
+                        longitude=0,
+                        block_groups=[],
+                        user_info={},
                         error_message="School location not found."
                     )
 
                 longitude, latitude, school_id = result
-
-                logger.debug(f"School coordinates: lat={latitude}, lon={longitude}")
-
-                # Create the map
-                m = folium.Map(
-                    location=[latitude, longitude],
-                    zoom_start=12,
-                    tiles='OpenStreetMap'
-                )
-                
-                # Add school marker
-                folium.Marker(
-                    [latitude, longitude],
-                    popup=selected_school,
-                    icon=folium.Icon(color='red', icon='info-sign')
-                ).add_to(m)
-
-                # Get and add block groups
                 block_groups = get_block_groups(school_id)
                 logger.debug(f"Retrieved {len(block_groups)} block groups")
-               
-                if block_groups:
-                    blocks_layer = folium.FeatureGroup(name='Block Groups')
-                    district_name = str(selected_district)
-                    school_name = str(selected_school)
 
-                    # Get user info from session
-                    user_info = {
+                # Pass data to template
+                return render_template(
+                    'select.html',
+                    instructions=render_template("selectInstructions.html"),
+                    selected_district=selected_district,
+                    selected_school=selected_school,
+                    latitude=latitude,
+                    longitude=longitude,
+                    block_groups=block_groups,
+                    user_info={
                         'role': session.get('role', 'unknown'),
                         'subjects': ','.join(session.get('subjects', [])) if session.get('role') == 'teacher' else None,
                         'admin_level': session.get('admin_level') if session.get('role') == 'administrator' else None
                     }
-                    
-                    logger.debug(f"Session data: {dict(session)}")
-                    logger.debug(f"User info being passed to popup: {user_info}")
-                    
-                    for block in block_groups:
-                        try:
-                            if not block.get('geometry'):
-                                logger.warning(f"Skipping block group with no geometry: {block}")
-                                continue
-                            
-                            popUp_html = render_template("popUp.html", 
-                                block=block,
-                                selected_school=school_name,
-                                selected_district=district_name,
-                                user_info=user_info
-                            )
-
-                            iframe = folium.IFrame(popUp_html, width=300, height=200)
-                            popup = folium.Popup(iframe, min_width=200, max_width=300)
-                            
-                            folium.GeoJson(
-                                block['geometry'],
-                                style_function=lambda x: {
-                                    'fillColor': '#ffcccb',
-                                    'color': '#000000',
-                                    'weight': 1,
-                                    'fillOpacity': 0.3
-                                },
-                                highlight_function=lambda x: {
-                                    'fillColor': '#ff0000',
-                                    'color': '#000000',
-                                    'weight': 2,
-                                    'fillOpacity': 0.5
-                                },
-                                popup=popup
-                            ).add_to(blocks_layer)
-                        except Exception as e:
-                            logger.error(f"Error adding block to map: {str(e)}")
-                            continue
-                    
-                    blocks_layer.add_to(m)
-                else:
-                    logger.warning("No block groups found for the given school")
-
-                map_html = m._repr_html_()
-               
-                return render_template(
-                    'select.html',
-                    instructions=render_template("selectInstructions.html"),
-                    map_html=map_html,
-                    selected_district=selected_district,
-                    selected_school=school_name
                 )
 
         except Exception as e:
             logger.error(f"Error fetching school data: {str(e)}")
-            return render_template('select.html', error_message="Error fetching school data")
+            return render_template(
+                'select.html',
+                instructions='',
+                selected_district=selected_district or 'Unknown',
+                selected_school=selected_school or 'Unknown',
+                latitude=0,
+                longitude=0,
+                block_groups=[],
+                user_info={},
+                error_message="Error fetching school data"
+            )
     
-    return render_template('select.html')
+    # If GET request, show empty page with error
+    return render_template(
+        'select.html',
+        instructions='',
+        selected_district='',
+        selected_school='',
+        latitude=0,
+        longitude=0,
+        block_groups=[],
+        user_info={},
+        error_message='Please select a school from the district page.'
+    )
 
 @app.route("/saveData", methods=["POST"])
 def submit_barriers():
     try:
         logger.debug("=== SAVEDATA ENDPOINT CALLED ===")
-        logger.debug(f"Form data received: {dict(request.form)}")
         
-        # Get form data
+        # Get session_id from client
+        client_session_id = request.form.get('client_session_id')
+        
+        # Support multiple block submissions
+        block_geoids_raw = request.form.get('block_geoids', '')
+        if block_geoids_raw:
+            block_geoids = [b.strip() for b in block_geoids_raw.split(',') if b.strip()]
+        else:
+            single_block = request.form.get('block_geoid', '').strip()
+            block_geoids = [single_block] if single_block else []
+        
         school_name = request.form.get('school')
         district = request.form.get('district')
-        block_geoid = request.form.get('block_geoid')
         barriers = request.form.getlist('barriers')
         other_specify = request.form.get('other_specify', '')
         
-        # Get user role information from form (passed from popup)
         user_role = request.form.get('user_role', 'unknown')
         user_subjects = request.form.get('user_subjects', None)
         user_admin_level = request.form.get('user_admin_level', None)
         
-        # Clean up empty strings to None
         if user_subjects == '':
             user_subjects = None
         if user_admin_level == '':
             user_admin_level = None
         
-        logger.debug(f"Parsed user info from form: role={user_role}, subjects={user_subjects}, admin_level={user_admin_level}")
-        logger.debug(f"Barriers: {barriers}, School: {school_name}, District: {district}, GEOID: {block_geoid}")
+        logger.debug(f"Client Session: {client_session_id}, Blocks: {block_geoids}, Barriers: {barriers}")
         
-        # Validate required fields
-        if not all([school_name, district, block_geoid, barriers]):
+        if not all([school_name, district, block_geoids, barriers]):
             return jsonify({
                 "success": False, 
                 "message": "Missing required fields"
             }), 400
         
-        # Get the school's UNIQUESCHOOLID
         with engine.connect() as connection:
             school_id_query = text("""
                 SELECT "UNIQUESCHOOLID"
@@ -361,43 +427,61 @@ def submit_barriers():
             
             school_unique_id = school_result[0]
         
-        # Generate a unique teacher ID
         teacher_id = str(uuid.uuid4())
         eastern = ZoneInfo("America/New_York")
         submitted_at = datetime.now(eastern).replace(tzinfo=None)
         
-        logger.debug(f"About to insert with: teacher_id={teacher_id}, user_role={user_role}, user_subjects={user_subjects}, user_admin_level={user_admin_level}")
+        saved_blocks = []
         
-        # Insert each barrier as a separate row
         with engine.begin() as connection:
-            for barrier in barriers:
-                reason_code = barrier.lower()[:50]
-                comment = other_specify if barrier == 'other' else barrier
+            for block_geoid in block_geoids:
+                if not block_geoid or block_geoid == 'N/A':
+                    continue
                 
-                insert_query = text("""
-                    INSERT INTO "allhsgrades24".teacher_reason_submissions
-                    ("UNIQUESCHOOLID", teacher_id, geoid, reason_code, comment, submitted_at, 
-                     user_role, user_subjects, user_admin_level)
-                    VALUES (:school_id, :teacher_id, :geoid, :reason_code, :comment, :submitted_at,
-                            :user_role, :user_subjects, :user_admin_level)
-                """)
+                # Delete existing submissions for this block in this client session (allows editing)
+                if client_session_id:
+                    delete_query = text("""
+                        DELETE FROM "allhsgrades24".teacher_reason_submissions
+                        WHERE session_id = :session_id AND geoid = :geoid
+                    """)
+                    connection.execute(delete_query, {
+                        'session_id': client_session_id,
+                        'geoid': block_geoid
+                    })
                 
-                connection.execute(insert_query, {
-                    "school_id": school_unique_id,
-                    "teacher_id": teacher_id,
-                    "geoid": block_geoid,
-                    "reason_code": reason_code,
-                    "comment": comment,
-                    "submitted_at": submitted_at,
-                    "user_role": user_role,
-                    "user_subjects": user_subjects,
-                    "user_admin_level": user_admin_level
-                })
+                # Insert new submissions
+                for barrier in barriers:
+                    reason_code = barrier.lower()[:50]
+                    comment = other_specify if barrier == 'other' else barrier
+                    
+                    insert_query = text("""
+                        INSERT INTO "allhsgrades24".teacher_reason_submissions
+                        ("UNIQUESCHOOLID", teacher_id, geoid, reason_code, comment, submitted_at, 
+                         user_role, user_subjects, user_admin_level, session_id)
+                        VALUES (:school_id, :teacher_id, :geoid, :reason_code, :comment, :submitted_at,
+                                :user_role, :user_subjects, :user_admin_level, :session_id)
+                    """)
+                    
+                    connection.execute(insert_query, {
+                        "school_id": school_unique_id,
+                        "teacher_id": teacher_id,
+                        "geoid": block_geoid,
+                        "reason_code": reason_code,
+                        "comment": comment,
+                        "submitted_at": submitted_at,
+                        "user_role": user_role,
+                        "user_subjects": user_subjects,
+                        "user_admin_level": user_admin_level,
+                        "session_id": client_session_id
+                    })
+                
+                saved_blocks.append(block_geoid)
         
-        logger.info(f"Successfully inserted {len(barriers)} barrier submissions for block group {block_geoid} with role data: {user_role}")
+        logger.info(f"Successfully saved {len(barriers)} barriers for {len(saved_blocks)} block(s)")
         return jsonify({
             "success": True, 
-            "message": f"Successfully submitted {len(barriers)} barrier(s)"
+            "message": f"Successfully submitted {len(barriers)} barrier(s) for {len(saved_blocks)} block(s)",
+            "saved_blocks": saved_blocks
         })
 
     except Exception as e:

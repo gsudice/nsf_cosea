@@ -3,66 +3,985 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Select School</title>
+    <title>Select Census Blocks - CoSea</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styling.css') }}">
     <style>
-        #map-container {
-            width: 80%;
-            height: 600px;
-            margin: 20px auto;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            overflow: hidden;
+        body { 
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Lato', sans-serif;
+            overflow-x: hidden;
+            background-color: #f4f4f4;
         }
-
-        #map {
-            height: 100%;
-            width: 100%;
+        
+        .top-container {
+            background: white;
+            padding: 20px 40px;
         }
-
-        .info-panel {
-            margin: 20px auto;
-            width: 80%;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
+        
+        .school-header {
+            max-width: 1200px;
+            margin: 0 auto;
         }
-
-        .error-message {
-            color: #dc3545;
-            padding: 10px;
+        
+        .school-header h2 {
+            color: #000;
+            margin: 0 0 10px 0;
+            font-size: 32px;
+            font-weight: 700;
+        }
+        
+        .school-header p {
+            font-size: 16px;
+            color: #000;
+            margin-bottom: 20px;
+        }
+        
+        .school-header p strong {
+            color: #000;
+            font-weight: 700;
+        }
+        
+        .school-info {
+            margin-top: 20px;
+        }
+        
+        .info-section {
+            margin-bottom: 30px;
+        }
+        
+        .info-section h4 {
+            color: #000;
+            margin: 0 0 10px 0;
+            font-size: 20px;
+            font-weight: 700;
+        }
+        
+        .info-section ul {
+            margin: 5px 0;
+            padding-left: 25px;
+        }
+        
+        .info-section li {
             margin: 10px 0;
-            background-color: #f8d7da;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #000;
+        }
+        
+        .info-section li strong {
+            color: #000;
+            font-weight: 700;
+        }
+        
+        .back-btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #0039a6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 15px;
+            text-decoration: none;
+            font-size: 16px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        
+        .back-btn:hover {
+            background: #0050d4;
+            transform: translateY(-2px);
+            text-decoration: none;
+        }
+        
+        .back-btn:active {
+            transform: translateY(0);
+        }
+        
+        #map { 
+            width: calc(100% - 80px);
+            height: 500px;
+            margin: 0 auto;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        
+        .map-container {
+            padding: 20px 40px;
+            background: white;
+        }
+        
+        .bottom-container {
+            background: #f4f4f4;
+            padding: 40px 40px;
+            border-top: 3px solid #e0e0e0;
+        }
+        
+        .bottom-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+        
+        .map-legend {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-size: 16px;
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .legend-title {
+            font-weight: 600;
+            font-size: 22px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 12px 0;
+        }
+        
+        .legend-item span {
+            font-size: 16px;
+            color: #555;
+            line-height: 1.6;
+        }
+        
+        .legend-color {
+            width: 30px;
+            height: 20px;
+            margin-right: 10px;
+            border: 1px solid #333;
+            border-radius: 3px;
+        }
+        
+        #selection-counter {
+            display: none;
+            background: #e8f5e9;
+            color: #2E7D32;
+            padding: 12px 15px;
+            border-radius: 5px;
+            font-weight: 600;
+            margin: 15px 0 10px 0;
+            text-align: center;
+            border-left: 4px solid #4CAF50;
+            font-size: 16px;
+        }
+        
+        #batch-submit-btn {
+            display: none;
+            width: 100%;
+            background: #0039a6;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            font-size: 16px;
+            margin-top: 5px;
+        }
+        
+        #batch-submit-btn:hover {
+            background: #0050d4;
+            transform: translateY(-2px);
+        }
+        
+        #batch-submit-btn:active {
+            transform: translateY(0);
+        }
+        
+        #end-session-btn {
+            background: #0039a6;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-size: 16px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        #end-session-btn:hover {
+            background: #0050d4;
+            transform: translateY(-2px);
+        }
+        
+        #end-session-btn:active {
+            transform: translateY(0);
+        }
+        
+        .session-note {
+            margin-top: 15px;
+            padding: 15px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 5px;
+            color: #856404;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+        
+        .session-actions {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .session-actions h4 {
+            color: #333;
+            margin: 0 0 15px 0;
+            font-size: 22px;
+            font-weight: 600;
+        }
+        
+        #multi-select-hint {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: none;
+            font-weight: bold;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            overflow-y: auto;
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 50px auto;
+            padding: 0;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        
+        .modal-header {
+            background: #0039a6;
+            color: white;
+            padding: 20px;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .close {
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+        
+        .close:hover { color: #ddd; }
+        
+        .modal-content form {
+            padding: 20px;
+        }
+        
+        .info-box {
+            background: #e3f2fd;
+            padding: 12px;
+            border-left: 4px solid #2196F3;
+            margin-bottom: 20px;
             border-radius: 4px;
+        }
+        
+        .edit-indicator, .batch-indicator {
+            display: none;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        
+        .edit-indicator {
+            color: #2196F3;
+            background: #e3f2fd;
+        }
+        
+        .batch-indicator {
+            color: #4CAF50;
+            background: #e8f5e9;
+        }
+        
+        .checkbox-group {
+            margin: 15px 0;
+        }
+        
+        .checkbox-item {
+            margin: 10px 0;
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .checkbox-item input[type="checkbox"] {
+            margin-right: 10px;
+            margin-top: 3px;
+            width: 18px;
+            height: 18px;
+        }
+        
+        .checkbox-item label {
+            cursor: pointer;
+            line-height: 1.5;
+            user-select: none;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 16px;
+        }
+        
+        textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-family: 'Lato', sans-serif;
+            font-size: 16px;
+            resize: vertical;
+            min-height: 80px;
+            transition: border-color 0.3s ease;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #0039a6;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        button[type="submit"], .btn-secondary {
+            flex: 1;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        
+        button[type="submit"] {
+            background: #0039a6;
+            color: white;
+        }
+        
+        button[type="submit"]:hover {
+            background: #0050d4;
+            transform: translateY(-2px);
+        }
+        
+        button[type="submit"]:active {
+            transform: translateY(0);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        #barrier-error {
+            display: none;
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            border-left: 4px solid #c62828;
         }
     </style>
 </head>
 <body>
-    <!-- Display the instructions here -->
-    <div class="info-panel">
-        <div>
-            {{ instructions|safe }} <!-- Render the instructions passed from the view -->
+    <div class="top-container">
+        <div class="school-header">
+            <h2>🏫 {{ selected_school }}</h2>
+            <p><strong>District:</strong> {{ selected_district }}</p>
+            
+            <div class="school-info">
+                <div class="info-section">
+                    <h4>🚧 Barrier Categories:</h4>
+                    <ul>
+                        <li><strong>Student Demographics:</strong> Underrepresented groups (race/ethnicity, gender, etc.) often have less exposure to CS education.</li>
+                        <li><strong>Economic Barriers:</strong> Many students face financial hardship, limiting their ability to access CS resources and programs.</li>
+                        <li><strong>Language Barriers:</strong> Students in households where English is not the primary language may struggle with CS coursework.</li>
+                        <li><strong>Parental Education Level:</strong> Students with limited exposure to CS at home may have less encouragement or understanding of CS opportunities.</li>
+                        <li><strong>Limited or No Computer at Home:</strong> Some students lack access to a personal computer, making it harder to practice CS skills outside school.</li>
+                        <li><strong>Limited or No Reliable Internet Access:</strong> Without a stable internet connection, students may struggle with online CS resources and coursework.</li>
+                        <li><strong>Distance Challenges:</strong> A long commute or lack of transportation may prevent students from attending CS programs or extracurricular activities.</li>
+                        <li><strong>No or Limited Introductory CS Courses:</strong> Some schools do not offer foundational CS courses, preventing early exposure to the field.</li>
+                        <li><strong>No or Limited Advanced CS Courses:</strong> Schools may lack advanced CS coursework, restricting students' ability to deepen their knowledge.</li>
+                        <li><strong>Other Contributing Factors:</strong> You may also specify additional reasons that impact CS education access in your area.</li>
+                    </ul>
+                </div>
+                
+                <div class="info-section">
+                    <h4>📋 How to Use:</h4>
+                    <ul>
+                        <li>Click any census block to assess barriers</li>
+                        <li>Hold <kbd>Ctrl</kbd> (Windows) or <kbd>⌘ Cmd</kbd> (Mac) and click to select multiple blocks</li>
+                        <li>Red blocks = Not started</li>
+                        <li>Blue blocks = Completed (click to edit)</li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="info-panel">
-        {% if selected_district and selected_school %}
-        <h2>Selected Location</h2>
-        <p><strong>District:</strong> {{ selected_district }}</p>
-        <p><strong>School:</strong> {{ selected_school }}</p>
-        {% endif %}
+    
+    <div class="map-container">
+        <div id="map"></div>
+    </div>
+    
+    <div class="bottom-container">
+        <div class="bottom-content">
+            <div class="map-legend">
+                <div class="legend-title">📍 Map Legend</div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f44336; opacity: 0.6;"></div>
+                    <span>Not Started - Click to begin</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4CAF50; opacity: 0.6;"></div>
+                    <span>Selected - Hold Ctrl/Cmd to select multiple</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #2196F3; opacity: 0.6;"></div>
+                    <span>Completed - Click to view/edit</span>
+                </div>
+                
+                <div id="selection-counter">0 block(s) selected</div>
+                <button id="batch-submit-btn">📝 Submit Selected Blocks</button>
+                
+                <a href="/district" class="back-btn" style="display: block; text-align: center; margin-top: 20px;">← Back to School Selection</a>
+            </div>
+            
+            <div class="session-actions">
+                <h4>💾 Session Management</h4>
+                <div class="session-note">
+                    <strong>💡 Note:</strong> All your assessments are saved locally in your browser. When you're finished, click the button below to save everything to the database.
+                </div>
+                <button id="end-session-btn" onclick="endSession()">🏁 End Session & Save to Database</button>
+            </div>
+        </div>
+    </div>
+    <div id="multi-select-hint">🖱️ Multi-select mode active</div>
+    
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Census Block Assessment</h3>
+                <span class="close">&times;</span>
+            </div>
+            
+            <div id="edit-indicator" class="edit-indicator">
+                ✏️ Editing previous submission
+            </div>
+            
+            <div id="batch-indicator" class="batch-indicator">
+                📋 Submitting for <span id="batch-count">0</span> block(s)
+            </div>
+            
+            <form id="barriers-form">
+                <p style="color: #666; font-size: 13px; margin: 10px 0 20px 0;">
+                    <strong>Block ID:</strong> <span id="modal-geoid">-</span>
+                </p>
+                
+                <div class="form-group">
+                    <label>Select Barriers (check all that apply):</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="barriers" value="none" id="barrier-none">
+                            <label for="barrier-none"><strong>None</strong> - No barriers identified</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="barriers" value="student_demographics" id="barrier-demo">
+                            <label for="barrier-demo">Student demographics</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="barriers" value="economic_barriers" id="barrier-econ">
+                            <label for="barrier-econ">Economic barriers</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="barriers" value="transportation" id="barrier-trans">
+                            <label for="barrier-trans">Transportation</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="barriers" value="safety_concerns" id="barrier-safety">
+                            <label for="barrier-safety">Safety concerns</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="barriers" value="language_barriers" id="barrier-lang">
+                            <label for="barrier-lang">Language barriers</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="barriers" value="cultural_barriers" id="barrier-culture">
+                            <label for="barrier-culture">Cultural barriers</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="barriers" value="other" id="barrier-other">
+                            <label for="barrier-other">Other (please specify in notes)</label>
+                        </div>
+                    </div>
+                    <div id="barrier-error">
+                        ⚠️ "None" cannot be selected with other barriers
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="notes">Additional Notes:</label>
+                    <textarea id="notes" name="notes" placeholder="Please select 'Other Contributing Factors' above to add notes..." disabled style="background-color: #f0f0f0; cursor: not-allowed;"></textarea>
+                </div>
+                
+                <div class="button-group">
+                    <button type="submit">💾 Save Assessment</button>
+                    <button type="button" class="btn-secondary close">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-        {% if error_message %}
-        <div class="error-message">
-            {{ error_message }}
-        </div>
-        {% endif %}
-    </div>
-
-    {% if map_html %}
-    <div id="map-container">
-        <div id="map">
-            {{ map_html | safe }}
-        </div>
-    </div>
-    {% endif %}
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Get data from Flask template
+        const schoolName = "{{ selected_school }}";
+        const schoolDistrict = "{{ selected_district }}";
+        const schoolLat = {{ latitude }};
+        const schoolLon = {{ longitude }};
+        
+        // Get block groups data passed from Flask
+        const blockGroupsData = {{ block_groups | tojson }};
+        
+        // Initialize map
+        const map = L.map('map').setView([schoolLat, schoolLon], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        // Add school marker - simple red pin with popup
+        const schoolIcon = L.divIcon({
+            className: 'school-marker-icon',
+            html: '<div style="background: #e74c3c; width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"><div style="width: 10px; height: 10px; background: white; border-radius: 50%; position: absolute; top: 7px; left: 7px;"></div></div>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 30],
+            popupAnchor: [0, -30]
+        });
+        
+        const schoolMarker = L.marker([schoolLat, schoolLon], {
+            icon: schoolIcon
+        }).addTo(map);
+        
+        schoolMarker.bindPopup(`<b>🏫 ${schoolName}</b><br><small>${schoolDistrict}</small>`).openPopup();
+        
+        // State management
+        let censusBlocks = [];
+        let selectedBlocks = [];
+        let ctrlPressed = false;
+        let currentEditingBlock = null;
+        
+        // Session storage key
+        const SESSION_KEY = `school_${schoolName.replace(/\s+/g, '_')}_submissions`;
+        
+        // Get completed blocks from sessionStorage
+        function getCompletedBlocks() {
+            const stored = sessionStorage.getItem(SESSION_KEY);
+            return stored ? JSON.parse(stored) : {};
+        }
+        
+        // Save to sessionStorage
+        function saveToSession(geoid, data) {
+            const completed = getCompletedBlocks();
+            completed[geoid] = data;
+            sessionStorage.setItem(SESSION_KEY, JSON.stringify(completed));
+        }
+        
+        // Check if block is completed
+        function isBlockCompleted(geoid) {
+            return getCompletedBlocks()[geoid] !== undefined;
+        }
+        
+        // Load census blocks from template data
+        const completedBlocks = getCompletedBlocks();
+        
+        blockGroupsData.forEach(blockData => {
+            const geoid = blockData.geoid;
+            const isCompleted = completedBlocks[geoid] !== undefined;
+            
+            const feature = {
+                type: "Feature",
+                properties: { geoid: geoid },
+                geometry: blockData.geometry
+            };
+            
+            const layer = L.geoJSON(feature, {
+                style: {
+                    fillColor: isCompleted ? '#2196F3' : '#f44336',
+                    fillOpacity: 0.6,
+                    color: '#333',
+                    weight: 2
+                }
+            }).addTo(map);
+            
+            layer.on('click', function(e) {
+                handleBlockClick(geoid, layer);
+            });
+            
+            censusBlocks.push({
+                geoid: geoid,
+                layer: layer
+            });
+        });
+        
+        function handleBlockClick(geoid, layer) {
+            if (ctrlPressed) {
+                // Multi-select mode - prevent selecting completed blocks
+                if (isBlockCompleted(geoid)) {
+                    alert('This block is already completed. Click it normally (without Ctrl) to edit.');
+                    return;
+                }
+                
+                const index = selectedBlocks.indexOf(geoid);
+                if (index > -1) {
+                    selectedBlocks.splice(index, 1);
+                    layer.setStyle({ fillColor: '#f44336', fillOpacity: 0.6 });
+                } else {
+                    selectedBlocks.push(geoid);
+                    layer.setStyle({ fillColor: '#4CAF50', fillOpacity: 0.6 });
+                }
+                
+                updateSelectionUI();
+            } else {
+                // Single block mode
+                openSingleBlockModal(geoid);
+            }
+        }
+        
+        function openSingleBlockModal(geoid) {
+            if (selectedBlocks.length > 0) {
+                clearSelections();
+            }
+            
+            currentEditingBlock = geoid;
+            const isCompleted = isBlockCompleted(geoid);
+            
+            if (isCompleted) {
+                const data = getCompletedBlocks()[geoid];
+                document.getElementById('edit-indicator').style.display = 'block';
+                document.getElementById('batch-indicator').style.display = 'none';
+                document.getElementById('modal-geoid').textContent = geoid;
+                
+                // Load saved data
+                document.querySelectorAll('input[name="barriers"]').forEach(cb => {
+                    cb.checked = data.barriers.includes(cb.value);
+                });
+                document.getElementById('notes').value = data.notes || '';
+            } else {
+                document.getElementById('edit-indicator').style.display = 'none';
+                document.getElementById('batch-indicator').style.display = 'none';
+                document.getElementById('modal-geoid').textContent = geoid;
+                document.getElementById('barriers-form').reset();
+            }
+            
+            document.getElementById('modal').style.display = 'block';
+        }
+        
+        function updateSelectionUI() {
+            const count = selectedBlocks.length;
+            const counter = document.getElementById('selection-counter');
+            const btn = document.getElementById('batch-submit-btn');
+            
+            if (count > 0) {
+                counter.textContent = `${count} block(s) selected`;
+                counter.style.display = 'block';
+                btn.style.display = 'block';
+            } else {
+                counter.style.display = 'none';
+                btn.style.display = 'none';
+            }
+        }
+        
+        function clearSelections() {
+            const completedBlocks = getCompletedBlocks();
+            selectedBlocks.forEach(geoid => {
+                const block = censusBlocks.find(b => b.geoid === geoid);
+                if (block && block.layer) {
+                    const isCompleted = completedBlocks[geoid] !== undefined;
+                    block.layer.setStyle({
+                        fillColor: isCompleted ? '#2196F3' : '#f44336',
+                        fillOpacity: 0.6
+                    });
+                }
+            });
+            selectedBlocks = [];
+            updateSelectionUI();
+        }
+        
+        // Batch submit button
+        document.getElementById('batch-submit-btn').addEventListener('click', function() {
+            if (selectedBlocks.length === 0) return;
+            
+            currentEditingBlock = null;
+            document.getElementById('edit-indicator').style.display = 'none';
+            document.getElementById('batch-indicator').style.display = 'block';
+            document.getElementById('batch-count').textContent = selectedBlocks.length;
+            document.getElementById('modal-geoid').textContent = selectedBlocks.join(', ');
+            document.getElementById('barriers-form').reset();
+            document.getElementById('modal').style.display = 'block';
+        });
+        
+        // Keyboard handling - track Ctrl/Cmd key properly
+        document.addEventListener('keydown', (e) => {
+            if ((e.key === 'Control' || e.key === 'Meta') && !ctrlPressed) {
+                ctrlPressed = true;
+                document.getElementById('multi-select-hint').style.display = 'block';
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'Control' || e.key === 'Meta') {
+                ctrlPressed = false;
+                document.getElementById('multi-select-hint').style.display = 'none';
+            }
+        });
+        
+        // Also handle when window loses focus (in case key is released outside window)
+        window.addEventListener('blur', () => {
+            if (ctrlPressed) {
+                ctrlPressed = false;
+                document.getElementById('multi-select-hint').style.display = 'none';
+            }
+        });
+        
+        // Form validation - "None" is exclusive
+        document.querySelectorAll('input[name="barriers"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const noneCheckbox = document.getElementById('barrier-none');
+                const otherCheckbox = document.getElementById('barrier-other');
+                const notesField = document.getElementById('notes');
+                const errorDiv = document.getElementById('barrier-error');
+                
+                if (this.value === 'none' && this.checked) {
+                    document.querySelectorAll('input[name="barriers"]:not(#barrier-none)').forEach(cb => {
+                        cb.checked = false;
+                    });
+                    errorDiv.style.display = 'none';
+                    // Disable notes when "None" is selected
+                    notesField.disabled = true;
+                    notesField.style.backgroundColor = '#f0f0f0';
+                    notesField.style.cursor = 'not-allowed';
+                    notesField.value = '';
+                } else if (this.value !== 'none' && this.checked) {
+                    if (noneCheckbox.checked) {
+                        this.checked = false;
+                        errorDiv.style.display = 'block';
+                        setTimeout(() => errorDiv.style.display = 'none', 3000);
+                    }
+                }
+                
+                // Enable/disable notes based on "Other" checkbox
+                if (otherCheckbox.checked) {
+                    notesField.disabled = false;
+                    notesField.style.backgroundColor = 'white';
+                    notesField.style.cursor = 'text';
+                    notesField.placeholder = 'Please specify other contributing factors...';
+                    notesField.focus();
+                } else if (!noneCheckbox.checked) {
+                    notesField.disabled = true;
+                    notesField.style.backgroundColor = '#f0f0f0';
+                    notesField.style.cursor = 'not-allowed';
+                    notesField.placeholder = "Please select 'Other Contributing Factors' above to add notes...";
+                    notesField.value = '';
+                }
+            });
+        });
+        
+        // Form submission
+        document.getElementById('barriers-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const barriers = Array.from(document.querySelectorAll('input[name="barriers"]:checked'))
+                .map(cb => cb.value);
+            const notes = document.getElementById('notes').value.trim();
+            
+            if (barriers.length === 0) {
+                alert('Please select at least one barrier option');
+                return;
+            }
+            
+            const submissionData = { barriers, notes, timestamp: new Date().toISOString() };
+            
+            if (currentEditingBlock) {
+                // Single block edit/submission
+                saveToSession(currentEditingBlock, submissionData);
+                updateBlockColor(currentEditingBlock, true);
+            } else if (selectedBlocks.length > 0) {
+                // Batch submission
+                selectedBlocks.forEach(geoid => {
+                    saveToSession(geoid, submissionData);
+                    updateBlockColor(geoid, true);
+                });
+                clearSelections();
+            }
+            
+            closeModal();
+        });
+        
+        function updateBlockColor(geoid, isCompleted) {
+            const block = censusBlocks.find(b => b.geoid === geoid);
+            if (block && block.layer) {
+                block.layer.setStyle({
+                    fillColor: isCompleted ? '#2196F3' : '#f44336',
+                    fillOpacity: 0.6
+                });
+            }
+        }
+        
+        // Modal controls
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+            document.getElementById('barriers-form').reset();
+            document.getElementById('barrier-error').style.display = 'none';
+            currentEditingBlock = null;
+        }
+        
+        document.querySelectorAll('.close').forEach(el => {
+            el.addEventListener('click', closeModal);
+        });
+        
+        window.addEventListener('click', function(e) {
+            if (e.target == document.getElementById('modal')) {
+                closeModal();
+            }
+        });
+        
+        // End session function - Save to database via existing /saveData endpoint
+        function endSession() {
+            const submissions = getCompletedBlocks();
+            const count = Object.keys(submissions).length;
+            
+            if (count === 0) {
+                alert('No submissions to save. Please complete at least one census block assessment.');
+                return;
+            }
+            
+            if (!confirm(`Save ${count} assessment(s) to database and end session?`)) {
+                return;
+            }
+            
+            // Prepare form data for each submission
+            let savedCount = 0;
+            let failedCount = 0;
+            
+            const savePromises = Object.entries(submissions).map(([geoid, data]) => {
+                const formData = new FormData();
+                formData.append('block_geoid', geoid);
+                formData.append('school', schoolName);
+                formData.append('district', schoolDistrict);
+                formData.append('client_session_id', sessionStorage.getItem('client_session_id') || '');
+                
+                // Add barriers
+                data.barriers.forEach(barrier => {
+                    formData.append('barriers', barrier);
+                });
+                
+                // Add notes if present
+                if (data.notes) {
+                    formData.append('other_specify', data.notes);
+                }
+                
+                // Add user info from session
+                formData.append('user_role', '{{ user_info.role }}');
+                {% if user_info.subjects %}
+                formData.append('user_subjects', '{{ user_info.subjects }}');
+                {% endif %}
+                {% if user_info.admin_level %}
+                formData.append('user_admin_level', '{{ user_info.admin_level }}');
+                {% endif %}
+                
+                return fetch('/saveData', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        savedCount++;
+                    } else {
+                        failedCount++;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error saving block:', geoid, error);
+                    failedCount++;
+                });
+            });
+            
+            Promise.all(savePromises).then(() => {
+                if (failedCount === 0) {
+                    alert(`Successfully saved ${savedCount} assessment(s) to database!`);
+                    sessionStorage.removeItem(SESSION_KEY);
+                    window.location.href = '/';
+                } else {
+                    alert(`Saved ${savedCount} assessments. ${failedCount} failed. Please try again.`);
+                }
+            });
+        }
+    </script>
 </body>
 </html>
