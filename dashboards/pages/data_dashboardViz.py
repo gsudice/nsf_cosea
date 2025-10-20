@@ -1,7 +1,7 @@
 # keep this at the top to silence warning
 import data_dashboard.data_loader as data_loader
 from data_dashboard.settings import *
-from data_dashboard.settings import APPROVED_COURSES
+from data_dashboard.settings import APPROVED_COURSES, COURSE_DISPLAY_MAP
 from sqlalchemy import create_engine
 import pandas as pd
 import plotly.graph_objs as go
@@ -36,7 +36,16 @@ city_options = [{"label": f"City: {city}", "value": f"city:{city}"}
 
 all_search_options = school_options + district_options + city_options
 
-courses_options = [{"label": course.title(), "value": course}
+def get_course_display(course_key: str) -> str:
+    """Return the frontend display label for a course key.
+
+    Looks up COURSE_DISPLAY_MAP (keys are the lowercase course strings
+    as they appear in APPROVED_COURSES). Falls back to title-casing.
+    """
+    return COURSE_DISPLAY_MAP.get(course_key, course_key.title())
+
+
+courses_options = [{"label": get_course_display(course), "value": course}
                    for course in APPROVED_COURSES]
 
 modality_options = [{"label": "Virtual", "value": "Virtual"}, {"label": "In Person", "value": "In Person"}, {
@@ -443,9 +452,11 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
             lambda x: int(x) if pd.notnull(x) else 0)
         merged["approved_teachers"] = merged["approved_teachers"].apply(
             lambda x: int(x) if pd.notnull(x) else 0)
+        merged["extra_teachers"] = merged["extra_teachers"].apply(
+            lambda x: int(x) if pd.notnull(x) else 0)
         merged["student_teacher_ratio"] = merged.apply(
-            lambda row: row["CS_Enrollment"] / row["approved_teachers"]
-            if row["approved_teachers"] not in [0, None, "", float('nan')] else 0.0,
+            lambda row: row["CS_Enrollment"] / (row["approved_teachers"] + row["extra_teachers"])
+            if (row["approved_teachers"] + row["extra_teachers"]) not in [0, None, "", float('nan')] else 0.0,
             axis=1
         )
 
@@ -527,10 +538,12 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
                 lambda x: int(x) if pd.notnull(x) else 0)
             df["approved_teachers"] = df["approved_teachers"].apply(
                 lambda x: int(x) if pd.notnull(x) else 0)
+            df["extra_teachers"] = df["extra_teachers"].apply(
+                lambda x: int(x) if pd.notnull(x) else 0)
 
             df["student_teacher_ratio"] = df.apply(
-                lambda row: row["CS_Enrollment"] / row["approved_teachers"]
-                if row["approved_teachers"] not in [0, None, "", float('nan')] else 0.0,
+                lambda row: row["CS_Enrollment"] / (row["approved_teachers"] + row["extra_teachers"]) 
+                if (row["approved_teachers"] + row["extra_teachers"]) not in [0, None, "", float('nan')] else 0.0,
                 axis=1
             )
 
@@ -615,9 +628,12 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
             lambda x: int(x) if pd.notnull(x) else 0)
         schools["Certified_Teachers"] = schools["Certified_Teachers"].apply(
             lambda x: int(x) if pd.notnull(x) else 0)
+        # Include extra certified teachers in the denominator
+        schools["extra_teachers"] = schools["UNIQUESCHOOLID"].apply(
+            lambda x: data_loader.SCHOOLDATA["extra_teachers_count"].get(str(x), 0))
         schools["student_teacher_ratio"] = schools.apply(
-            lambda row: row["CS_Enrollment"] / row["Certified_Teachers"]
-            if row["Certified_Teachers"] not in [0, None, "", float('nan')] else 0.0,
+            lambda row: row["CS_Enrollment"] / (row["Certified_Teachers"] + row["extra_teachers"]) 
+            if (row["Certified_Teachers"] + row["extra_teachers"]) not in [0, None, "", float('nan')] else 0.0,
             axis=1
         )
 
@@ -801,9 +817,12 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
             lambda x: int(x) if pd.notnull(x) else 0)
         schools["Certified_Teachers"] = schools["Certified_Teachers"].apply(
             lambda x: int(x) if pd.notnull(x) else 0)
+        # Include extra teachers in gender view as well
+        schools["extra_teachers"] = schools["UNIQUESCHOOLID"].apply(
+            lambda x: data_loader.SCHOOLDATA["extra_teachers_count"].get(str(x), 0))
         schools["student_teacher_ratio"] = schools.apply(
-            lambda row: row["CS_Enrollment"] / row["Certified_Teachers"]
-            if row["Certified_Teachers"] not in [0, None, "", float('nan')] else 0.0,
+            lambda row: row["CS_Enrollment"] / (row["Certified_Teachers"] + row["extra_teachers"]) 
+            if (row["Certified_Teachers"] + row["extra_teachers"]) not in [0, None, "", float('nan')] else 0.0,
             axis=1
         )
 
@@ -1013,7 +1032,7 @@ def update_course_list(hoverData, selected_school, school_toggles):
         course_items = []
         for course in APPROVED_COURSES:
             course_items.append(
-                html.Li([html.Span("[0] ", style={"color": "red"}), course.title()]))
+                html.Li([html.Span("[0] ", style={"color": "red"}), get_course_display(course)]))
         return html.Div([
             html.Div([
                 html.Strong("Offered CS Courses:", style={
@@ -1071,7 +1090,7 @@ def update_course_list(hoverData, selected_school, school_toggles):
             count_style = {"font-weight": "bold"}
             name_style = {"font-weight": "bold"}
         course_items.append(
-            html.Li([html.Span(count_str, style=count_style), html.Span(course.title(), style=name_style)]))
+            html.Li([html.Span(count_str, style=count_style), html.Span(get_course_display(course), style=name_style)]))
 
     return html.Div([
         html.Div([

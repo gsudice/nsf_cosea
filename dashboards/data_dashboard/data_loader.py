@@ -29,8 +29,14 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
     cs_enrollment = row.get("CS_Enrollment", 0)
     approved_teachers = row.get("approved_teachers", 0)
     extra_teachers = row.get("extra_teachers", 0)
+    # Compute ratio using approved teachers plus extra certified teachers
+    total_teachers_for_ratio = 0
+    try:
+        total_teachers_for_ratio = int(approved_teachers) + int(extra_teachers)
+    except Exception:
+        total_teachers_for_ratio = approved_teachers or 0
     ratio_display = row.get("ratio_display", ratio_fmt(
-        cs_enrollment / approved_teachers if approved_teachers else 0))
+        cs_enrollment / total_teachers_for_ratio if total_teachers_for_ratio else 0))
 
     # If not in row, fetch from data
     if "approved_teachers" not in row:
@@ -38,8 +44,14 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
         approved_teachers = SCHOOLDATA["approved_teachers_count"].get(
             school_id, 0)
         extra_teachers = SCHOOLDATA["extra_teachers_count"].get(school_id, 0)
+        # Use approved + extra teachers for ratio
+        total_teachers_for_ratio = 0
+        try:
+            total_teachers_for_ratio = int(approved_teachers) + int(extra_teachers)
+        except Exception:
+            total_teachers_for_ratio = approved_teachers or 0
         ratio_display = ratio_fmt(
-            cs_enrollment / approved_teachers if approved_teachers else 0)
+            cs_enrollment / total_teachers_for_ratio if total_teachers_for_ratio else 0)
 
     # Race and RI
     total_race_vals = ""

@@ -17,6 +17,12 @@ APPROVED_COURSES = [
     "introduction to digital technology",
     "introduction to hardware technology"
 ]
+# Mapping for display names (preserve key casing in data but adjust frontend labels)
+COURSE_DISPLAY_MAP = {
+    # Keep keys as stored in APPROVED_COURSES (lowercase); map to desired display labels
+    "ib computer science, year one": "IB Computer Science, Year One",
+    "ib computer science, year two": "IB Computer Science, Year Two",
+}
 MODALITY_LABELS = {
     "Both": "In Person and Virtual",
     "In Person": "In Person Only",
