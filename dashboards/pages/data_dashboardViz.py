@@ -21,6 +21,8 @@ register_page(
 engine = create_engine(DATABASE_URL)
 
 overlay_options = LABELS["overlay_options"]
+highway_label_option = {"label": "Highway Labels", "value": "highway_labels"}
+overlay_options = LABELS["overlay_options"] + [highway_label_option]
 
 school_options = [{"label": f"School: {row['SCHOOL_NAME']}", "value": f"school:{row['UNIQUESCHOOLID']}"}
                   for _, row in data_loader.SCHOOLDATA["approved_all"].iterrows()]
@@ -103,12 +105,12 @@ layout = html.Div([
                         'font-size': '1.17em', 'font-weight': '700', 'color': '#2a3b4c'})
         ], className="sidebar-header"),
         dcc.Checklist(
-            id="map-options-toggle",
-            options=LABELS["map_options"],
-            value=DEFAULT_MAP_OPTIONS,
-            className="sidebar-legend-toggle",
-            style={'display': 'flex', 'flex-direction': 'row', 'gap': '10px'}
-        ),
+                id="map-options-toggle",
+                options=LABELS["map_options"] + [highway_label_option],
+                value=DEFAULT_MAP_OPTIONS + ["highway_labels"],
+                className="sidebar-legend-toggle",
+                style={'display': 'flex', 'flex-direction': 'row', 'gap': '10px'}
+            ),
         html.Div([
             html.Strong(LABELS["school_dots"]),
             html.Div([
@@ -344,8 +346,46 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         city_text_settings = CITY_LABEL_TEXT_SETTINGS
         city_text_size = CITY_LABEL_TEXT_SIZE
         # Use proper projection to EPSG:3857 to apply meter offsets accurately (like map1)
-        transformer_to_3857 = Transformer.from_crs("EPSG:4326", "EPSG:3857", always_xy=True)
-        transformer_to_4326 = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True)
+        transformer_to_3857 = Transformer.from_crs(
+            "EPSG:4326", "EPSG:3857", always_xy=True)
+        transformer_to_4326 = Transformer.from_crs(
+            "EPSG:3857", "EPSG:4326", always_xy=True)
+        # Add highway labels if toggled
+        if "highway_labels" in map_options:
+            highway_labels = data_loader.GEODATA.get("highway_labels", [])
+            # Offset in degrees latitude (approx 0.04 deg ~ 4.5km)
+            label_offset_deg = 0.04
+            for h in highway_labels:
+                # Leader line from highway point to label
+                label_lat = h["lat"] + label_offset_deg
+                label_lon = h["lon"]
+                # Draw stapled leader line by drawing small line segments (dash imitation)
+                num_dashes = 6
+                dash_frac = 0.08  # fraction of total length occupied by each dash
+                lons = []
+                lats = []
+                for i in range(num_dashes):
+                    center = (i + 0.5) / num_dashes
+                    start = max(0.0, center - dash_frac / 2)
+                    end = min(1.0, center + dash_frac / 2)
+                    sx = h["lon"] + (label_lon - h["lon"]) * start
+                    sy = h["lat"] + (label_lat - h["lat"]) * start
+                    ex = h["lon"] + (label_lon - h["lon"]) * end
+                    ey = h["lat"] + (label_lat - h["lat"]) * end
+                    lons.extend([sx, ex, None])
+                    lats.extend([sy, ey, None])
+                fig.add_trace(go.Scattermapbox(
+                    lon=lons, lat=lats, mode="lines",
+                    line=dict(color="#2a3b4c", width=1), showlegend=False, hoverinfo="skip"
+                ))
+                # Draw label text (invisible marker + text)
+                fig.add_trace(go.Scattermapbox(
+                    lon=[label_lon], lat=[label_lat], mode="markers+text",
+                    marker=dict(size=2, color="#2a3b4c", opacity=0),
+                    text=[h["name"]], textfont=dict(size=12, color="#2a3b4c"),
+                    name=h["name"], showlegend=False, hoverinfo="skip",
+                    textposition="top center"
+                ))
 
         # Add leader line and label for each city using projected offsets
         for _, row in city_df.iterrows():
@@ -356,26 +396,32 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
             px, py = transformer_to_3857.transform(lon, lat)
             dx_m, dy_m = offsets_m.get(city, (20000, 20000))
             # Determine label anchor for the leader line (keep original map1 offsets)
-            nudge_x, nudge_y = city_text_settings.get(city, {}).get("nudge", (0, 0))
+            nudge_x, nudge_y = city_text_settings.get(
+                city, {}).get("nudge", (0, 0))
             label_px = px + dx_m + nudge_x
             label_py = py + dy_m + nudge_y
             # Compute a separate text anchor (small shift in meters) that only affects text placement
-            text_nudge_x, text_nudge_y = city_text_settings.get(city, {}).get("text_nudge", (0, 0))
+            text_nudge_x, text_nudge_y = city_text_settings.get(
+                city, {}).get("text_nudge", (0, 0))
             label_px_text = label_px + text_nudge_x
             label_py_text = label_py + text_nudge_y
             # reproject label anchor back to lat/lon (used by leader line)
-            label_lon, label_lat = transformer_to_4326.transform(label_px, label_py)
+            label_lon, label_lat = transformer_to_4326.transform(
+                label_px, label_py)
             # reproject text-only anchor for text symbol placement
-            label_lon_text, label_lat_text = transformer_to_4326.transform(label_px_text, label_py_text)
+            label_lon_text, label_lat_text = transformer_to_4326.transform(
+                label_px_text, label_py_text)
             # line from point to label
             fig.add_trace(go.Scattermapbox(
                 lon=[lon, label_lon], lat=[lat, label_lat], mode="lines",
                 line=dict(color="black", width=1), showlegend=False, hoverinfo="skip"
             ))
             # label text (use an invisible marker + text to ensure placement)
-            textposition = city_text_settings.get(city, {}).get("textposition", "middle right")
+            textposition = city_text_settings.get(
+                city, {}).get("textposition", "middle right")
             fig.add_trace(go.Scattermapbox(
-                lon=[label_lon_text], lat=[label_lat_text], mode="markers+text",
+                lon=[label_lon_text], lat=[
+                    label_lat_text], mode="markers+text",
                 marker=dict(size=2, color="black", opacity=0),
                 text=[city], textfont=dict(size=city_text_size, color="black"),
                 showlegend=False, hoverinfo="skip",

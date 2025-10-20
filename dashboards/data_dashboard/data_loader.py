@@ -4,10 +4,12 @@ import tempfile
 import requests
 import geopandas as gpd
 import osmnx as ox
-from shapely.geometry import Polygon, MultiPolygon
+from shapely.geometry import Polygon, MultiPolygon, Point, LineString, MultiPoint, MultiLineString, GeometryCollection
+from shapely.ops import unary_union
 from sqlalchemy import create_engine
 import pandas as pd
 import json
+import re
 
 
 def ratio_fmt(val):
@@ -413,9 +415,9 @@ def load_all_school_data():
         "courses": courses_dict,
         "school_names": school_names,
         "extra_teachers": extra_teachers,
-    "approved_teachers_count": approved_teachers_count,
-    "extra_teachers_count": extra_teachers_count,
-    "city_labels": city_label_df
+        "approved_teachers_count": approved_teachers_count,
+        "extra_teachers_count": extra_teachers_count,
+        "city_labels": city_label_df
     }
 
 
@@ -447,13 +449,133 @@ def load_geodata():
         with open(road_zip, "wb") as f:
             f.write(r.content)
     roads = gpd.read_file(f"zip://{road_zip}")
-    interstates = roads[roads["RTTYP"] == "I"].to_crs(epsg=4326)
-    interstates = gpd.clip(interstates, ga_boundary)
+    # All interstates (may extend beyond GA)
+    interstates_all = roads[roads["RTTYP"] == "I"].to_crs(epsg=4326)
+    # Interstates clipped to GA boundary for drawing
+    interstates = gpd.clip(interstates_all, ga_boundary)
     highway_lines = []
+    # Temporary collection to group segments by highway name
+    highway_segments = {}
+    # Build union geometries per highway name for full (unclipped) interstates to detect crossings
+    highway_unions = {}
+    for _, row in interstates_all.iterrows():
+        name = row.get("FULLNAME") or row.get("SIGN1") or row.get("REF") or "Interstate"
+        if not name:
+            name = "Interstate"
+        if name not in highway_unions:
+            highway_unions[name] = []
+        highway_unions[name].append(row.geometry)
+    for name in list(highway_unions.keys()):
+        try:
+            highway_unions[name] = unary_union(highway_unions[name])
+        except Exception:
+            # Fallback to simple sum of geometries
+            highway_unions[name] = highway_unions[name][0]
     for _, row in interstates.iterrows():
         geom = row.geometry
-        x, y = geom.xy
-        highway_lines.append((list(x), list(y)))
+        # Some geometries may be MultiLineString; handle generically
+        try:
+            xs, ys = geom.xy
+            segments = [(list(xs), list(ys))]
+        except Exception:
+            # For MultiLineString
+            segments = []
+            for part in geom.geoms:
+                xs, ys = part.xy
+                segments.append((list(xs), list(ys)))
+
+        for seg_x, seg_y in segments:
+            highway_lines.append((seg_x, seg_y))
+            name = row.get("FULLNAME") or row.get("SIGN1") or row.get("REF") or "Interstate"
+            if not name:
+                name = "Interstate"
+            # Group by name
+            if name not in highway_segments:
+                highway_segments[name] = []
+            # store length of segment for choosing longest later
+            seg_length = 0
+            if len(seg_x) > 1:
+                # approximate length by sum of euclidean distances in degrees (fine for grouping)
+                seg_length = sum(((seg_x[i+1]-seg_x[i])**2 + (seg_y[i+1]-seg_y[i])**2)**0.5 for i in range(len(seg_x)-1))
+            highway_segments[name].append({"x": seg_x, "y": seg_y, "length": seg_length})
+
+    # Build two labels per interstate, placed at the true start and end of the clipped geometry
+    highway_labels = []
+    for name, segs in highway_segments.items():
+        # Concatenate all segments for this interstate
+        all_x = []
+        all_y = []
+        for seg in segs:
+            all_x.extend(seg["x"])
+            all_y.extend(seg["y"])
+        n = len(all_x)
+        if n > 1:
+            # Determine highway number digits from name (extract digits, e.g., 'I-75' -> '75')
+            digits_match = re.search(r"(\d{1,3})", name)
+            num_digits = len(digits_match.group(1)) if digits_match else 0
+            if num_digits == 3:
+                # For 3-digit interstates, place a single label at the midpoint
+                mid_idx = n // 2
+                label_lon = all_x[mid_idx]
+                label_lat = all_y[mid_idx]
+                highway_labels.append({"name": name, "lat": label_lat, "lon": label_lon})
+            else:
+                # Default: for 1- or 2-digit interstates, place two labels at start and end
+                label_lon1 = all_x[0]
+                label_lat1 = all_y[0]
+                label_lon2 = all_x[-1]
+                label_lat2 = all_y[-1]
+                highway_labels.append({"name": name, "lat": label_lat1, "lon": label_lon1})
+                highway_labels.append({"name": name, "lat": label_lat2, "lon": label_lon2})
+    # Add border labels for highways that extend outside the Georgia boundary
+    ga_polygon = ga_boundary.unary_union
+    ga_boundary_line = ga_polygon.boundary
+    # Function to extract points from intersection geometry
+    def _extract_points_from_intersection(g):
+        pts = []
+        if g.is_empty:
+            return pts
+        if isinstance(g, Point):
+            pts.append((g.x, g.y))
+        elif isinstance(g, MultiPoint):
+            for p in g.geoms:
+                pts.append((p.x, p.y))
+        elif isinstance(g, (LineString, MultiLineString)):
+            cent = g.centroid
+            pts.append((cent.x, cent.y))
+        elif isinstance(g, GeometryCollection):
+            for geom in g.geoms:
+                if isinstance(geom, Point):
+                    pts.append((geom.x, geom.y))
+                elif isinstance(geom, (LineString, MultiLineString)):
+                    cent = geom.centroid
+                    pts.append((cent.x, cent.y))
+        return pts
+
+    for name, union_geom in highway_unions.items():
+        try:
+            if union_geom.is_empty:
+                continue
+        except Exception:
+            continue
+        # If the highway is not entirely within GA, add label(s) at the border crossing(s)
+        try:
+            if not union_geom.within(ga_polygon):
+                inters = union_geom.intersection(ga_boundary_line)
+                points = _extract_points_from_intersection(inters)
+                for lon, lat in points:
+                    # avoid duplicates near existing labels for this highway
+                    too_close = False
+                    for lbl in highway_labels:
+                        if lbl.get("name") == name:
+                            if abs(lbl.get("lon") - lon) < 0.0001 and abs(lbl.get("lat") - lat) < 0.0001:
+                                too_close = True
+                                break
+                    if not too_close:
+                        highway_labels.append({"name": name, "lat": lat, "lon": lon})
+        except Exception:
+            # if any geometry operation fails, skip
+            continue
     ga_outline = []
     for _, row in ga_boundary.iterrows():
         geom = row.geometry
@@ -468,6 +590,7 @@ def load_geodata():
         "ga_boundary": ga_boundary,
         "county_lines": county_lines,
         "highway_lines": highway_lines,
+        "highway_labels": highway_labels,
         "ga_outline": ga_outline
     }
 
