@@ -1,11 +1,13 @@
 # keep this at the top to silence warning
 import data_dashboard.data_loader as data_loader
 from data_dashboard.settings import *
-from data_dashboard.settings import APPROVED_COURSES, COURSE_DISPLAY_MAP
+from data_dashboard.settings import APPROVED_COURSES, COURSE_DISPLAY_MAP, CITY_LABEL_OFFSETS_M, CITY_LABEL_TEXT_SETTINGS, CITY_LABEL_TEXT_SIZE
 from sqlalchemy import create_engine
 import pandas as pd
 import plotly.graph_objs as go
 from dash import register_page, html, dcc, callback, Input, Output, State, callback_context
+import math
+from pyproj import Transformer
 import warnings
 
 # this is how we make a page recognized by Dash, comment out to hide
@@ -35,6 +37,7 @@ city_options = [{"label": f"City: {city}", "value": f"city:{city}"}
                 for city in sorted(data_loader.SCHOOLDATA["approved_all"]["School City"].dropna().unique())]
 
 all_search_options = school_options + district_options + city_options
+
 
 def get_course_display(course_key: str) -> str:
     """Return the frontend display label for a course key.
@@ -332,6 +335,53 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         hoverinfo="skip"
     ))
 
+    # Add city labels if toggled
+    if "city_labels" in map_options:
+        # Draw labels outside the points with leader lines (approximate offsets)
+        city_df = data_loader.SCHOOLDATA["city_labels"].copy()
+        # Use city label configuration from settings
+        offsets_m = CITY_LABEL_OFFSETS_M
+        city_text_settings = CITY_LABEL_TEXT_SETTINGS
+        city_text_size = CITY_LABEL_TEXT_SIZE
+        # Use proper projection to EPSG:3857 to apply meter offsets accurately (like map1)
+        transformer_to_3857 = Transformer.from_crs("EPSG:4326", "EPSG:3857", always_xy=True)
+        transformer_to_4326 = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True)
+
+        # Add leader line and label for each city using projected offsets
+        for _, row in city_df.iterrows():
+            city = row["city"]
+            lat = float(row["lat"])
+            lon = float(row["lon"])
+            # project to meters
+            px, py = transformer_to_3857.transform(lon, lat)
+            dx_m, dy_m = offsets_m.get(city, (20000, 20000))
+            # Determine label anchor for the leader line (keep original map1 offsets)
+            nudge_x, nudge_y = city_text_settings.get(city, {}).get("nudge", (0, 0))
+            label_px = px + dx_m + nudge_x
+            label_py = py + dy_m + nudge_y
+            # Compute a separate text anchor (small shift in meters) that only affects text placement
+            text_nudge_x, text_nudge_y = city_text_settings.get(city, {}).get("text_nudge", (0, 0))
+            label_px_text = label_px + text_nudge_x
+            label_py_text = label_py + text_nudge_y
+            # reproject label anchor back to lat/lon (used by leader line)
+            label_lon, label_lat = transformer_to_4326.transform(label_px, label_py)
+            # reproject text-only anchor for text symbol placement
+            label_lon_text, label_lat_text = transformer_to_4326.transform(label_px_text, label_py_text)
+            # line from point to label
+            fig.add_trace(go.Scattermapbox(
+                lon=[lon, label_lon], lat=[lat, label_lat], mode="lines",
+                line=dict(color="black", width=1), showlegend=False, hoverinfo="skip"
+            ))
+            # label text (use an invisible marker + text to ensure placement)
+            textposition = city_text_settings.get(city, {}).get("textposition", "middle right")
+            fig.add_trace(go.Scattermapbox(
+                lon=[label_lon_text], lat=[label_lat_text], mode="markers+text",
+                marker=dict(size=2, color="black", opacity=0),
+                text=[city], textfont=dict(size=city_text_size, color="black"),
+                showlegend=False, hoverinfo="skip",
+                textposition=textposition
+            ))
+
     # Add underlay if selected
     if underlay_dropdown != DEFAULT_UNDERLAY_OPTION:
         geojson = data_loader.CBGDATA[underlay_dropdown]['geojson']
@@ -455,7 +505,8 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         merged["extra_teachers"] = merged["extra_teachers"].apply(
             lambda x: int(x) if pd.notnull(x) else 0)
         merged["student_teacher_ratio"] = merged.apply(
-            lambda row: row["CS_Enrollment"] / (row["approved_teachers"] + row["extra_teachers"])
+            lambda row: row["CS_Enrollment"] /
+            (row["approved_teachers"] + row["extra_teachers"])
             if (row["approved_teachers"] + row["extra_teachers"]) not in [0, None, "", float('nan')] else 0.0,
             axis=1
         )
@@ -542,7 +593,8 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
                 lambda x: int(x) if pd.notnull(x) else 0)
 
             df["student_teacher_ratio"] = df.apply(
-                lambda row: row["CS_Enrollment"] / (row["approved_teachers"] + row["extra_teachers"]) 
+                lambda row: row["CS_Enrollment"] /
+                (row["approved_teachers"] + row["extra_teachers"])
                 if (row["approved_teachers"] + row["extra_teachers"]) not in [0, None, "", float('nan')] else 0.0,
                 axis=1
             )
@@ -632,7 +684,8 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         schools["extra_teachers"] = schools["UNIQUESCHOOLID"].apply(
             lambda x: data_loader.SCHOOLDATA["extra_teachers_count"].get(str(x), 0))
         schools["student_teacher_ratio"] = schools.apply(
-            lambda row: row["CS_Enrollment"] / (row["Certified_Teachers"] + row["extra_teachers"]) 
+            lambda row: row["CS_Enrollment"] /
+            (row["Certified_Teachers"] + row["extra_teachers"])
             if (row["Certified_Teachers"] + row["extra_teachers"]) not in [0, None, "", float('nan')] else 0.0,
             axis=1
         )
@@ -821,7 +874,8 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         schools["extra_teachers"] = schools["UNIQUESCHOOLID"].apply(
             lambda x: data_loader.SCHOOLDATA["extra_teachers_count"].get(str(x), 0))
         schools["student_teacher_ratio"] = schools.apply(
-            lambda row: row["CS_Enrollment"] / (row["Certified_Teachers"] + row["extra_teachers"]) 
+            lambda row: row["CS_Enrollment"] /
+            (row["Certified_Teachers"] + row["extra_teachers"])
             if (row["Certified_Teachers"] + row["extra_teachers"]) not in [0, None, "", float('nan')] else 0.0,
             axis=1
         )

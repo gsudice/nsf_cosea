@@ -47,7 +47,8 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
         # Use approved + extra teachers for ratio
         total_teachers_for_ratio = 0
         try:
-            total_teachers_for_ratio = int(approved_teachers) + int(extra_teachers)
+            total_teachers_for_ratio = int(
+                approved_teachers) + int(extra_teachers)
         except Exception:
             total_teachers_for_ratio = approved_teachers or 0
         ratio_display = ratio_fmt(
@@ -76,7 +77,8 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
             # Add total students first
             total_students = row.get("Total Student Count", None)
             if pd.notnull(total_students):
-                total_race_vals_list.append(f"Total Students: {int(total_students)}")
+                total_race_vals_list.append(
+                    f"Total Students: {int(total_students)}")
             for ri_key, (total_col, total_label) in total_race_map.items():
                 val = row.get(total_col, None)
                 if pd.notnull(val):
@@ -389,6 +391,18 @@ def load_all_school_data():
         extra_teachers_count[str(school_id)] = len(
             all_certs) - len(approved_certs)
 
+    # Key Georgia cities for map labels (lat, lon)
+    city_labels = {
+        "Atlanta": (33.7490, -84.3880),
+        "Savannah": (32.0809, -81.0912),
+        "Augusta": (33.4735, -82.0105),
+        "Macon": (32.8407, -83.6324)
+    }
+    # Use module-level pandas 'pd' imported at top of file
+    city_label_df = pd.DataFrame([
+        {"city": name, "lat": coords[0], "lon": coords[1]} for name, coords in city_labels.items()
+    ])
+
     return {
         "gadoe": gadoe,
         "course_logic": course_logic,
@@ -399,8 +413,9 @@ def load_all_school_data():
         "courses": courses_dict,
         "school_names": school_names,
         "extra_teachers": extra_teachers,
-        "approved_teachers_count": approved_teachers_count,
-        "extra_teachers_count": extra_teachers_count
+    "approved_teachers_count": approved_teachers_count,
+    "extra_teachers_count": extra_teachers_count,
+    "city_labels": city_label_df
     }
 
 

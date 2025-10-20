@@ -68,6 +68,7 @@ LABELS = {
         {"label": "Show Legend", "value": "show_legend"},
         {"label": "Highways", "value": "highways"},
         {"label": "County Lines", "value": "counties"},
+        {"label": "City Labels", "value": "city_labels"},
     ],
     "sidebar_title": "Map Options",
     "school_dots": "School Dots",
@@ -166,7 +167,7 @@ COUNTY_SHAPEFILE_URL = "https://www2.census.gov/geo/tiger/TIGER2022/COUNTY/tl_20
 ROAD_SHAPEFILE_URL = "https://www2.census.gov/geo/tiger/TIGER2022/PRIMARYROADS/tl_2022_us_primaryroads.zip"
 
 # ---------- DEFAULTS ----------
-DEFAULT_MAP_OPTIONS = ["show_legend", "highways", "counties"]
+DEFAULT_MAP_OPTIONS = ["show_legend", "highways", "counties", "city_labels"]
 DEFAULT_SCHOOL_TOGGLE = "modalities"
 DEFAULT_DOTS_DROPDOWN_MODALITIES = "LOGIC_CLASS_2"
 DEFAULT_DOTS_DROPDOWN_DISPARITY = "RI_Asian"
@@ -193,3 +194,24 @@ UNDERLAY_COLOR_SCALE = [
     [0.75, UNDERLAY_COLORS[3]],
     [1, UNDERLAY_COLORS[4]]
 ]
+
+# ---------- CITY LABEL CONFIGURATION ----------
+# Offsets are in meters (EPSG:3857) from the city point to label anchor used by leader lines
+CITY_LABEL_OFFSETS_M = {
+    "Atlanta": (-120000, 5000),
+    "Savannah": (6000, 40000),
+    "Augusta": (30000, -8000),
+    "Macon": (-170000, -60000)
+}
+
+# Text positioning details: textposition (Plotly keyword) and an additional small
+# text-only nudge (in meters) to shift only the text separately from the leader line anchor
+CITY_LABEL_TEXT_SETTINGS = {
+    "Atlanta": {"textposition": "middle left", "nudge": (-8000, 0), "text_nudge": (0, 0)},
+    "Macon": {"textposition": "middle left", "nudge": (-8000, 0), "text_nudge": (0, 0)},
+    "Augusta": {"textposition": "bottom right", "nudge": (30000, -8000), "text_nudge": (2000, 6000)},
+    "Savannah": {"textposition": "top right", "nudge": (6000, 40000), "text_nudge": (-14000, 4000)},
+}
+
+# City label text size (points)
+CITY_LABEL_TEXT_SIZE = 13
