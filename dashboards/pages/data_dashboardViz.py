@@ -1180,19 +1180,8 @@ def update_course_list(hoverData, selected_school, school_toggles):
         school_name = data_loader.SCHOOLDATA["school_names"].get(
             school_id, f"School {school_id}")
     else:
-        # Show full list with [0] in red
-        course_items = []
-        for course in APPROVED_COURSES:
-            course_items.append(
-                html.Li([html.Span("[0] ", style={"color": "red"}), get_course_display(course)]))
-        return html.Div([
-            html.Div([
-                html.Strong("Offered CS Courses:", style={
-                            'margin-bottom': '8px', 'display': 'block', 'font-size': '1.17em', 'font-weight': '700', 'color': '#2a3b4c'}),
-            ], className="sidebar-header"),
-            html.Ul(course_items, style={
-                    'list-style': 'none', 'padding-left': '0'})
-        ])
+        # No school hovered or selected: show nothing
+        return html.Div()
 
     courses_counts = data_loader.SCHOOLDATA["courses"].get(school_id, {})
 
