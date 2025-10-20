@@ -24,6 +24,13 @@ overlay_options = LABELS["overlay_options"]
 highway_label_option = {"label": "Highway Labels", "value": "highway_labels"}
 overlay_options = LABELS["overlay_options"] + [highway_label_option]
 
+# Build map options list with highway labels next to highways
+map_options_list = []
+for opt in LABELS["map_options"]:
+    map_options_list.append(opt)
+    if opt.get("value") == "highways":
+        map_options_list.append(highway_label_option)
+
 school_options = [{"label": f"School: {row['SCHOOL_NAME']}", "value": f"school:{row['UNIQUESCHOOLID']}"}
                   for _, row in data_loader.SCHOOLDATA["approved_all"].iterrows()]
 
@@ -106,10 +113,11 @@ layout = html.Div([
         ], className="sidebar-header"),
         dcc.Checklist(
                 id="map-options-toggle",
-                options=LABELS["map_options"] + [highway_label_option],
+                options=map_options_list,
                 value=DEFAULT_MAP_OPTIONS + ["highway_labels"],
                 className="sidebar-legend-toggle",
-                style={'display': 'flex', 'flex-direction': 'row', 'gap': '10px'}
+                labelStyle={'display': 'inline-block', 'margin-right': '6px', 'font-size': '0.9em'},
+                style={'display': 'flex', 'flex-direction': 'row', 'gap': '6px', 'align-items': 'center'}
             ),
         html.Div([
             html.Strong(LABELS["school_dots"]),

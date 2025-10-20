@@ -459,7 +459,8 @@ def load_geodata():
     # Build union geometries per highway name for full (unclipped) interstates to detect crossings
     highway_unions = {}
     for _, row in interstates_all.iterrows():
-        name = row.get("FULLNAME") or row.get("SIGN1") or row.get("REF") or "Interstate"
+        name = row.get("FULLNAME") or row.get(
+            "SIGN1") or row.get("REF") or "Interstate"
         if not name:
             name = "Interstate"
         if name not in highway_unions:
@@ -486,7 +487,8 @@ def load_geodata():
 
         for seg_x, seg_y in segments:
             highway_lines.append((seg_x, seg_y))
-            name = row.get("FULLNAME") or row.get("SIGN1") or row.get("REF") or "Interstate"
+            name = row.get("FULLNAME") or row.get(
+                "SIGN1") or row.get("REF") or "Interstate"
             if not name:
                 name = "Interstate"
             # Group by name
@@ -496,8 +498,10 @@ def load_geodata():
             seg_length = 0
             if len(seg_x) > 1:
                 # approximate length by sum of euclidean distances in degrees (fine for grouping)
-                seg_length = sum(((seg_x[i+1]-seg_x[i])**2 + (seg_y[i+1]-seg_y[i])**2)**0.5 for i in range(len(seg_x)-1))
-            highway_segments[name].append({"x": seg_x, "y": seg_y, "length": seg_length})
+                seg_length = sum(
+                    ((seg_x[i+1]-seg_x[i])**2 + (seg_y[i+1]-seg_y[i])**2)**0.5 for i in range(len(seg_x)-1))
+            highway_segments[name].append(
+                {"x": seg_x, "y": seg_y, "length": seg_length})
 
     # Build two labels per interstate, placed at the true start and end of the clipped geometry
     highway_labels = []
@@ -518,19 +522,23 @@ def load_geodata():
                 mid_idx = n // 2
                 label_lon = all_x[mid_idx]
                 label_lat = all_y[mid_idx]
-                highway_labels.append({"name": name, "lat": label_lat, "lon": label_lon})
+                highway_labels.append(
+                    {"name": name, "lat": label_lat, "lon": label_lon})
             else:
                 # Default: for 1- or 2-digit interstates, place two labels at start and end
                 label_lon1 = all_x[0]
                 label_lat1 = all_y[0]
                 label_lon2 = all_x[-1]
                 label_lat2 = all_y[-1]
-                highway_labels.append({"name": name, "lat": label_lat1, "lon": label_lon1})
-                highway_labels.append({"name": name, "lat": label_lat2, "lon": label_lon2})
+                highway_labels.append(
+                    {"name": name, "lat": label_lat1, "lon": label_lon1})
+                highway_labels.append(
+                    {"name": name, "lat": label_lat2, "lon": label_lon2})
     # Add border labels for highways that extend outside the Georgia boundary
     ga_polygon = ga_boundary.unary_union
     ga_boundary_line = ga_polygon.boundary
     # Function to extract points from intersection geometry
+
     def _extract_points_from_intersection(g):
         pts = []
         if g.is_empty:
@@ -572,7 +580,8 @@ def load_geodata():
                                 too_close = True
                                 break
                     if not too_close:
-                        highway_labels.append({"name": name, "lat": lat, "lon": lon})
+                        highway_labels.append(
+                            {"name": name, "lat": lat, "lon": lon})
         except Exception:
             # if any geometry operation fails, skip
             continue
