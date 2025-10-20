@@ -1,3 +1,27 @@
+/* Info hover icon style for sidebar (matches #0039a6 theme) */
+.sidebar-info-icon {
+  color: #0039a6 !important;
+  border: 1.5px solid #0039a6;
+  border-radius: 50%;
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  text-align: center;
+  line-height: 16px;
+  font-size: 0.95em;
+  font-weight: bold;
+  margin-left: 6px;
+  cursor: pointer;
+  background: #fff;
+  vertical-align: middle;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+/* Optional: subtle shadow for accessibility */
+.sidebar-info-icon:hover {
+  background: #e6f0ff;
+}
 /* =================== GLOBAL =================== */
 @import url("https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;0,700;0,900&display=swap");
 

@@ -74,7 +74,7 @@ LABELS = {
     "school_dots": "School Dots",
     "school_toggles": [
         {"label": "Course Modality", "value": "modalities"},
-        {"label": "Representation Index", "value": "disparity"},
+        {"label": "Representation Index (RI)", "value": "disparity"},
     ],
     "dots_dropdown_label_modality": "Modality Type",
     "dots_dropdown_label_disparity": "RI Category",

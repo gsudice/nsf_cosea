@@ -112,15 +112,24 @@ layout = html.Div([
                         'font-size': '1.17em', 'font-weight': '700', 'color': '#2a3b4c'})
         ], className="sidebar-header"),
         dcc.Checklist(
-                id="map-options-toggle",
-                options=map_options_list,
-                value=DEFAULT_MAP_OPTIONS + ["highway_labels"],
-                className="sidebar-legend-toggle",
-                labelStyle={'display': 'inline-block', 'margin-right': '6px', 'font-size': '0.9em'},
-                style={'display': 'flex', 'flex-direction': 'row', 'gap': '6px', 'align-items': 'center'}
-            ),
+            id="map-options-toggle",
+            options=map_options_list,
+            value=DEFAULT_MAP_OPTIONS + ["highway_labels"],
+            className="sidebar-legend-toggle",
+            labelStyle={'display': 'inline-block',
+                        'margin-right': '6px', 'font-size': '0.9em'},
+            style={'display': 'flex', 'flex-direction': 'row',
+                   'gap': '6px', 'align-items': 'center'}
+        ),
         html.Div([
-            html.Strong(LABELS["school_dots"]),
+            html.Strong([
+                LABELS["school_dots"],
+                html.Span(
+                    "i",
+                    title="School Dots: 'Modality' shows how CS courses are offered (Virtual, In Person, Both, None). 'Representation Index' shows how well different groups are represented in CS courses compared to the school population.",
+                    className="sidebar-info-icon"
+                )
+            ]),
             html.Div([
                 dcc.RadioItems(
                     id="school-toggles",
@@ -175,7 +184,14 @@ layout = html.Div([
                     ),
                 ], style={'flex': '1'}),
                 html.Div([
-                    html.Strong("Modality"),
+                    html.Strong([
+                        "Modality",
+                        html.Span(
+                            "i",
+                            title="Modality: Indicates how CS courses are offered at the school—Virtual, In Person, Both, or None.",
+                            className="sidebar-info-icon"
+                        )
+                    ]),
                     dcc.Checklist(
                         id="modality-filter",
                         options=modality_options,
@@ -184,7 +200,14 @@ layout = html.Div([
                     ),
                 ], style={'flex': '1'}),
                 html.Div([
-                    html.Strong("Extra Teachers"),
+                    html.Strong([
+                        "Extra Teachers",
+                        html.Span(
+                            "i",
+                            title="Extra Teachers: These are teachers who do not teach a CS course on the approved list, but are certified to teach CS.",
+                            className="sidebar-info-icon"
+                        )
+                    ]),
                     dcc.Checklist(
                         id="extra-teachers-filter",
                         options=[
@@ -195,7 +218,14 @@ layout = html.Div([
                 ], style={'flex': '1'}),
             ], style={'display': 'flex', 'gap': '20px', 'margin-bottom': '24px'}),
             html.Div([
-                html.Strong("Courses Offered"),
+                html.Strong([
+                    "Courses Offered",
+                    html.Span(
+                        "i",
+                        title="Courses Offered: These are the approved CS courses for the dashboard, as defined by Georgia State Board of Education Rule 160-4-2-.20.",
+                        className="sidebar-info-icon"
+                    )
+                ]),
                 dcc.Checklist(
                     id="courses-filter",
                     options=courses_options,
@@ -204,7 +234,14 @@ layout = html.Div([
                 ),
             ], className="sidebar-section"),
             html.Div([
-                html.Strong("Student-Teacher Ratio"),
+                html.Strong([
+                    "Student-Teacher Ratio",
+                    html.Span(
+                        "i",
+                        title="Student-Teacher Ratio: Calculated as CS Enrollment divided by the sum of approved and extra CS teachers at the school.",
+                        className="sidebar-info-icon"
+                    )
+                ]),
                 dcc.RangeSlider(
                     id="ratio-threshold",
                     min=0,
@@ -218,7 +255,14 @@ layout = html.Div([
                 ),
             ], className="sidebar-section"),
             html.Div([
-                html.Strong("RI Thresholds"),
+                html.Strong([
+                    "RI Thresholds",
+                    html.Span(
+                        "i",
+                        title="RI (Representation Index) Thresholds: Filter schools by how well different groups are represented in CS courses compared to their overall school population. Values between -0.05 and 0.05 indicate parity; negative or positive values indicate under- or over-representation.",
+                        className="sidebar-info-icon"
+                    )
+                ]),
                 dcc.RangeSlider(
                     id="ri-threshold",
                     min=-1.0,
