@@ -7,53 +7,102 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="{{ url_for('static', filename='styling.css') }}">
     <style>
-        body { 
-            margin: 0; 
-            padding: 0; 
+        body {
+            margin: 0;
+            padding: 0;
             font-family: 'Lato', sans-serif;
             overflow-x: hidden;
             background-color: #f4f4f4;
         }
         
-        .top-container {
-            background: white;
-            padding: 20px 40px;
+        /* Main container for top section */
+        .top-unified-container {
+            max-width: 800px;
+            margin: 100px auto 20px auto;
+            padding: 40px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         
-        .school-header {
-            max-width: 1200px;
-            margin: 0 auto;
+        .page-header-section {
+            text-align: center;
+            margin-bottom: 40px;
         }
         
-        .school-header h2 {
-            color: #000;
+        .page-header-section h2 {
+            color: #0039a6;
+            font-size: 28px;
+            font-weight: 600;
             margin: 0 0 10px 0;
-            font-size: 32px;
-            font-weight: 700;
         }
         
-        .school-header p {
+        .page-header-section p {
+            color: #555;
             font-size: 16px;
-            color: #000;
-            margin-bottom: 20px;
+            margin: 5px 0;
         }
         
-        .school-header p strong {
-            color: #000;
-            font-weight: 700;
+        .progress-indicator-map {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .progress-bar-map {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            margin: 0 auto 10px;
+            overflow: hidden;
+        }
+        
+        .progress-fill-map {
+            height: 100%;
+            background: #0039a6;
+            width: 100%;
+        }
+        
+        .instruction-box {
+            background: #e3f2fd;
+            padding: 20px;
+            border-left: 4px solid #2196F3;
+            border-radius: 4px;
+            margin-bottom: 30px;
+        }
+        
+        .instruction-box h4 {
+            color: #0039a6;
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0 0 10px 0;
+        }
+        
+        .instruction-box p {
+            margin: 0;
+            color: #1565C0;
+            font-size: 15px;
+            line-height: 1.6;
+            font-family: 'Lato', sans-serif;
         }
         
         .school-info {
-            margin-top: 20px;
+            margin-top: 0;
         }
         
         .info-section {
             margin-bottom: 30px;
         }
         
+        .info-section:last-child {
+            margin-bottom: 0;
+        }
+        
         .info-section h4 {
-            color: #000;
-            margin: 0 0 10px 0;
+            color: #333;
+            margin: 0 0 15px 0;
             font-size: 20px;
             font-weight: 700;
         }
@@ -67,12 +116,12 @@
             margin: 10px 0;
             font-size: 14px;
             line-height: 1.6;
-            color: #000;
+            color: #555;
         }
         
         .info-section li strong {
-            color: #000;
-            font-weight: 700;
+            color: #0039a6;
+            font-weight: 600;
         }
         
         .back-btn {
@@ -100,23 +149,25 @@
             transform: translateY(0);
         }
         
-        #map { 
-            width: calc(100% - 80px);
+        #map {
+            width: 100%;
             height: 500px;
-            margin: 0 auto;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             border-radius: 8px;
         }
         
         .map-container {
-            padding: 20px 40px;
-            background: white;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 40px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         
         .bottom-container {
             background: #f4f4f4;
             padding: 40px 40px;
-            border-top: 3px solid #e0e0e0;
         }
         
         .bottom-content {
@@ -314,7 +365,9 @@
             line-height: 1;
         }
         
-        .close:hover { color: #ddd; }
+        .close:hover { 
+            color: #ddd; 
+        }
         
         .modal-content form {
             padding: 20px;
@@ -450,49 +503,71 @@
     </style>
 </head>
 <body>
-    <div class="top-container">
-        <div class="school-header">
-            <h2>🏫 {{ selected_school }}</h2>
+    <div class="header">
+        <h1>CoSea Teachers Portal</h1>
+    </div>
+
+    <!-- Unified Top Container -->
+    <div class="top-unified-container">
+        <!-- Page Header -->
+        <div class="page-header-section">
+            <h2>Identify Specific Areas and Associated Limiting Factors</h2>
+            <p><strong>School:</strong> {{ selected_school }}</p>
             <p><strong>District:</strong> {{ selected_district }}</p>
-            
-            <div class="school-info">
-                <div class="info-section">
-                    <h4>🚧 Barrier Categories:</h4>
-                    <ul>
-                        <li><strong>Student Demographics:</strong> Underrepresented groups (race/ethnicity, gender, etc.) often have less exposure to CS education.</li>
-                        <li><strong>Economic Barriers:</strong> Many students face financial hardship, limiting their ability to access CS resources and programs.</li>
-                        <li><strong>Language Barriers:</strong> Students in households where English is not the primary language may struggle with CS coursework.</li>
-                        <li><strong>Parental Education Level:</strong> Students with limited exposure to CS at home may have less encouragement or understanding of CS opportunities.</li>
-                        <li><strong>Limited or No Computer at Home:</strong> Some students lack access to a personal computer, making it harder to practice CS skills outside school.</li>
-                        <li><strong>Limited or No Reliable Internet Access:</strong> Without a stable internet connection, students may struggle with online CS resources and coursework.</li>
-                        <li><strong>Distance Challenges:</strong> A long commute or lack of transportation may prevent students from attending CS programs or extracurricular activities.</li>
-                        <li><strong>No or Limited Introductory CS Courses:</strong> Some schools do not offer foundational CS courses, preventing early exposure to the field.</li>
-                        <li><strong>No or Limited Advanced CS Courses:</strong> Schools may lack advanced CS coursework, restricting students' ability to deepen their knowledge.</li>
-                        <li><strong>Other Contributing Factors:</strong> You may also specify additional reasons that impact CS education access in your area.</li>
-                    </ul>
-                </div>
-                
-                <div class="info-section">
-                    <h4>📋 How to Use:</h4>
-                    <ul>
-                        <li>Click any census block to assess barriers</li>
-                        <li>Hold <kbd>Ctrl</kbd> (Windows) or <kbd>⌘ Cmd</kbd> (Mac) and click to select multiple blocks</li>
-                        <li>Red blocks = Not started</li>
-                        <li>Blue blocks = Completed (click to edit)</li>
-                    </ul>
-                </div>
+        </div>
+
+        <!-- Progress Indicator -->
+        <div class="progress-indicator-map">
+            <div class="progress-bar-map">
+                <div class="progress-fill-map"></div>
+            </div>
+            Step 3 of 3: Geographic Assessment
+        </div>
+
+        <!-- Instructions -->
+        <div class="instruction-box">
+            <p><strong>📝 Instructions:</strong> Click on census blocks on the map below to identify specific geographic areas where students may face barriers to CS education access. If you are aware of specific limiting factors for each area, please indicate them.</p>
+        </div>
+
+        <!-- Barrier Categories & How to Use -->
+        <div class="school-info">
+            <div class="info-section">
+                <h4>🚧 Barrier Categories:</h4>
+                <ul>
+                    <li><strong>Student Demographics:</strong> Underrepresented groups (race/ethnicity, gender, etc.) often have less exposure to CS education.</li>
+                    <li><strong>Economic Barriers:</strong> Many students face financial hardship, limiting their ability to access CS resources and programs.</li>
+                    <li><strong>Language Barriers:</strong> Students in households where English is not the primary language may struggle with CS coursework.</li>
+                    <li><strong>Parental Education Level:</strong> Students with limited exposure to CS at home may have less encouragement or understanding of CS opportunities.</li>
+                    <li><strong>Limited or No Computer at Home:</strong> Some students lack access to a personal computer, making it harder to practice CS skills outside school.</li>
+                    <li><strong>Limited or No Reliable Internet Access:</strong> Without a stable internet connection, students may struggle with online CS resources and coursework.</li>
+                    <li><strong>Distance Challenges:</strong> A long commute or lack of transportation may prevent students from attending CS programs or extracurricular activities.</li>
+                    <li><strong>No or Limited Introductory CS Courses:</strong> Some schools do not offer foundational CS courses, preventing early exposure to the field.</li>
+                    <li><strong>No or Limited Advanced CS Courses:</strong> Schools may lack advanced CS coursework, restricting students' ability to deepen their knowledge.</li>
+                    <li><strong>Other Contributing Factors:</strong> You may also specify additional reasons that impact CS education access in your area.</li>
+                </ul>
+            </div>
+            <div class="info-section">
+                <h4>📋 How to Use:</h4>
+                <ul>
+                    <li>Click any census block to assess barriers</li>
+                    <li>Hold <kbd>Ctrl</kbd> (Windows) or <kbd>⌘ Cmd</kbd> (Mac) and click to select multiple blocks</li>
+                    <li>Red blocks = Not started</li>
+                    <li>Blue blocks = Completed (click to edit)</li>
+                </ul>
             </div>
         </div>
     </div>
     
+    <!-- Map Container -->
     <div class="map-container">
         <div id="map"></div>
     </div>
     
+    <!-- Bottom Container -->
     <div class="bottom-container">
         <div class="bottom-content">
             <div class="map-legend">
-                <div class="legend-title">📍 Map Legend</div>
+                <div class="legend-title">🗺️ Map Legend</div>
                 <div class="legend-item">
                     <div class="legend-color" style="background: #f44336; opacity: 0.6;"></div>
                     <span>Not Started - Click to begin</span>
@@ -505,23 +580,22 @@
                     <div class="legend-color" style="background: #2196F3; opacity: 0.6;"></div>
                     <span>Completed - Click to view/edit</span>
                 </div>
-                
                 <div id="selection-counter">0 block(s) selected</div>
-                <button id="batch-submit-btn">📝 Submit Selected Blocks</button>
-                
+                <button id="batch-submit-btn">📋 Submit Selected Blocks</button>
                 <a href="/district" class="back-btn" style="display: block; text-align: center; margin-top: 20px;">← Back to School Selection</a>
             </div>
             
             <div class="session-actions">
                 <h4>💾 Session Management</h4>
                 <div class="session-note">
-                    <strong>💡 Note:</strong> All your assessments are saved locally in your browser. When you're finished, click the button below to save everything to the database.
+                    <strong>📝 Note:</strong> All your assessments are saved locally in your browser. When you're finished, click the button below to save everything to the database.
                 </div>
-                <button id="end-session-btn" onclick="endSession()">🏁 End Session & Save to Database</button>
+                <button id="end-session-btn" onclick="endSession()">✅ End Session & Save to Database</button>
             </div>
         </div>
     </div>
-    <div id="multi-select-hint">🖱️ Multi-select mode active</div>
+    
+    <div id="multi-select-hint">🔄 Multi-select mode active</div>
     
     <div id="modal" class="modal">
         <div class="modal-content">
@@ -529,20 +603,16 @@
                 <h3>Census Block Assessment</h3>
                 <span class="close">&times;</span>
             </div>
-            
             <div id="edit-indicator" class="edit-indicator">
                 ✏️ Editing previous submission
             </div>
-            
             <div id="batch-indicator" class="batch-indicator">
                 📋 Submitting for <span id="batch-count">0</span> block(s)
             </div>
-            
             <form id="barriers-form">
                 <p style="color: #666; font-size: 13px; margin: 10px 0 20px 0;">
                     <strong>Block ID:</strong> <span id="modal-geoid">-</span>
                 </p>
-                
                 <div class="form-group">
                     <label>Select Barriers (check all that apply):</label>
                     <div class="checkbox-group">
@@ -559,20 +629,32 @@
                             <label for="barrier-econ">Economic barriers</label>
                         </div>
                         <div class="checkbox-item">
-                            <input type="checkbox" name="barriers" value="transportation" id="barrier-trans">
-                            <label for="barrier-trans">Transportation</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="barriers" value="safety_concerns" id="barrier-safety">
-                            <label for="barrier-safety">Safety concerns</label>
-                        </div>
-                        <div class="checkbox-item">
                             <input type="checkbox" name="barriers" value="language_barriers" id="barrier-lang">
                             <label for="barrier-lang">Language barriers</label>
                         </div>
                         <div class="checkbox-item">
-                            <input type="checkbox" name="barriers" value="cultural_barriers" id="barrier-culture">
-                            <label for="barrier-culture">Cultural barriers</label>
+                            <input type="checkbox" name="barriers" value="parent_education" id="barrier-parent">
+                            <label for="barrier-parent">Low parental education</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="barriers" value="no_computer_home" id="barrier-computer">
+                            <label for="barrier-computer">No computer at home</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="barriers" value="no_internet_home" id="barrier-internet">
+                            <label for="barrier-internet">No internet at home</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="barriers" value="distance_issues" id="barrier-distance">
+                            <label for="barrier-distance">Distance to school</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="barriers" value="lack_cs_intro_courses" id="barrier-intro">
+                            <label for="barrier-intro">No CS intro courses</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="barriers" value="lack_cs_advanced_courses" id="barrier-advanced">
+                            <label for="barrier-advanced">No advanced CS courses</label>
                         </div>
                         <div class="checkbox-item">
                             <input type="checkbox" name="barriers" value="other" id="barrier-other">
@@ -596,7 +678,7 @@
             </form>
         </div>
     </div>
-
+    
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         // Get data from Flask template
@@ -635,20 +717,20 @@
         let ctrlPressed = false;
         let currentEditingBlock = null;
         
-        // Session storage key
+        // Session storage key for current school
         const SESSION_KEY = `school_${schoolName.replace(/\s+/g, '_')}_submissions`;
         
-        // Get completed blocks from sessionStorage
+        // Get completed blocks from localStorage
         function getCompletedBlocks() {
-            const stored = sessionStorage.getItem(SESSION_KEY);
+            const stored = localStorage.getItem(SESSION_KEY);
             return stored ? JSON.parse(stored) : {};
         }
         
-        // Save to sessionStorage
+        // Save to localStorage
         function saveToSession(geoid, data) {
             const completed = getCompletedBlocks();
             completed[geoid] = data;
-            sessionStorage.setItem(SESSION_KEY, JSON.stringify(completed));
+            localStorage.setItem(SESSION_KEY, JSON.stringify(completed));
         }
         
         // Check if block is completed
@@ -658,7 +740,6 @@
         
         // Load census blocks from template data
         const completedBlocks = getCompletedBlocks();
-        
         blockGroupsData.forEach(blockData => {
             const geoid = blockData.geoid;
             const isCompleted = completedBlocks[geoid] !== undefined;
@@ -704,7 +785,6 @@
                     selectedBlocks.push(geoid);
                     layer.setStyle({ fillColor: '#4CAF50', fillOpacity: 0.6 });
                 }
-                
                 updateSelectionUI();
             } else {
                 // Single block mode
@@ -731,11 +811,19 @@
                     cb.checked = data.barriers.includes(cb.value);
                 });
                 document.getElementById('notes').value = data.notes || '';
+                
+                // Enable notes if "other" is checked
+                if (data.barriers.includes('other')) {
+                    document.getElementById('notes').disabled = false;
+                    document.getElementById('notes').style.backgroundColor = 'white';
+                    document.getElementById('notes').style.cursor = 'text';
+                }
             } else {
                 document.getElementById('edit-indicator').style.display = 'none';
                 document.getElementById('batch-indicator').style.display = 'none';
                 document.getElementById('modal-geoid').textContent = geoid;
                 document.getElementById('barriers-form').reset();
+                document.getElementById('notes').disabled = true;
             }
             
             document.getElementById('modal').style.display = 'block';
@@ -800,7 +888,7 @@
             }
         });
         
-        // Also handle when window loses focus (in case key is released outside window)
+        // Also handle when window loses focus
         window.addEventListener('blur', () => {
             if (ctrlPressed) {
                 ctrlPressed = false;
@@ -821,6 +909,7 @@
                         cb.checked = false;
                     });
                     errorDiv.style.display = 'none';
+                    
                     // Disable notes when "None" is selected
                     notesField.disabled = true;
                     notesField.style.backgroundColor = '#f0f0f0';
@@ -864,7 +953,11 @@
                 return;
             }
             
-            const submissionData = { barriers, notes, timestamp: new Date().toISOString() };
+            const submissionData = {
+                barriers,
+                notes,
+                timestamp: new Date().toISOString()
+            };
             
             if (currentEditingBlock) {
                 // Single block edit/submission
@@ -897,6 +990,9 @@
             document.getElementById('modal').style.display = 'none';
             document.getElementById('barriers-form').reset();
             document.getElementById('barrier-error').style.display = 'none';
+            document.getElementById('notes').disabled = true;
+            document.getElementById('notes').style.backgroundColor = '#f0f0f0';
+            document.getElementById('notes').style.cursor = 'not-allowed';
             currentEditingBlock = null;
         }
         
@@ -910,76 +1006,54 @@
             }
         });
         
-        // End session function - Save to database via existing /saveData endpoint
+        // End session function - Save ALL data from localStorage to database
         function endSession() {
-            const submissions = getCompletedBlocks();
-            const count = Object.keys(submissions).length;
+            const completedBlocks = getCompletedBlocks();
+            const count = Object.keys(completedBlocks).length;
             
             if (count === 0) {
                 alert('No submissions to save. Please complete at least one census block assessment.');
                 return;
             }
             
-            if (!confirm(`Save ${count} assessment(s) to database and end session?`)) {
+            if (!confirm(`Save ${count} assessment(s) to database and end session? You will be redirected to the home page.`)) {
                 return;
             }
             
-            // Prepare form data for each submission
-            let savedCount = 0;
-            let failedCount = 0;
+            // Collect ALL localStorage data
+            const allLocalStorage = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                allLocalStorage[key] = localStorage.getItem(key);
+            }
             
-            const savePromises = Object.entries(submissions).map(([geoid, data]) => {
-                const formData = new FormData();
-                formData.append('block_geoid', geoid);
-                formData.append('school', schoolName);
-                formData.append('district', schoolDistrict);
-                formData.append('client_session_id', sessionStorage.getItem('client_session_id') || '');
-                
-                // Add barriers
-                data.barriers.forEach(barrier => {
-                    formData.append('barriers', barrier);
-                });
-                
-                // Add notes if present
-                if (data.notes) {
-                    formData.append('other_specify', data.notes);
-                }
-                
-                // Add user info from session
-                formData.append('user_role', '{{ user_info.role }}');
-                {% if user_info.subjects %}
-                formData.append('user_subjects', '{{ user_info.subjects }}');
-                {% endif %}
-                {% if user_info.admin_level %}
-                formData.append('user_admin_level', '{{ user_info.admin_level }}');
-                {% endif %}
-                
-                return fetch('/saveData', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(result => {
-                    if (result.success) {
-                        savedCount++;
-                    } else {
-                        failedCount++;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error saving block:', geoid, error);
-                    failedCount++;
-                });
-            });
+            console.log('Sending localStorage data:', allLocalStorage);
             
-            Promise.all(savePromises).then(() => {
-                if (failedCount === 0) {
-                    alert(`Successfully saved ${savedCount} assessment(s) to database!`);
-                    sessionStorage.removeItem(SESSION_KEY);
+            // Send to server
+            fetch('/end_session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    localStorage: allLocalStorage
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert(`Successfully saved ${result.count} assessment(s) across ${result.schools} school(s) to database!`);
+                    // Clear ALL localStorage
+                    localStorage.clear();
+                    // Redirect to home page
                     window.location.href = '/';
                 } else {
-                    alert(`Saved ${savedCount} assessments. ${failedCount} failed. Please try again.`);
+                    alert(`Failed to save data: ${result.error || 'Unknown error'}. Please try again.`);
                 }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to save session. Please try again.');
             });
         }
     </script>
