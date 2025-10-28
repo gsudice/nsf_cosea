@@ -133,8 +133,8 @@ layout = html.Div([
                                     opt["label"],
                                     html.Span(
                                         "i",
-                                        title=("Course Modality: Indicates how CS courses are offered at the school — Virtual, In Person, Both, or None.") if opt.get("value") == "modalities" else (
-                                            "Representation Index (RI): Shows how well different groups are represented in CS courses compared to the school population."),
+                                        title=("Indicates how CS courses are offered at the school.") if opt.get("value") == "modalities" else (
+                                            "Shows how well different groups are represented in CS courses compared to the school population."),
                                         className="sidebar-info-icon",
                                         style={"margin-left": "6px"}
                                     )
@@ -198,7 +198,7 @@ layout = html.Div([
                         "Modality",
                         html.Span(
                             "i",
-                            title="Modality: Indicates how CS courses are offered at the school—Virtual, In Person, Both, or None.",
+                            title="Indicates how CS courses are offered at the school.",
                             className="sidebar-info-icon"
                         )
                     ]),
@@ -214,7 +214,7 @@ layout = html.Div([
                         "Extra Teachers",
                         html.Span(
                             "i",
-                            title="Extra Teachers: These are teachers who do not teach a CS course on the approved list, but are certified to teach CS.",
+                            title="These are teachers who do not teach a CS course on the Courses Offered list below, but are certified to teach CS.",
                             className="sidebar-info-icon"
                         )
                     ]),
@@ -232,7 +232,7 @@ layout = html.Div([
                     "Courses Offered",
                     html.Span(
                         "i",
-                        title="Courses Offered: These are the available CS courses at each school, based on Georgia State Bill 108. Select a course to filter schools that offer that course (either virtually or in-person). Multiple selections will show schools that offer ALL of the selected courses.",
+                        title="These are the available CS courses at each school, based on Georgia State Bill 108. Select a course to filter schools that offer that course (either virtually or in-person). Multiple selections will show schools that offer ALL of the selected courses.",
                         className="sidebar-info-icon"
                     )
                 ]),
@@ -245,10 +245,10 @@ layout = html.Div([
             ], className="sidebar-section"),
             html.Div([
                 html.Strong([
-                    "Student-Teacher Ratio",
+                    "CS Student-Teacher Ratio",
                     html.Span(
                         "i",
-                        title="Student-Teacher Ratio: Calculated as CS Enrollment divided by the sum of approved and extra CS teachers at the school.",
+                        title="Number of CS students per CS teacher. Calculated as CS Enrollment divided by the sum of approved and extra CS teachers at the school.",
                         className="sidebar-info-icon"
                     )
                 ]),
@@ -269,7 +269,7 @@ layout = html.Div([
                     "RI Thresholds",
                     html.Span(
                         "i",
-                        title="RI (Representation Index) Thresholds: Filter schools by how well different groups are represented in CS courses compared to their overall school population. Values between -0.05 and 0.05 indicate parity; negative or positive values indicate under- or over-representation.",
+                        title="Filter schools by how well different groups are represented in CS courses compared to their overall school population. Values between -0.05 and 0.05 indicate parity; negative or positive values indicate under- or over-representation.",
                         className="sidebar-info-icon"
                     )
                 ]),
@@ -289,7 +289,7 @@ layout = html.Div([
                     "Course Total Offered",
                     html.Span(
                         "i",
-                        title="Course Total Offered: Number of distinct approved CS courses that are offered at the school. A course is counted if it is offered virtually or in-person.",
+                        title="Number of distinct approved CS courses that are offered at the school. A course is counted if it is offered virtually or in-person.",
                         className="sidebar-info-icon",
                         style={'margin-left': '6px'}
                     )
