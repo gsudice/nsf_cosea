@@ -133,7 +133,8 @@ layout = html.Div([
                                     opt["label"],
                                     html.Span(
                                         "i",
-                                        title=("Course Modality: Indicates how CS courses are offered at the school — Virtual, In Person, Both, or None.") if opt.get("value") == "modalities" else ("Representation Index (RI): Shows how well different groups are represented in CS courses compared to the school population."),
+                                        title=("Course Modality: Indicates how CS courses are offered at the school — Virtual, In Person, Both, or None.") if opt.get("value") == "modalities" else (
+                                            "Representation Index (RI): Shows how well different groups are represented in CS courses compared to the school population."),
                                         className="sidebar-info-icon",
                                         style={"margin-left": "6px"}
                                     )
@@ -144,7 +145,8 @@ layout = html.Div([
                         ],
                         value=DEFAULT_SCHOOL_TOGGLE,
                         className="sidebar-school-toggles",
-                        style={'display': 'flex', 'flex-direction': 'row', 'gap': '10px'}
+                        style={'display': 'flex',
+                               'flex-direction': 'row', 'gap': '10px'}
                     ),
                 ], style={'display': 'flex', 'align-items': 'center'}),
                 html.Div([
@@ -230,7 +232,7 @@ layout = html.Div([
                     "Courses Offered",
                     html.Span(
                         "i",
-                        title="Courses Offered: These are the available CS courses at each school, based on Georgia State Bill 108.",
+                        title="Courses Offered: These are the available CS courses at each school, based on Georgia State Bill 108. Select a course to filter schools that offer that course (either virtually or in-person). Multiple selections will show schools that offer ALL of the selected courses.",
                         className="sidebar-info-icon"
                     )
                 ]),
