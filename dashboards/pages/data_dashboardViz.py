@@ -122,23 +122,31 @@ layout = html.Div([
                    'gap': '6px', 'align-items': 'center'}
         ),
         html.Div([
-            html.Strong([
-                LABELS["school_dots"],
-                html.Span(
-                    "i",
-                    title="School Dots: 'Modality' shows how CS courses are offered (Virtual, In Person, Both, None). 'Representation Index' shows how well different groups are represented in CS courses compared to the school population.",
-                    className="sidebar-info-icon"
-                )
-            ]),
+            html.Strong(LABELS["school_dots"]),
             html.Div([
-                dcc.RadioItems(
-                    id="school-toggles",
-                    options=LABELS["school_toggles"],
-                    value=DEFAULT_SCHOOL_TOGGLE,
-                    className="sidebar-school-toggles",
-                    style={'display': 'flex',
-                           'flex-direction': 'row', 'gap': '10px'}
-                ),
+                html.Div([
+                    dcc.RadioItems(
+                        id="school-toggles",
+                        options=[
+                            {
+                                "label": html.Span([
+                                    opt["label"],
+                                    html.Span(
+                                        "i",
+                                        title=("Course Modality: Indicates how CS courses are offered at the school — Virtual, In Person, Both, or None.") if opt.get("value") == "modalities" else ("Representation Index (RI): Shows how well different groups are represented in CS courses compared to the school population."),
+                                        className="sidebar-info-icon",
+                                        style={"margin-left": "6px"}
+                                    )
+                                ]),
+                                "value": opt["value"]
+                            }
+                            for opt in LABELS["school_toggles"]
+                        ],
+                        value=DEFAULT_SCHOOL_TOGGLE,
+                        className="sidebar-school-toggles",
+                        style={'display': 'flex', 'flex-direction': 'row', 'gap': '10px'}
+                    ),
+                ], style={'display': 'flex', 'align-items': 'center'}),
                 html.Div([
                     html.Label(id="dots-dropdown-label",
                                className="sidebar-dots-dropdown-label"),
@@ -222,7 +230,7 @@ layout = html.Div([
                     "Courses Offered",
                     html.Span(
                         "i",
-                        title="Courses Offered: These are the approved CS courses for the dashboard, as defined by Georgia State Board of Education Rule 160-4-2-.20.",
+                        title="Courses Offered: These are the available CS courses at each school, based on Georgia State Bill 108.",
                         className="sidebar-info-icon"
                     )
                 ]),
@@ -275,7 +283,15 @@ layout = html.Div([
                 ),
             ], id="ri-threshold-container", className="sidebar-section"),
             html.Div([
-                html.Strong("Course Total Offered"),
+                html.Strong([
+                    "Course Total Offered",
+                    html.Span(
+                        "i",
+                        title="Course Total Offered: Number of distinct approved CS courses that are offered at the school. A course is counted if it is offered virtually or in-person.",
+                        className="sidebar-info-icon",
+                        style={'margin-left': '6px'}
+                    )
+                ]),
                 dcc.RangeSlider(
                     id="course-total-offered",
                     min=0,

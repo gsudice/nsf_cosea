@@ -398,7 +398,8 @@ def load_all_school_data():
         "Atlanta": (33.7490, -84.3880),
         "Savannah": (32.0809, -81.0912),
         "Augusta": (33.4735, -82.0105),
-        "Macon": (32.8407, -83.6324)
+        "Macon": (32.8407, -83.6324),
+        "Columbus": (32.492222, -84.940277)
     }
     # Use module-level pandas 'pd' imported at top of file
     city_label_df = pd.DataFrame([

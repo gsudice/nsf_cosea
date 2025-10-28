@@ -201,7 +201,8 @@ CITY_LABEL_OFFSETS_M = {
     "Atlanta": (-120000, 5000),
     "Savannah": (6000, 40000),
     "Augusta": (30000, -8000),
-    "Macon": (-170000, -60000)
+    "Macon": (-170000, -60000),
+    "Columbus": (-30000, 10000),
 }
 
 # Text positioning details: textposition (Plotly keyword) and an additional small
@@ -211,6 +212,7 @@ CITY_LABEL_TEXT_SETTINGS = {
     "Macon": {"textposition": "middle left", "nudge": (-8000, 0), "text_nudge": (0, 0)},
     "Augusta": {"textposition": "bottom right", "nudge": (30000, -8000), "text_nudge": (2000, 6000)},
     "Savannah": {"textposition": "top right", "nudge": (6000, 40000), "text_nudge": (-14000, 4000)},
+    "Columbus": {"textposition": "middle left", "nudge": (-30000, 10000), "text_nudge": (-2000, 0)},
 }
 
 # City label text size (points)
