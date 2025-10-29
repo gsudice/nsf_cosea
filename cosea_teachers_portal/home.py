@@ -79,6 +79,13 @@ def role_selection():
             if not subjects:
                 return render_template('role_selection.html', 
                                      error_message="Please select at least one subject.")
+            
+            # Handle "other" subject - replace with "other(specified text)"
+            subject_other_specify = request.form.get('subject_other_specify', '').strip()
+            if 'other' in subjects and subject_other_specify:
+                # Replace "other" with "other(text)"
+                subjects = [s if s != 'other' else f'other({subject_other_specify})' for s in subjects]
+            
             session['subjects'] = subjects
             session.pop('admin_level', None)
             
@@ -110,8 +117,9 @@ def district():
         selected_school = request.form.get('school')
         
         if not selected_district or not selected_school:
+            districts = get_districts()
             return render_template('district.html', 
-                                 districts=get_districts(),
+                                 districts=districts,
                                  error_message="Please select both district and school.")
         
         # Store current selections
@@ -180,21 +188,12 @@ def survey_questions():
         return redirect(url_for('district'))
     
     if request.method == "POST":
-        # Save survey responses to session
-        session['q1_familiarity'] = request.form.get('q1_familiarity')
-        session['q2_accessibility'] = request.form.get('q2_accessibility')
-        session['q3_biggest_barrier'] = request.form.get('q3_biggest_barrier')
+        # Save survey responses to session - NO VALIDATION, all optional
+        session['q1_familiarity'] = request.form.get('q1_familiarity', '')
+        session['q2_accessibility'] = request.form.get('q2_accessibility', '')
+        session['q3_biggest_barrier'] = request.form.get('q3_biggest_barrier', '')
         
-        if not all([session.get('q1_familiarity'), session.get('q2_accessibility'), session.get('q3_biggest_barrier')]):
-            return render_template('survey_questions.html',
-                                 selected_school=session.get('selected_school'),
-                                 selected_district=session.get('selected_district'),
-                                 error_message="Please answer all questions.",
-                                 q1_value=session.get('q1_familiarity'),
-                                 q2_value=session.get('q2_accessibility'),
-                                 q3_value=session.get('q3_biggest_barrier'))
-        
-        # IMPORTANT: Save to school_submissions immediately after survey
+        # Save to school_submissions immediately after survey
         school_key = get_school_key(session['selected_district'], session['selected_school'])
         if 'school_submissions' not in session:
             session['school_submissions'] = {}
@@ -513,10 +512,6 @@ def end_session():
             logger.error("No school submissions found in Flask session!")
             return jsonify({"success": False, "error": "No survey/barrier data found. Please complete the survey."}), 400
         
-        if not all_school_blocks:
-            logger.error("No block data found in localStorage!")
-            return jsonify({"success": False, "error": "No census block assessments found. Please assess at least one block."}), 400
-        
         teacher_id = str(uuid.uuid4())
         client_session_id = session.get('session_id')
         ip_hash = session.get('ip_hash') or get_ip_hash()
@@ -530,7 +525,7 @@ def end_session():
         total_saved = 0
         total_failed = 0
         schools_processed = []
-        processed_school_ids = set()  # Track which schools we've already processed
+        processed_school_ids = set()
         
         with engine.begin() as connection:
             # Process each school's data
@@ -540,11 +535,17 @@ def end_session():
                     school_name = school_session_data.get('school')
                     
                     # Get survey and district barrier data from session
-                    q1_familiarity = school_session_data.get('q1_familiarity')
-                    q2_accessibility = school_session_data.get('q2_accessibility')
-                    q3_biggest_barrier = school_session_data.get('q3_biggest_barrier')
+                    q1_familiarity = school_session_data.get('q1_familiarity', '').strip()
+                    q2_accessibility = school_session_data.get('q2_accessibility', '').strip()
+                    q3_biggest_barrier = school_session_data.get('q3_biggest_barrier', '').strip()
                     district_barriers = ','.join(school_session_data.get('district_barriers', []))
-                    district_barriers_other = school_session_data.get('district_barriers_other', '')
+                    district_barriers_other = school_session_data.get('district_barriers_other', '').strip()
+                    
+                    # Convert empty strings to None (NULL in database)
+                    q1_familiarity = q1_familiarity if q1_familiarity else None
+                    q2_accessibility = q2_accessibility if q2_accessibility else None
+                    q3_biggest_barrier = q3_biggest_barrier if q3_biggest_barrier else None
+                    district_barriers_other = district_barriers_other if district_barriers_other else None
                     
                     logger.info(f"Processing school: {school_name}")
                     logger.debug(f"Session data - Q1: {q1_familiarity}, Q2: {q2_accessibility}, Q3: {q3_biggest_barrier}")
@@ -577,7 +578,7 @@ def end_session():
                     # Mark this school as processed
                     processed_school_ids.add(school_unique_id)
                     
-                    # Match localStorage key - try multiple formats
+                    # Match localStorage key
                     school_name_clean = school_name.replace(' ', '_')
                     block_submissions = None
                     
@@ -594,15 +595,46 @@ def end_session():
                             logger.info(f"✅ Found block data with key: {possible_key}")
                             break
                     
-                    if not block_submissions:
-                        logger.warning(f"⚠️ No block submissions found for {school_name}. Tried keys: {possible_keys}")
-                        logger.warning(f"Available localStorage keys: {list(all_school_blocks.keys())}")
+                    # Handle case where there are NO census blocks
+                    if not block_submissions or len(block_submissions) == 0:
+                        logger.info(f"ℹ️ No block submissions found for {school_name}. Saving survey/barrier data with NULL geoid.")
+                        
+                        insert_query = text("""
+                            INSERT INTO "allhsgrades24".teacher_reason_submissions
+                            ("UNIQUESCHOOLID", teacher_id, geoid, reason_code, comment, submitted_at, 
+                             user_role, user_subjects, user_admin_level, session_id, ip_hash,
+                             q1_familiarity, q2_accessibility, q3_biggest_barrier,
+                             district_barriers, district_barriers_other)
+                            VALUES (:school_id, :teacher_id, NULL, 'no_census_assessment', NULL, :submitted_at,
+                                    :user_role, :user_subjects, :user_admin_level, :session_id, :ip_hash,
+                                    :q1_familiarity, :q2_accessibility, :q3_biggest_barrier,
+                                    :district_barriers, :district_barriers_other)
+                        """)
+                        
+                        connection.execute(insert_query, {
+                            "school_id": school_unique_id,
+                            "teacher_id": teacher_id,
+                            "submitted_at": submitted_at,
+                            "user_role": user_role,
+                            "user_subjects": user_subjects,
+                            "user_admin_level": user_admin_level,
+                            "session_id": client_session_id,
+                            "ip_hash": ip_hash,
+                            "q1_familiarity": q1_familiarity,
+                            "q2_accessibility": q2_accessibility,
+                            "q3_biggest_barrier": q3_biggest_barrier,
+                            "district_barriers": district_barriers,
+                            "district_barriers_other": district_barriers_other
+                        })
+                        
+                        logger.info(f"✅ Saved survey/barrier data for {school_name} (no census blocks)")
+                        schools_processed.append(school_name)
+                        total_saved += 1
                         continue
                     
                     logger.info(f"Processing {len(block_submissions)} blocks for {school_name}")
                     
-                    # DELETE ALL PREVIOUS SUBMISSIONS FOR THIS SCHOOL AND SESSION
-                    # This ensures we don't have duplicates
+                    # DELETE previous submissions for this school and session
                     delete_school_query = text("""
                         DELETE FROM "allhsgrades24".teacher_reason_submissions
                         WHERE "UNIQUESCHOOLID" = :school_id 
@@ -614,7 +646,7 @@ def end_session():
                     })
                     logger.info(f"🗑️ Deleted {delete_result.rowcount} previous submissions for school {school_name}")
                     
-                    # Now insert the new/latest data
+                    # Insert new data
                     blocks_saved_for_school = 0
                     for geoid, block_data in block_submissions.items():
                         try:
@@ -628,7 +660,11 @@ def end_session():
                             # Insert submissions for each barrier
                             for barrier in barriers:
                                 reason_code = barrier.lower()[:50]
-                                comment = notes if barrier == 'other' else barrier
+                                # Comment is NULL unless barrier is 'other' with notes
+                                if barrier.lower() == 'other' and notes.strip():
+                                    comment = notes.strip()
+                                else:
+                                    comment = None
                                 
                                 insert_query = text("""
                                     INSERT INTO "allhsgrades24".teacher_reason_submissions
@@ -684,12 +720,6 @@ def end_session():
         logger.info(f"❌ Failed: {total_failed} blocks")
         logger.info(f"📚 Schools: {schools_processed}")
         
-        if total_saved == 0:
-            return jsonify({
-                "success": False, 
-                "error": "No data was saved. Please check the logs."
-            }), 500
-        
         # Clear Flask session after successful save
         session.clear()
         
@@ -708,4 +738,4 @@ def end_session():
         return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(host='127.0.0.1', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=80, debug=False)
