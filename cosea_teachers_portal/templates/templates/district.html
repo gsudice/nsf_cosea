@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GSU CS Department Research Survey - District Selection</title>
+    <link rel="icon" href="{{ url_for('static', filename='Gsulogo.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styling.css') }}">
+</head>
+<body>
+    <div class="district_menu"> 
+        <form action="{{ url_for('district') }}" method="POST">
+            <label for="district-dropdown" id="dropdown-label">Select District:</label>
+            <select id="district-dropdown" name="district" class="dropdown">
+                <option value="none" selected disabled hidden>Select an Option</option>
+                {% for option in districts %}
+                <option value="{{ option }}">{{ option }}</option>
+                {% endfor %}
+            </select>
+            <br>
+            <label for="school-dropdown" id="dropdown-label">Select School:</label>
+            <select id="school-dropdown" name="school" class="dropdown">
+                <option value="none" selected disabled hidden>Select an Option</option>
+            </select>
+            <br>
+            <button id="submit" type="submit">Submit</button>
+        </form>
+    </div> 
+    <script src="{{ url_for('static', filename='retrieveSchools.js') }}"></script>
+</body>
+</html>

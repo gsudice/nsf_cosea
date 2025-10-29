@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GSU Computer Science Department Research Survey</title>
+    <link rel="icon" href="{{ url_for('static', filename='Gsulogo.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styling.css') }}">
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>CoSea Teachers Portal</h1>
+    </div>
+
+    <div class="home">
+        <h1 id="topic">The Teacher Feedback Portal!</h1>
+        <h1 id="intro">Project Survey Instructions</h1>
+        <div id="intro_para">
+            <p>This portal is designed to enable Georgia high school teachers and administrators to provide valuable feedback about computer science (CS) education accessibility in their schools and communities.</p>
+            
+            <p><strong>You are asked to:</strong></p>
+            <ol>
+                <li>Select your role (Teacher or Administrator) and relevant information</li>
+                <li>Select your District and School</li>
+                <li>Answer survey questions about Computer Science classes accessibility (optional)</li>
+                <li>Identify district-level barriers to Computer Science classes</li>
+                <li>Optionally, view a map and mark specific geographic areas with Computer Science classes accessibility challenges</li>
+            </ol>
+            
+            <p><strong>What you can do:</strong></p>
+            <ul>
+                <li><strong>Share your perspective:</strong> Answer questions about Computer Science classes access in your school or district</li>
+                <li><strong>Identify barriers:</strong> Select from a comprehensive list of factors that may limit Computer Science classes</li>
+                <li><strong>Geographic assessment (optional):</strong> Mark census block regions with low Computer Science exposure through interactive map clicks</li>
+                <li><strong>Provide details:</strong> Add custom factors and notes to capture unique challenges in your area</li>
+                <li><strong>Multiple schools:</strong> Assess multiple schools in a single session</li>
+            </ul>
+            
+            <p><strong>Your feedback matters:</strong></p>
+            <p>The data collected will be used to validate the Co-SEA Risk Index, a metric designed to score census block groups based on their risk of limited access to Computer Science classes. By identifying these areas, stakeholders can strategically allocate resources and implement interventions where they are most needed to broaden participation in computing.</p>
+            
+            <p><strong>Flexible completion:</strong> All components are designed to capture your valuable insights. The survey questions and geographic assessments are optional - you can complete as much or as little as you're comfortable with while still contributing meaningful data.</p>
+        </div>
+        <button id="next" onclick="window.location.href='{{ url_for('role_selection') }}'">Get Started</button>
+    </div>
+</body>
+</html>

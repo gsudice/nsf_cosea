@@ -1,0 +1,395 @@
+/* =================== GLOBAL =================== */
+@import url("https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;0,700;0,900&display=swap");
+
+/* Universal Reset & Font */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Lato, sans-serif;
+}
+
+body,
+html {
+  height: 100%;
+  width: 100%;
+  scroll-behavior: smooth;
+  background-color: #f4f4f4;
+}
+
+/* =================== HEADER =================== */
+.header {
+  background-color: #0039a6;
+  height: 6vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header h1 {
+  font-size: 24px;
+  color: white;
+  flex-grow: 1;
+  text-align: center;
+  font-weight: 400;
+}
+
+/* =================== HOME PAGE =================== */
+.home {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 80px 40px 40px;
+  background-color: white;
+  min-height: 100vh;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+#topic {
+  text-align: center;
+  margin-bottom: 40px;
+  font-size: 42px;
+  color: #0039a6;
+  font-weight: 700;
+}
+
+#intro {
+  margin-top: 40px;
+  margin-bottom: 30px;
+  font-size: 28px;
+  color: #333;
+  font-weight: 600;
+  text-align: center;
+}
+
+#intro_para {
+  margin-top: 30px;
+  font-size: 18px;
+  line-height: 1.8;
+  color: #555;
+  margin-bottom: 40px;
+}
+
+#intro_para p {
+  margin-bottom: 20px;
+}
+
+#intro_para ol,
+#intro_para ul {
+  margin-left: 30px;
+  margin-bottom: 20px;
+}
+
+#intro_para li {
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+#next {
+  display: block;
+  margin: 40px auto 20px;
+  padding: 15px 40px;
+  font-size: 18px;
+  font-weight: 600;
+  background-color: #0039a6;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+#next:hover {
+  background-color: #0050d4;
+  transform: translateY(-2px);
+}
+
+#next:active {
+  transform: translateY(0);
+}
+
+/* =================== ROLE SELECTION / DISTRICT SELECTION =================== */
+.district_menu {
+  max-width: 600px;
+  margin: 100px auto;
+  padding: 40px;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#dropdown-label {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 30px;
+  display: block;
+  color: #333;
+  text-align: center;
+}
+
+select,
+#district-dropdown,
+#school-dropdown {
+  width: 100%;
+  padding: 12px 15px;
+  margin-bottom: 25px;
+  font-size: 16px;
+  border: 2px solid #ddd;
+  border-radius: 5px;
+  background-color: white;
+  cursor: pointer;
+  transition: border-color 0.3s ease;
+}
+
+select:focus,
+#district-dropdown:focus,
+#school-dropdown:focus {
+  outline: none;
+  border-color: #0039a6;
+}
+
+select:hover,
+#district-dropdown:hover,
+#school-dropdown:hover {
+  border-color: #0050d4;
+}
+
+/* Role Selection Specific */
+.role-section {
+  margin: 30px 0;
+  padding: 25px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.role-section label strong {
+  color: #333;
+  font-size: 18px;
+}
+
+.role-option,
+.subject-option {
+  margin: 15px 0;
+  padding: 12px;
+  background: white;
+  border-radius: 5px;
+  transition: background-color 0.2s ease;
+}
+
+.role-option:hover,
+.subject-option:hover {
+  background-color: #f0f7ff;
+}
+
+input[type="radio"],
+input[type="checkbox"] {
+  margin-right: 12px;
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  accent-color: #0039a6;
+}
+
+.role-option label,
+.subject-option label {
+  cursor: pointer;
+  font-size: 16px;
+  color: #555;
+}
+
+.hidden {
+  display: none;
+}
+
+.error-message {
+  color: #dc3545;
+  padding: 15px;
+  margin: 15px 0;
+  background-color: #f8d7da;
+  border-radius: 5px;
+  border-left: 4px solid #dc3545;
+  font-size: 14px;
+}
+
+/* =================== BUTTONS =================== */
+button,
+#submit {
+  padding: 12px 30px;
+  font-size: 16px;
+  font-weight: 600;
+  background-color: #0039a6;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  width: 100%;
+  margin-top: 10px;
+}
+
+button:hover,
+#submit:hover {
+  background-color: #0050d4;
+  transform: translateY(-2px);
+}
+
+button:active,
+#submit:active {
+  transform: translateY(0);
+}
+
+button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* =================== MAP AND SELECT PAGE =================== */
+.info-panel {
+  margin: 80px auto 20px;
+  max-width: 1200px;
+  padding: 25px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.info-panel h1 {
+  color: #0039a6;
+  font-size: 32px;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.info-panel h2 {
+  color: #333;
+  font-size: 22px;
+  margin-top: 25px;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.info-panel p {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #555;
+  margin-bottom: 15px;
+}
+
+.info-panel ul {
+  margin-left: 25px;
+  margin-bottom: 20px;
+}
+
+.info-panel li {
+  margin-bottom: 12px;
+  line-height: 1.6;
+  color: #555;
+  font-size: 16px;
+}
+
+.info-panel li strong {
+  color: #0039a6;
+  font-weight: 600;
+}
+
+.info-panel strong {
+  color: #333;
+}
+
+#map-container {
+  width: 90%;
+  max-width: 1200px;
+  height: 600px;
+  margin: 20px auto;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#map {
+  height: 100%;
+  width: 100%;
+}
+
+/* =================== POPUP STYLING =================== */
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.2);
+}
+
+.leaflet-popup-content {
+  margin: 15px;
+  font-family: Lato, sans-serif;
+}
+
+/* =================== FORM MESSAGES =================== */
+#form-message {
+  margin-top: 15px;
+  font-weight: 600;
+  padding: 10px;
+  border-radius: 5px;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* =================== RESPONSIVE DESIGN =================== */
+@media (max-width: 768px) {
+  .home,
+  .district_menu {
+    padding: 60px 20px 20px;
+  }
+
+  #topic {
+    font-size: 32px;
+  }
+
+  #intro {
+    font-size: 22px;
+  }
+
+  #intro_para {
+    font-size: 16px;
+  }
+
+  .header h1 {
+    font-size: 18px;
+  }
+
+  #map-container {
+    width: 95%;
+    height: 400px;
+  }
+
+  .info-panel {
+    margin-top: 70px;
+    padding: 20px;
+  }
+
+  .district_menu {
+    margin: 80px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  #topic {
+    font-size: 28px;
+  }
+
+  #intro {
+    font-size: 20px;
+  }
+
+  button,
+  #submit,
+  #next {
+    padding: 12px 20px;
+    font-size: 14px;
+  }
+}
