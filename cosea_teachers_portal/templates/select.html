@@ -521,12 +521,12 @@
             <div class="progress-bar-map">
                 <div class="progress-fill-map"></div>
             </div>
-            Step 3 of 3: Geographic Assessment
+            Step 3 of 3: Geographic Assessment (Optional)
         </div>
 
         <!-- Instructions -->
         <div class="instruction-box">
-            <p><strong>📝 Instructions:</strong> Click on census blocks on the map below to identify specific geographic areas where students may face barriers to CS education access. If you are aware of specific limiting factors for each area, please indicate them.</p>
+            <p><strong>📝 Instructions:</strong> Click on census blocks on the map below to identify specific geographic areas where students may face barriers to CS education access. If you are aware of specific limiting factors for each area, please indicate them. <em>This step is optional - you can save your data without completing any census block assessments.</em></p>
         </div>
 
         <!-- Barrier Categories & How to Use -->
@@ -588,7 +588,7 @@
             <div class="session-actions">
                 <h4>💾 Session Management</h4>
                 <div class="session-note">
-                    <strong>📝 Note:</strong> All your assessments are saved locally in your browser. When you're finished, click the button below to save everything to the database.
+                    <strong>📝 Note:</strong> All your assessments are saved locally in your browser. When you're finished, click the button below to save everything to the database. Census block assessments are optional - you can save even without completing any blocks.
                 </div>
                 <button id="end-session-btn" onclick="endSession()">✅ End Session & Save to Database</button>
             </div>
@@ -616,10 +616,6 @@
                 <div class="form-group">
                     <label>Select Barriers (check all that apply):</label>
                     <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="barriers" value="none" id="barrier-none">
-                            <label for="barrier-none"><strong>None</strong> - No barriers identified</label>
-                        </div>
                         <div class="checkbox-item">
                             <input type="checkbox" name="barriers" value="student_demographics" id="barrier-demo">
                             <label for="barrier-demo">Student demographics</label>
@@ -659,6 +655,10 @@
                         <div class="checkbox-item">
                             <input type="checkbox" name="barriers" value="other" id="barrier-other">
                             <label for="barrier-other">Other (please specify in notes)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="barriers" value="none" id="barrier-none">
+                            <label for="barrier-none"><strong>None</strong> - No barriers identified</label>
                         </div>
                     </div>
                     <div id="barrier-error">
@@ -896,7 +896,7 @@
             }
         });
         
-        // Form validation - "None" is exclusive
+        // Form validation - "None" is exclusive and uses smart auto-deselect logic
         document.querySelectorAll('input[name="barriers"]').forEach(checkbox => {
             checkbox.addEventListener('change', function() {
                 const noneCheckbox = document.getElementById('barrier-none');
@@ -904,6 +904,7 @@
                 const notesField = document.getElementById('notes');
                 const errorDiv = document.getElementById('barrier-error');
                 
+                // If "None" is checked, auto-deselect all others
                 if (this.value === 'none' && this.checked) {
                     document.querySelectorAll('input[name="barriers"]:not(#barrier-none)').forEach(cb => {
                         cb.checked = false;
@@ -915,11 +916,12 @@
                     notesField.style.backgroundColor = '#f0f0f0';
                     notesField.style.cursor = 'not-allowed';
                     notesField.value = '';
-                } else if (this.value !== 'none' && this.checked) {
+                    notesField.placeholder = "Please select 'Other Contributing Factors' above to add notes...";
+                } 
+                // If any other barrier is checked while "None" is checked, auto-deselect "None"
+                else if (this.value !== 'none' && this.checked) {
                     if (noneCheckbox.checked) {
-                        this.checked = false;
-                        errorDiv.style.display = 'block';
-                        setTimeout(() => errorDiv.style.display = 'none', 3000);
+                        noneCheckbox.checked = false;
                     }
                 }
                 
@@ -930,12 +932,15 @@
                     notesField.style.cursor = 'text';
                     notesField.placeholder = 'Please specify other contributing factors...';
                     notesField.focus();
-                } else if (!noneCheckbox.checked) {
-                    notesField.disabled = true;
-                    notesField.style.backgroundColor = '#f0f0f0';
-                    notesField.style.cursor = 'not-allowed';
-                    notesField.placeholder = "Please select 'Other Contributing Factors' above to add notes...";
-                    notesField.value = '';
+                } else if (!noneCheckbox.checked && this.value !== 'none') {
+                    // Only disable if "Other" is not checked and we're not processing "None"
+                    if (!otherCheckbox.checked) {
+                        notesField.disabled = true;
+                        notesField.style.backgroundColor = '#f0f0f0';
+                        notesField.style.cursor = 'not-allowed';
+                        notesField.placeholder = "Please select 'Other Contributing Factors' above to add notes...";
+                        notesField.value = '';
+                    }
                 }
             });
         });
@@ -947,9 +952,17 @@
             const barriers = Array.from(document.querySelectorAll('input[name="barriers"]:checked'))
                 .map(cb => cb.value);
             const notes = document.getElementById('notes').value.trim();
+            const otherCheckbox = document.getElementById('barrier-other');
             
             if (barriers.length === 0) {
                 alert('Please select at least one barrier option');
+                return;
+            }
+            
+            // Require notes if "Other" is checked
+            if (otherCheckbox.checked && !notes) {
+                alert('Please specify the "Other" barrier in the additional notes field');
+                document.getElementById('notes').focus();
                 return;
             }
             
@@ -1007,16 +1020,18 @@
         });
         
         // End session function - Save ALL data from localStorage to database
+        // UPDATED: Removed census block requirement
         function endSession() {
             const completedBlocks = getCompletedBlocks();
             const count = Object.keys(completedBlocks).length;
             
-            if (count === 0) {
-                alert('No submissions to save. Please complete at least one census block assessment.');
-                return;
-            }
+            // REMOVED REQUIREMENT - Allow saving even without census blocks
+            // Changed confirmation message to reflect optional census blocks
+            const confirmMsg = count > 0 
+                ? `Save ${count} assessment(s) to database and end session? You will be redirected to the home page.`
+                : `Save your survey and barrier assessments to database and end session? (No census block assessments completed). You will be redirected to the home page.`;
             
-            if (!confirm(`Save ${count} assessment(s) to database and end session? You will be redirected to the home page.`)) {
+            if (!confirm(confirmMsg)) {
                 return;
             }
             
@@ -1042,7 +1057,10 @@
             .then(response => response.json())
             .then(result => {
                 if (result.success) {
-                    alert(`Successfully saved ${result.count} assessment(s) across ${result.schools} school(s) to database!`);
+                    const successMsg = result.count > 0
+                        ? `Successfully saved ${result.count} assessment(s) across ${result.schools} school(s) to database!`
+                        : `Successfully saved your survey and barrier data to database!`;
+                    alert(successMsg);
                     // Clear ALL localStorage
                     localStorage.clear();
                     // Redirect to home page

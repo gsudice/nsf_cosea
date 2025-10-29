@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GSU CS Department Research Survey</title>
+    <title>GSU Computer Science Department Research Survey</title>
     <link rel="icon" href="{{ url_for('static', filename='Gsulogo.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styling.css') }}">
 </head>
@@ -17,20 +17,30 @@
         <h1 id="topic">The Teacher Feedback Portal!</h1>
         <h1 id="intro">Project Survey Instructions</h1>
         <div id="intro_para">
-            <p>This portal is designed to enable Georgia high school teachers to identify areas they perceive have low student exposure to computer science (CS) education.</p>
-            <p>You are asked to:</p>
+            <p>This portal is designed to enable Georgia high school teachers and administrators to provide valuable feedback about computer science (CS) education accessibility in their schools and communities.</p>
+            
+            <p><strong>You are asked to:</strong></p>
             <ol>
-                <li>Select your role and relevant information,</li>
-                <li>Select your district and school,</li>
-                <li>View a map of the surrounding areas, based on established school zone boundaries, along with main roads and landmarks.</li>
+                <li>Select your role (Teacher or Administrator) and relevant information</li>
+                <li>Select your District and School</li>
+                <li>Answer survey questions about Computer Science classes accessibility (optional)</li>
+                <li>Identify district-level barriers to Computer Science classes</li>
+                <li>Optionally, view a map and mark specific geographic areas with Computer Science classes accessibility challenges</li>
             </ol>
-            <p>Participants can then:</p>
+            
+            <p><strong>What you can do:</strong></p>
             <ul>
-                <li>Mark regions that they identify with low CS exposure through block-specific clicks.</li>
-                <li>Articulate influencing factors from a predefined list, with an option to add custom factors.</li>
+                <li><strong>Share your perspective:</strong> Answer questions about Computer Science classes access in your school or district</li>
+                <li><strong>Identify barriers:</strong> Select from a comprehensive list of factors that may limit Computer Science classes</li>
+                <li><strong>Geographic assessment (optional):</strong> Mark census block regions with low Computer Science exposure through interactive map clicks</li>
+                <li><strong>Provide details:</strong> Add custom factors and notes to capture unique challenges in your area</li>
+                <li><strong>Multiple schools:</strong> Assess multiple schools in a single session</li>
             </ul>
-            <p>The objective is to empower educators to collaboratively pinpoint areas lacking CS exposure, fostering a deeper understanding of the challenges involved.</p>
-            <p>The resulting data will be used to validate the Co-SEA Risk Index, a metric to score census block groups with their risk of access to CS education. By scoring census block groups in this way, stakeholders can strategically place interventions where most needed to broaden participation in computing.</p>
+            
+            <p><strong>Your feedback matters:</strong></p>
+            <p>The data collected will be used to validate the Co-SEA Risk Index, a metric designed to score census block groups based on their risk of limited access to Computer Science classes. By identifying these areas, stakeholders can strategically allocate resources and implement interventions where they are most needed to broaden participation in computing.</p>
+            
+            <p><strong>Flexible completion:</strong> All components are designed to capture your valuable insights. The survey questions and geographic assessments are optional - you can complete as much or as little as you're comfortable with while still contributing meaningful data.</p>
         </div>
         <button id="next" onclick="window.location.href='{{ url_for('role_selection') }}'">Get Started</button>
     </div>

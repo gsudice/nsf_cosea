@@ -83,6 +83,11 @@
                     <input type="checkbox" name="subjects" value="other" id="subject-other">
                     <label for="subject-other">Other</label>
                 </div>
+                <input type="text" 
+                       id="subject-other-text" 
+                       name="subject_other_specify" 
+                       placeholder="Please specify other subject..." 
+                       style="width: 100%; padding: 10px; margin-top: 10px; border: 2px solid #ddd; border-radius: 5px; font-family: 'Lato', sans-serif; font-size: 14px; display: none;">
             </div>
 
             <!-- Admin Level (shown if administrator selected) -->
@@ -112,6 +117,8 @@
         const adminRadio = document.getElementById('role-admin');
         const teacherSubjects = document.getElementById('teacher-subjects');
         const adminLevel = document.getElementById('admin-level');
+        const subjectOtherCheckbox = document.getElementById('subject-other');
+        const subjectOtherText = document.getElementById('subject-other-text');
 
         teacherRadio.addEventListener('change', function() {
             if (this.checked) {
@@ -128,6 +135,19 @@
                 teacherSubjects.classList.add('hidden');
                 // Clear teacher selections
                 document.querySelectorAll('input[name="subjects"]').forEach(input => input.checked = false);
+                subjectOtherText.style.display = 'none';
+                subjectOtherText.value = '';
+            }
+        });
+
+        // Handle "Other" subject checkbox
+        subjectOtherCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                subjectOtherText.style.display = 'block';
+                subjectOtherText.focus();
+            } else {
+                subjectOtherText.style.display = 'none';
+                subjectOtherText.value = '';
             }
         });
 
@@ -146,6 +166,14 @@
                 if (subjects.length === 0) {
                     e.preventDefault();
                     alert('Please select at least one subject.');
+                    return false;
+                }
+                
+                // Check if "Other" is checked but text is empty
+                if (subjectOtherCheckbox.checked && !subjectOtherText.value.trim()) {
+                    e.preventDefault();
+                    alert('Please specify the other subject.');
+                    subjectOtherText.focus();
                     return false;
                 }
             } else if (role.value === 'administrator') {

@@ -131,6 +131,7 @@
             width: 100%;
             padding: 12px 15px;
             margin-top: 10px;
+            margin-bottom: 10px;
             border: 2px solid #ddd;
             border-radius: 5px;
             font-family: 'Lato', sans-serif;
@@ -232,7 +233,7 @@
         </div>
         
         <div class="info-box">
-            <p><strong>📝 Instructions:</strong> From the given list of factors, please check the limiting factors that may apply to your school or school district. You can select multiple options. If you select "None", other options will be disabled.</p>
+            <p><strong>📝 Instructions:</strong> We would like to understand why some students at your school (or school district if you're an admin) may not be enrolling in Computer Science classes if offered. With this in mind, please select from the limiting factors below that may contribute to students not participating in Computer Science classes.</p>
         </div>
         
         <div id="error-message" class="error-message"></div>
@@ -240,11 +241,6 @@
         <form action="{{ url_for('district_barriers') }}" method="POST" id="barriers-form">
             <div class="barriers-section">
                 <label>Select all limiting factors that apply to your school or school district:</label>
-                
-                <div class="barrier-item none-option">
-                    <input type="checkbox" name="barriers" value="none" id="barrier-none">
-                    <label for="barrier-none"><strong>None</strong> - No barriers identified</label>
-                </div>
                 
                 <div class="barrier-item">
                     <input type="checkbox" name="barriers" value="student_demographics" id="barrier-demo">
@@ -297,6 +293,11 @@
                 </div>
                 
                 <textarea id="other-text" name="other_specify" placeholder="Please describe other contributing factors..."></textarea>
+                
+                <div class="barrier-item none-option">
+                    <input type="checkbox" name="barriers" value="none" id="barrier-none">
+                    <label for="barrier-none"><strong>None</strong> - No barriers identified</label>
+                </div>
             </div>
             
             <div class="button-group">
@@ -314,45 +315,40 @@
         const allBarriers = document.querySelectorAll('input[name="barriers"]');
         const otherBarriers = Array.from(allBarriers).filter(cb => cb.id !== 'barrier-none');
         
+        // Handle "None" checkbox - auto-deselect all others
         noneCheckbox.addEventListener('change', function() {
             if (this.checked) {
                 otherBarriers.forEach(cb => {
                     cb.checked = false;
-                    cb.disabled = true;
                 });
+                // Hide and clear "Other" text box
                 otherText.style.display = 'none';
                 otherText.value = '';
                 errorMessage.style.display = 'none';
-            } else {
-                otherBarriers.forEach(cb => {
-                    cb.disabled = false;
-                });
             }
         });
         
+        // Handle any other barrier checkbox - auto-deselect "None"
         otherBarriers.forEach(checkbox => {
             checkbox.addEventListener('change', function() {
                 if (this.checked && noneCheckbox.checked) {
                     noneCheckbox.checked = false;
-                    otherBarriers.forEach(cb => {
-                        cb.disabled = false;
-                    });
                 }
             });
         });
         
+        // Handle "Other" checkbox - show/hide text box
         otherCheckbox.addEventListener('change', function() {
             if (this.checked) {
                 otherText.style.display = 'block';
-                otherText.required = true;
                 otherText.focus();
             } else {
                 otherText.style.display = 'none';
-                otherText.required = false;
                 otherText.value = '';
             }
         });
         
+        // Form validation
         document.getElementById('barriers-form').addEventListener('submit', function(e) {
             const checkedBarriers = Array.from(allBarriers).filter(cb => cb.checked);
             
@@ -375,6 +371,7 @@
             errorMessage.style.display = 'none';
         });
         
+        // Pre-fill form if data exists
         document.addEventListener('DOMContentLoaded', function() {
             const savedBarriersRaw = '{{ saved_barriers | tojson | safe }}';
             const savedOtherRaw = '{{ saved_other if saved_other else "" }}';
@@ -412,16 +409,6 @@
                         
                         if (barrier === 'other') {
                             otherText.style.display = 'block';
-                            otherText.required = true;
-                        }
-                        
-                        if (barrier === 'none') {
-                            otherBarriers.forEach(cb => {
-                                if (cb.id !== checkboxId) {
-                                    cb.checked = false;
-                                    cb.disabled = true;
-                                }
-                            });
                         }
                     }
                 });

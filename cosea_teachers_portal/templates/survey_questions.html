@@ -154,6 +154,13 @@
         #submit:active {
             transform: translateY(0);
         }
+        
+        .optional-note {
+            color: #666;
+            font-size: 14px;
+            font-style: italic;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -172,7 +179,7 @@
             <div class="progress-bar">
                 <div class="progress-fill"></div>
             </div>
-            Step 1 of 3: Initial Questions
+            Step 1 of 3: Initial Questions (Optional)
         </div>
         
         {% if error_message %}
@@ -184,35 +191,35 @@
         <form action="{{ url_for('survey_questions') }}" method="POST" id="survey-form">
             <!-- Question 1 -->
             <div class="question-section">
-                <label>1. What is your opinion about whether all students in your school (or school district if you're an admin) have equal access to Computer Science education? Are all students able to enroll in CS classes? If not, what are potential barriers that prevent students from enrolling?</label>
+                <label>1. What is your opinion about whether all students in your school (or school district if you're an admin) have equal access to Computer Science classes? Are all students able to enroll in Computer Science classes?</label>
                 <textarea 
                     name="q1_familiarity" 
                     id="q1_text" 
                     class="answer-textarea" 
-                    placeholder="Please share your thoughts..."
-                    required>{{ q1_value if q1_value else '' }}</textarea>
+                    placeholder="Please share your thoughts...">{{ q1_value if q1_value else '' }}</textarea>
+                <p class="optional-note">Optional - You may skip this question if you prefer</p>
             </div>
             
             <!-- Question 2 -->
             <div class="question-section">
-                <label>2. If you think students do not have equal access to CS classes, what in your opinion are the limiting factors (barriers)?</label>
+                <label>2. What in your opinion are the potential barriers that limit access to Computer Science classes?</label>
                 <textarea 
                     name="q2_accessibility" 
                     id="q2_text" 
                     class="answer-textarea" 
-                    placeholder="Please describe the limiting factors..."
-                    required>{{ q2_value if q2_value else '' }}</textarea>
+                    placeholder="Please describe the limiting factors...">{{ q2_value if q2_value else '' }}</textarea>
+                <p class="optional-note">Optional - You may skip this question if you prefer</p>
             </div>
             
             <!-- Question 3 -->
             <div class="question-section">
-                <label>3. What are ways by which you can improve access to CS classes in your school or school district? (Please list up to 3 ideas in order of priority)</label>
+                <label>3. What modifications could your school (or school district if you're an admin) implement to improve access to Computer Science classes?</label>
                 <textarea 
                     name="q3_biggest_barrier" 
                     id="q3_text" 
                     class="answer-textarea" 
-                    placeholder="Please list your top 3 ideas in order of priority..."
-                    required>{{ q3_value if q3_value else '' }}</textarea>
+                    placeholder="Please list your top 3 ideas...">{{ q3_value if q3_value else '' }}</textarea>
+                <p class="optional-note">Optional - You may skip this question if you prefer</p>
             </div>
             
             <div class="button-group">
@@ -223,17 +230,10 @@
     </div>
     
     <script>
-        // Form validation
+        // No validation - form can be submitted with empty fields
         document.getElementById('survey-form').addEventListener('submit', function(e) {
-            const q1 = document.getElementById('q1_text').value.trim();
-            const q2 = document.getElementById('q2_text').value.trim();
-            const q3 = document.getElementById('q3_text').value.trim();
-            
-            if (!q1 || !q2 || !q3) {
-                e.preventDefault();
-                alert('Please answer all questions before continuing.');
-                return false;
-            }
+            // Allow submission even if fields are empty
+            return true;
         });
     </script>
 </body>
