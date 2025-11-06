@@ -245,21 +245,21 @@ layout = html.Div([
             ], className="sidebar-section"),
             html.Div([
                 html.Strong([
-                    "CS Student-Teacher Ratio",
+                    "Student-to-CS-Teacher Ratio",
                     html.Span(
                         "i",
-                        title="Number of CS students per CS teacher. Calculated as CS Enrollment divided by the sum of approved and extra CS teachers at the school.",
+                        title="Number of total students per CS teacher. Calculated as Total Student Count divided by the sum of approved and extra CS teachers at the school.",
                         className="sidebar-info-icon"
                     )
                 ]),
                 dcc.RangeSlider(
                     id="ratio-threshold",
                     min=0,
-                    max=185,
-                    value=[0, 185],
+                    max=2500,
+                    value=[0, 2500],
                     step=1,
-                    marks={0: '0', 50: '50', 100: '100',
-                           150: '150', 185: '185'},
+                    marks={0: '0', 500: '500', 1000: '1000',
+                           1500: '1500', 2000: '2000', 2500: '2500'},
                     tooltip={"placement": "bottom", "always_visible": True},
                     className="sidebar-ratio-slider"
                 ),
@@ -359,7 +359,7 @@ def toggle_ri_threshold(school):
     prevent_initial_call=True
 )
 def reset_filters(n_clicks):
-    return [], [], [], [], [0, 185], [-1.0, 1.0], [0, 16]
+    return [], [], [], [], [0, 2500], [-1.0, 1.0], [0, 16]
 
 
 @callback(
@@ -614,14 +614,14 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         merged.loc[merged['CS_Enrollment'] == 0, 'Classification'] = "No"
 
         # Calculate student teacher ratio for filtering
-        merged["CS_Enrollment"] = merged["CS_Enrollment"].apply(
+        merged["Total Student Count"] = merged["Total Student Count"].apply(
             lambda x: int(x) if pd.notnull(x) else 0)
         merged["approved_teachers"] = merged["approved_teachers"].apply(
             lambda x: int(x) if pd.notnull(x) else 0)
         merged["extra_teachers"] = merged["extra_teachers"].apply(
             lambda x: int(x) if pd.notnull(x) else 0)
         merged["student_teacher_ratio"] = merged.apply(
-            lambda row: row["CS_Enrollment"] /
+            lambda row: row["Total Student Count"] /
             (row["approved_teachers"] + row["extra_teachers"])
             if (row["approved_teachers"] + row["extra_teachers"]) not in [0, None, "", float('nan')] else 0.0,
             axis=1
@@ -701,7 +701,7 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
 
         for modality, color in color_map.items():
             df = merged[merged["Classification"] == modality].copy()
-            df["CS_Enrollment"] = df["CS_Enrollment"].apply(
+            df["Total Student Count"] = df["Total Student Count"].apply(
                 lambda x: int(x) if pd.notnull(x) else 0)
             df["approved_teachers"] = df["approved_teachers"].apply(
                 lambda x: int(x) if pd.notnull(x) else 0)
@@ -709,7 +709,7 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
                 lambda x: int(x) if pd.notnull(x) else 0)
 
             df["student_teacher_ratio"] = df.apply(
-                lambda row: row["CS_Enrollment"] /
+                lambda row: row["Total Student Count"] /
                 (row["approved_teachers"] + row["extra_teachers"])
                 if (row["approved_teachers"] + row["extra_teachers"]) not in [0, None, "", float('nan')] else 0.0,
                 axis=1
@@ -1130,8 +1130,8 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
     if not legend_combined:
         legend_combined = None
 
-    max_ratio = 185
-    marks = {0: '0', 50: '50', 100: '100', 150: '150', 185: '185'}
+    max_ratio = 2500
+    marks = {0: '0', 500: '500', 1000: '1000', 1500: '1500', 2000: '2000', 2500: '2500'}
 
     return fig, legend_combined, max_ratio, marks
 

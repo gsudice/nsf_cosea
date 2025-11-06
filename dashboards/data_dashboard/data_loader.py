@@ -28,7 +28,7 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
     city = row.get("School City", "") or row.get("city", "")
     locale = row.get("Locale", "") or row.get("locale", "")
     grade_range = row.get("GRADE_RANGE", "")
-    cs_enrollment = row.get("CS_Enrollment", 0)
+    total_students = row.get("Total Student Count", 0)
     approved_teachers = row.get("approved_teachers", 0)
     extra_teachers = row.get("extra_teachers", 0)
     # Compute ratio using approved teachers plus extra certified teachers
@@ -38,7 +38,7 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
     except Exception:
         total_teachers_for_ratio = approved_teachers or 0
     ratio_display = row.get("ratio_display", ratio_fmt(
-        cs_enrollment / total_teachers_for_ratio if total_teachers_for_ratio else 0))
+        total_students / total_teachers_for_ratio if total_teachers_for_ratio else 0))
 
     # If not in row, fetch from data
     if "approved_teachers" not in row:
@@ -54,7 +54,7 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
         except Exception:
             total_teachers_for_ratio = approved_teachers or 0
         ratio_display = ratio_fmt(
-            cs_enrollment / total_teachers_for_ratio if total_teachers_for_ratio else 0)
+            total_students / total_teachers_for_ratio if total_teachers_for_ratio else 0)
 
     # Race and RI
     total_race_vals = ""
@@ -170,12 +170,6 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
             cs_race_vals = ""
             ri_vals = ""
 
-    cs_enrollment_val = row.get("CS_Enrollment", 0)
-    if pd.notnull(cs_enrollment_val):
-        cs_enrollment_str = int(cs_enrollment_val)
-    else:
-        cs_enrollment_str = ''
-
     approved_teachers_val = approved_teachers
     if pd.notnull(approved_teachers_val):
         approved_teachers_str = int(approved_teachers_val)
@@ -194,7 +188,6 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
         city=city,
         locale=locale,
         GRADE_RANGE=grade_range,
-        CS_Enrollment=cs_enrollment_str,
         approved_teachers=approved_teachers_str,
         extra_teachers=extra_teachers_str,
         ratio_display=ratio_display,
