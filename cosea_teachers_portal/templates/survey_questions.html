@@ -191,13 +191,12 @@
         <form action="{{ url_for('survey_questions') }}" method="POST" id="survey-form">
             <!-- Question 1 -->
             <div class="question-section">
-                <label>1. What is your opinion about whether all students in your school (or school district if you're an admin) have equal access to Computer Science classes? Are all students able to enroll in Computer Science classes?</label>
+                <label>1. What is your opinion about whether all students in your school (or school district if you're an admin) have access to Computer Science classes? Are all students able to enroll in Computer Science classes?</label>
                 <textarea 
                     name="q1_familiarity" 
                     id="q1_text" 
                     class="answer-textarea" 
                     placeholder="Please share your thoughts...">{{ q1_value if q1_value else '' }}</textarea>
-                <p class="optional-note">Optional - You may skip this question if you prefer</p>
             </div>
             
             <!-- Question 2 -->
@@ -208,7 +207,6 @@
                     id="q2_text" 
                     class="answer-textarea" 
                     placeholder="Please describe the limiting factors...">{{ q2_value if q2_value else '' }}</textarea>
-                <p class="optional-note">Optional - You may skip this question if you prefer</p>
             </div>
             
             <!-- Question 3 -->
@@ -219,7 +217,6 @@
                     id="q3_text" 
                     class="answer-textarea" 
                     placeholder="Please list your top 3 ideas...">{{ q3_value if q3_value else '' }}</textarea>
-                <p class="optional-note">Optional - You may skip this question if you prefer</p>
             </div>
             
             <div class="button-group">
