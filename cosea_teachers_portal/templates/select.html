@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Select Census Blocks - CoSea</title>
+    <title>Select Census Block Groups - CoSea</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="{{ url_for('static', filename='styling.css') }}">
     <style>
@@ -526,7 +526,7 @@
 
         <!-- Instructions -->
         <div class="instruction-box">
-            <p><strong>📝 Instructions:</strong> Click on census blocks on the map below to identify specific geographic areas where students may face barriers to CS education access. If you are aware of specific limiting factors for each area, please indicate them. <em>This step is optional - you can save your data without completing any census block assessments.</em></p>
+            <p><strong>📝 Instructions:</strong> Click on census block groups on the map below to identify specific geographic areas where students may face barriers to CS education access. If you are aware of specific limiting factors for each area, please indicate them. </p>
         </div>
 
         <!-- Barrier Categories & How to Use -->
@@ -549,7 +549,7 @@
             <div class="info-section">
                 <h4>📋 How to Use:</h4>
                 <ul>
-                    <li>Click any census block to assess barriers</li>
+                    <li>Click any census block groups to assess barriers</li>
                     <li>Hold <kbd>Ctrl</kbd> (Windows) or <kbd>⌘ Cmd</kbd> (Mac) and click to select multiple blocks</li>
                     <li>Red blocks = Not started</li>
                     <li>Blue blocks = Completed (click to edit)</li>
@@ -580,15 +580,15 @@
                     <div class="legend-color" style="background: #2196F3; opacity: 0.6;"></div>
                     <span>Completed - Click to view/edit</span>
                 </div>
-                <div id="selection-counter">0 block(s) selected</div>
-                <button id="batch-submit-btn">📋 Submit Selected Blocks</button>
+                <div id="selection-counter">0 block group(s) selected</div>
+                <button id="batch-submit-btn">📋 Submit Selected Block Groups</button>
                 <a href="/district" class="back-btn" style="display: block; text-align: center; margin-top: 20px;">← Back to School Selection</a>
             </div>
             
             <div class="session-actions">
                 <h4>💾 Session Management</h4>
                 <div class="session-note">
-                    <strong>📝 Note:</strong> All your assessments are saved locally in your browser. When you're finished, click the button below to save everything to the database. Census block assessments are optional - you can save even without completing any blocks.
+                    <strong>📝 Note:</strong> All your assessments are saved locally in your browser. When you're finished, click the button below to save everything to the database. Census Block Groups assessments are optional - you can save even without completing any blocks.
                 </div>
                 <button id="end-session-btn" onclick="endSession()">✅ End Session & Save to Database</button>
             </div>
@@ -600,7 +600,7 @@
     <div id="modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Census Block Assessment</h3>
+                <h3>Census Block Group Assessment</h3>
                 <span class="close">&times;</span>
             </div>
             <div id="edit-indicator" class="edit-indicator">
@@ -672,8 +672,8 @@
                 </div>
                 
                 <div class="button-group">
-                    <button type="submit">💾 Save Assessment</button>
                     <button type="button" class="btn-secondary close">Cancel</button>
+                    <button type="submit">💾 Save Assessment</button>
                 </div>
             </form>
         </div>
