@@ -1057,14 +1057,13 @@
             .then(response => response.json())
             .then(result => {
                 if (result.success) {
-                    const successMsg = result.count > 0
-                        ? `Successfully saved ${result.count} assessment(s) across ${result.schools} school(s) to database!`
-                        : `Successfully saved your survey and barrier data to database!`;
-                    alert(successMsg);
                     // Clear ALL localStorage
                     localStorage.clear();
                     // Redirect to home page
-                    window.location.href = '/';
+                    if (result.redirect){
+                        window.location.href = result.redirect;
+                        return;
+                    } window.location.href='/';
                 } else {
                     alert(`Failed to save data: ${result.error || 'Unknown error'}. Please try again.`);
                 }

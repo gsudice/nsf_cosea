@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Submission Review – CoSea</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styling.css') }}">
+    <style>
+        body {
+            background: #f3f6fa;
+            font-family: 'Lato', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background: #0039a6;
+            padding: 25px 40px;
+            color: white;
+            text-align: center;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .page-container {
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .school-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            border-left: 6px solid #0039a6;
+        }
+
+        .school-title {
+            font-size: 26px;
+            margin-bottom: 10px;
+            font-weight: 700;
+            color: #0039a6;
+        }
+
+        .school-subtitle {
+            font-size: 18px;
+            margin-bottom: 25px;
+            color: #555;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            margin-top: 25px;
+            margin-bottom: 10px;
+            border-left: 4px solid #0039a6;
+            padding-left: 10px;
+        }
+
+        .answer-box {
+            background: #f8f9fc;
+            padding: 12px 15px;
+            border-radius: 6px;
+            border: 1px solid #e0e6ef;
+            margin-bottom: 10px;
+            white-space: pre-line;
+        }
+
+        .barrier-tag {
+            background: #e8f0ff;
+            color: #0039a6;
+            padding: 6px 12px;
+            margin: 4px 4px 4px 0;
+            border-radius: 20px;
+            font-size: 14px;
+            display: inline-block;
+            border: 1px solid #0039a6;
+        }
+
+        .block-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .block-table th, .block-table td {
+            border: 1px solid #d4d9e2;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .block-table th {
+            background: #0039a6;
+            color: white;
+        }
+
+        .no-blocks {
+            background: #fff3cd;
+            padding: 12px 15px;
+            border-left: 4px solid #ffca2c;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 15px;
+            color: #856404;
+        }
+
+        .btn-container {
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .action-btn {
+            background: #0039a6;
+            color: white;
+            padding: 14px 26px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            margin: 10px;
+            font-size: 16px;
+            transition: 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .action-btn:hover {
+            background: #0050d4;
+            transform: translateY(-2px);
+        }
+
+        @media print {
+            .action-btn, .header {
+                display: none !important;
+            }
+            body {
+                background: white;
+            }
+            .school-card {
+                box-shadow: none;
+                border: 1px solid #ccc !important;
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">Submission Review</div>
+
+<div class="page-container">
+
+    {% for school in schools %}
+    <div class="school-card">
+        
+        <div class="school-title">{{ school.school }}</div>
+        <div class="school-subtitle">{{ school.district }}</div>
+
+        <!-- Q1 -->
+        <div class="section-title">1. Opinion on CS Availability</div>
+        <div class="answer-box">
+            {{ school.survey.q1 if school.survey.q1 else "No answer provided." }}
+        </div>
+
+        <!-- Q2 -->
+        <div class="section-title">2. Barriers Limiting CS Enrollment</div>
+        <div class="answer-box">
+            {{ school.survey.q2 if school.survey.q2 else "No barriers listed." }}
+        </div>
+
+        <!-- Q3 -->
+        <div class="section-title">3. Improvements (Top Priorities)</div>
+        <div class="answer-box">
+            {{ school.survey.q3 if school.survey.q3 else "No improvements listed." }}
+        </div>
+
+        <!-- District Barriers -->
+        <div class="section-title">District-Level Barriers</div>
+        <div>
+            {% if school.district_barriers %}
+                {% for b in school.district_barriers %}
+                    <span class="barrier-tag">{{ b }}</span>
+                {% endfor %}
+            {% else %}
+                <div class="answer-box">No district-level barriers identified.</div>
+            {% endif %}
+        </div>
+
+        {% if school.district_barriers_other %}
+            <div class="answer-box" style="margin-top:10px;">
+                <strong>Other Notes:</strong><br>{{ school.district_barriers_other }}
+            </div>
+        {% endif %}
+
+        <!-- Block Groups -->
+        <div class="section-title">Census Block Group Submissions</div>
+
+        {% if school.blocks|length == 0 %}
+            <div class="no-blocks">No census block assessments were completed for this school.</div>
+        {% else %}
+            <table class="block-table">
+                <tr>
+                    <th>Block GEOID</th>
+                    <th>Barriers</th>
+                    <th>Notes</th>
+                </tr>
+                {% for geoid, block in school.blocks.items() %}
+                <tr>
+                    <td>{{ geoid }}</td>
+                    <td>{{ block.barriers|join(', ') }}</td>
+                    <td>{{ block.notes }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        {% endif %}
+
+    </div>
+    {% endfor %}
+
+    <div class="btn-container">
+        <button class="action-btn" onclick="window.print()">🖨️ Print / Save PDF</button>
+        <a href="/" class="action-btn">🏠 Return Home</a>
+    </div>
+
+</div>
+
+</body>
+</html>

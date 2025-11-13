@@ -191,32 +191,51 @@
         <form action="{{ url_for('survey_questions') }}" method="POST" id="survey-form">
             <!-- Question 1 -->
             <div class="question-section">
-                <label>1. What is your opinion about whether all students in your school (or school district if you're an admin) have access to Computer Science classes? Are all students able to enroll in Computer Science classes?</label>
-                <textarea 
-                    name="q1_familiarity" 
-                    id="q1_text" 
-                    class="answer-textarea" 
-                    placeholder="Please share your thoughts...">{{ q1_value if q1_value else '' }}</textarea>
+                <label>1. What is your opinion on the availability of Computer Science (CS) classes in your high school or school district? Choose one appropriate answer:</label>
+                <div style="margin-top: 15px;">
+                    <input type="radio" name="q1_familiarity" value="sufficient" required>
+                        Sufficient opportunities are available given the size of our student body
+                    <br><br>
+                    <input type="radio" name="q1_familiarity" value="somewhat">
+                        Somewhat available, but not enough for the students in our school/or district
+                    <br><br>
+                    <input type="radio" name="q1_familiarity" value="rare">
+                        Opportunities are rare
+                    <br><br>
+                    <input type="radio" name="q1_familiarity" value="none">
+                        No opportunities at all
+                    <br><br>
+                </div>
             </div>
             
             <!-- Question 2 -->
             <div class="question-section">
-                <label>2. What in your opinion are the potential barriers that limit access to Computer Science classes?</label>
+                <label>2. Can you think of any barriers that would prevent or limit students from enrolling in Computer Science (CS) classes during grades 9 through 12?</label>
                 <textarea 
                     name="q2_accessibility" 
                     id="q2_text" 
                     class="answer-textarea" 
-                    placeholder="Please describe the limiting factors...">{{ q2_value if q2_value else '' }}</textarea>
+                    placeholder="Please describe the barriers...">{{ q2_value if q2_value else '' }}</textarea>
             </div>
             
             <!-- Question 3 -->
             <div class="question-section">
-                <label>3. What modifications could your school (or school district if you're an admin) implement to improve access to Computer Science classes?</label>
+                <label>3. In what ways could your school or district improve or facilitate access to Computer Science classes? Please list up to three top priorities below:</label>
                 <textarea 
-                    name="q3_biggest_barrier" 
+                    name="q3_1" 
                     id="q3_text" 
                     class="answer-textarea" 
-                    placeholder="Please list your top 3 ideas...">{{ q3_value if q3_value else '' }}</textarea>
+                    placeholder="Please list your Priority 1...">{{ q3_value if q3_value else '' }}</textarea>
+                <textarea 
+                    name="q3_2" 
+                    id="q3_text" 
+                    class="answer-textarea" 
+                    placeholder="Please list your Priority 2...">{{ q3_value if q3_value else '' }}</textarea>
+                <textarea 
+                    name="q3_3" 
+                    id="q3_text" 
+                    class="answer-textarea" 
+                    placeholder="Please list your Priority 3...">{{ q3_value if q3_value else '' }}</textarea>
             </div>
             
             <div class="button-group">
