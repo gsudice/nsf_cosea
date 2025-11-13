@@ -11,7 +11,7 @@ import hashlib
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import json
-
+review_cache = {}
 # Set up logging
 logging.basicConfig(
     level=logging.DEBUG,
@@ -19,12 +19,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-load_dotenv()
+from pathlib import Path
+env_path = Path(__file__).parent / ".env"
+load_dotenv(env_path)
 
-USERNAME = os.getenv("USERNAME")
-PASSWORD = os.getenv("PASSWORD")
-SERVER = os.getenv("SERVER")
-DATABASE = os.getenv("DATABASE")
+USERNAME = os.getenv("DB_USERNAME")
+PASSWORD = os.getenv("DB_PASSWORD")
+SERVER = os.getenv("DB_SERVER")
+DATABASE = os.getenv("DB_DATABASE")
 PORT = "5432"
 
 app = Flask(__name__)
@@ -191,7 +193,10 @@ def survey_questions():
         # Save survey responses to session - NO VALIDATION, all optional
         session['q1_familiarity'] = request.form.get('q1_familiarity', '')
         session['q2_accessibility'] = request.form.get('q2_accessibility', '')
-        session['q3_biggest_barrier'] = request.form.get('q3_biggest_barrier', '')
+        q3_1 = request.form.get('q3_1', '').strip()
+        q3_2 = request.form.get('q3_2', '').strip()
+        q3_3 = request.form.get('q3_3', '').strip()
+        session['q3_biggest_barrier'] = "\n".join([x for x in [q3_1, q3_2, q3_3] if x])
         
         # Save to school_submissions immediately after survey
         school_key = get_school_key(session['selected_district'], session['selected_school'])
@@ -478,264 +483,192 @@ def submit_barriers():
 
 @app.route("/end_session", methods=["POST"])
 def end_session():
-    """Save ALL data from localStorage and Flask session when user clicks 'End Session'"""
+    """Save ALL user data to database, then redirect to Review Page."""
     try:
-        logger.debug("=== END SESSION - SAVING ALL DATA ===")
         data = request.get_json()
-        
-        # Get localStorage data sent from client
-        local_storage_data = data.get('localStorage', {})
-        
-        logger.info(f"Received localStorage keys: {list(local_storage_data.keys())}")
-        
-        # Extract all school block submissions from localStorage
-        all_school_blocks = {}
-        for key, value in local_storage_data.items():
-            if key.startswith('school_') and key.endswith('_submissions'):
-                school_identifier = key.replace('school_', '').replace('_submissions', '')
-                try:
-                    parsed_value = json.loads(value) if isinstance(value, str) else value
-                    all_school_blocks[school_identifier] = parsed_value
-                    logger.info(f"Parsed localStorage for {school_identifier}: {len(parsed_value)} blocks")
-                except Exception as parse_error:
-                    logger.error(f"Failed to parse localStorage data for key {key}: {parse_error}")
-        
-        logger.info(f"Found {len(all_school_blocks)} schools with block data in localStorage")
-        
-        # Get Flask session data
-        school_submissions = session.get('school_submissions', {})
-        
-        logger.info(f"Flask session has {len(school_submissions)} schools")
-        logger.debug(f"Session school keys: {list(school_submissions.keys())}")
-        
-        if not school_submissions:
-            logger.error("No school submissions found in Flask session!")
-            return jsonify({"success": False, "error": "No survey/barrier data found. Please complete the survey."}), 400
-        
+        local_storage_data = data.get("localStorage", {})
+
+        if "school_submissions" not in session:
+            return jsonify({"success": False, "error": "No data to save"}), 400
+
+        school_submissions = session["school_submissions"]
+
         teacher_id = str(uuid.uuid4())
-        client_session_id = session.get('session_id')
-        ip_hash = session.get('ip_hash') or get_ip_hash()
+        client_session_id = session["session_id"]
+        ip_hash = session.get("ip_hash", get_ip_hash())
+        user_role = session.get('role')
+        user_subjects = ",".join(session.get("subjects", [])) if user_role == "teacher" else None
+        user_admin_level = session.get("admin_level") if user_role == "administrator" else None
+
+        saved_count = 0
+        error_count = 0
+        
         eastern = ZoneInfo("America/New_York")
         submitted_at = datetime.now(eastern).replace(tzinfo=None)
+    except Exception as tz_error:
+        logger.error(f"Timezone load error: {tz_error}. Falling back to UTC.")
+        submitted_at = datetime.utcnow()
         
-        user_role = session.get('role', 'unknown')
-        user_subjects = ','.join(session.get('subjects', [])) if session.get('role') == 'teacher' else None
-        user_admin_level = session.get('admin_level') if session.get('role') == 'administrator' else None
-        
-        total_saved = 0
-        total_failed = 0
-        schools_processed = []
-        processed_school_ids = set()
-        
+
+        # ---- SAVE TO DATABASE ----
         with engine.begin() as connection:
-            # Process each school's data
-            for school_key, school_session_data in school_submissions.items():
+            for school_key, school_data in school_submissions.items():
+                district = school_data["district"]
+                school_name = school_data["school"]
+
+                # Get school ID
+                result = connection.execute(
+                    text("""SELECT "UNIQUESCHOOLID"
+                            FROM "allhsgrades24".tbl_approvedschools
+                            WHERE "SYSTEM_NAME" = :d AND "SCHOOL_NAME" = :s"""),
+                    {"d": district, "s": school_name}
+                ).fetchone()
+
+                if not result:
+                    continue
+
+                school_id = result[0]
+
+                # Delete previous submissions for same session
+                connection.execute(
+                    text("""DELETE FROM "allhsgrades24".teacher_reason_submissions
+                            WHERE "UNIQUESCHOOLID" = :sid
+                            AND session_id = :sess"""),
+                    {"sid": school_id, "sess": client_session_id}
+                )
+
+                # Insert district-level responses when there are no blocks
+                district_barriers_str = ",".join(school_data.get("district_barriers", []))
+                district_barriers_other = school_data.get("district_barriers_other")
+
+                # Extract all census block submissions for this school
+                block_key = school_name.replace(" ", "_")
+                block_data = local_storage_data.get(f"school_{block_key}_submissions", "{}")
                 try:
-                    district = school_session_data.get('district')
-                    school_name = school_session_data.get('school')
-                    
-                    # Get survey and district barrier data from session
-                    q1_familiarity = school_session_data.get('q1_familiarity', '').strip()
-                    q2_accessibility = school_session_data.get('q2_accessibility', '').strip()
-                    q3_biggest_barrier = school_session_data.get('q3_biggest_barrier', '').strip()
-                    district_barriers = ','.join(school_session_data.get('district_barriers', []))
-                    district_barriers_other = school_session_data.get('district_barriers_other', '').strip()
-                    
-                    # Convert empty strings to None (NULL in database)
-                    q1_familiarity = q1_familiarity if q1_familiarity else None
-                    q2_accessibility = q2_accessibility if q2_accessibility else None
-                    q3_biggest_barrier = q3_biggest_barrier if q3_biggest_barrier else None
-                    district_barriers_other = district_barriers_other if district_barriers_other else None
-                    
-                    logger.info(f"Processing school: {school_name}")
-                    logger.debug(f"Session data - Q1: {q1_familiarity}, Q2: {q2_accessibility}, Q3: {q3_biggest_barrier}")
-                    logger.debug(f"District barriers: {district_barriers}")
-                    
-                    # Get school ID first
-                    school_id_query = text("""
-                        SELECT "UNIQUESCHOOLID"
-                        FROM "allhsgrades24".tbl_approvedschools 
-                        WHERE "SCHOOL_NAME" = :school_name 
-                        AND "SYSTEM_NAME" = :district
-                    """)
-                    school_result = connection.execute(school_id_query, {
-                        "school_name": school_name, 
-                        "district": district
-                    }).fetchone()
-                    
-                    if not school_result:
-                        logger.error(f"❌ School not found in database: {school_name}")
-                        continue
-                    
-                    school_unique_id = school_result[0]
-                    logger.info(f"School ID: {school_unique_id}")
-                    
-                    # Check if we've already processed this school
-                    if school_unique_id in processed_school_ids:
-                        logger.warning(f"⚠️ School {school_name} (ID: {school_unique_id}) already processed, skipping duplicate")
-                        continue
-                    
-                    # Mark this school as processed
-                    processed_school_ids.add(school_unique_id)
-                    
-                    # Match localStorage key
-                    school_name_clean = school_name.replace(' ', '_')
-                    block_submissions = None
-                    
-                    # Try different key formats
-                    possible_keys = [
-                        school_name_clean,
-                        school_name.replace(' ', '_'),
-                        f"{district}_{school_name}".replace(' ', '_'),
-                    ]
-                    
-                    for possible_key in possible_keys:
-                        if possible_key in all_school_blocks:
-                            block_submissions = all_school_blocks[possible_key]
-                            logger.info(f"✅ Found block data with key: {possible_key}")
-                            break
-                    
-                    # Handle case where there are NO census blocks
-                    if not block_submissions or len(block_submissions) == 0:
-                        logger.info(f"ℹ️ No block submissions found for {school_name}. Saving survey/barrier data with NULL geoid.")
-                        
-                        insert_query = text("""
-                            INSERT INTO "allhsgrades24".teacher_reason_submissions
-                            ("UNIQUESCHOOLID", teacher_id, geoid, reason_code, comment, submitted_at, 
-                             user_role, user_subjects, user_admin_level, session_id, ip_hash,
-                             q1_familiarity, q2_accessibility, q3_biggest_barrier,
-                             district_barriers, district_barriers_other)
-                            VALUES (:school_id, :teacher_id, NULL, 'no_census_assessment', NULL, :submitted_at,
-                                    :user_role, :user_subjects, :user_admin_level, :session_id, :ip_hash,
-                                    :q1_familiarity, :q2_accessibility, :q3_biggest_barrier,
-                                    :district_barriers, :district_barriers_other)
-                        """)
-                        
-                        connection.execute(insert_query, {
-                            "school_id": school_unique_id,
-                            "teacher_id": teacher_id,
-                            "submitted_at": submitted_at,
-                            "user_role": user_role,
-                            "user_subjects": user_subjects,
-                            "user_admin_level": user_admin_level,
-                            "session_id": client_session_id,
-                            "ip_hash": ip_hash,
-                            "q1_familiarity": q1_familiarity,
-                            "q2_accessibility": q2_accessibility,
-                            "q3_biggest_barrier": q3_biggest_barrier,
-                            "district_barriers": district_barriers,
-                            "district_barriers_other": district_barriers_other
-                        })
-                        
-                        logger.info(f"✅ Saved survey/barrier data for {school_name} (no census blocks)")
-                        schools_processed.append(school_name)
-                        total_saved += 1
-                        continue
-                    
-                    logger.info(f"Processing {len(block_submissions)} blocks for {school_name}")
-                    
-                    # DELETE previous submissions for this school and session
-                    delete_school_query = text("""
-                        DELETE FROM "allhsgrades24".teacher_reason_submissions
-                        WHERE "UNIQUESCHOOLID" = :school_id 
-                        AND session_id = :session_id
-                    """)
-                    delete_result = connection.execute(delete_school_query, {
-                        'school_id': school_unique_id,
-                        'session_id': client_session_id
-                    })
-                    logger.info(f"🗑️ Deleted {delete_result.rowcount} previous submissions for school {school_name}")
-                    
-                    # Insert new data
-                    blocks_saved_for_school = 0
-                    for geoid, block_data in block_submissions.items():
-                        try:
-                            barriers = block_data.get('barriers', [])
-                            notes = block_data.get('notes', '')
-                            
-                            if not barriers:
-                                logger.warning(f"No barriers for block {geoid}, skipping")
-                                continue
-                            
-                            # Insert submissions for each barrier
-                            for barrier in barriers:
-                                reason_code = barrier.lower()[:50]
-                                # Comment is NULL unless barrier is 'other' with notes
-                                if barrier.lower() == 'other' and notes.strip():
-                                    comment = notes.strip()
-                                else:
-                                    comment = None
-                                
-                                insert_query = text("""
-                                    INSERT INTO "allhsgrades24".teacher_reason_submissions
-                                    ("UNIQUESCHOOLID", teacher_id, geoid, reason_code, comment, submitted_at, 
-                                     user_role, user_subjects, user_admin_level, session_id, ip_hash,
-                                     q1_familiarity, q2_accessibility, q3_biggest_barrier,
-                                     district_barriers, district_barriers_other)
-                                    VALUES (:school_id, :teacher_id, :geoid, :reason_code, :comment, :submitted_at,
-                                            :user_role, :user_subjects, :user_admin_level, :session_id, :ip_hash,
-                                            :q1_familiarity, :q2_accessibility, :q3_biggest_barrier,
-                                            :district_barriers, :district_barriers_other)
-                                """)
-                                
-                                connection.execute(insert_query, {
-                                    "school_id": school_unique_id,
-                                    "teacher_id": teacher_id,
+                    block_data = json.loads(block_data)
+                except:
+                    block_data = {}
+
+                # If no block groups → save 1 row with geoid=NULL
+                if not block_data:
+                    connection.execute(
+                        text("""INSERT INTO "allhsgrades24".teacher_reason_submissions
+                                ("UNIQUESCHOOLID", teacher_id, geoid, reason_code, comment,
+                                submitted_at, user_role, user_subjects, user_admin_level,
+                                session_id, ip_hash, q1_familiarity, q2_accessibility,
+                                q3_biggest_barrier, district_barriers, district_barriers_other)
+                                VALUES (:sid, :tid, NULL, 'no_census_assessment', NULL,
+                                :time, :role, :subjects, :admin, :sess, :ip,
+                                :q1, :q2, :q3, :dbarr, :dbother)"""),
+                        {
+                            "sid": school_id,
+                            "tid": teacher_id,
+                            "time": submitted_at,
+                            "role": user_role,
+                            "subjects": user_subjects,
+                            "admin": user_admin_level,
+                            "sess": client_session_id,
+                            "ip": ip_hash,
+                            "q1": school_data.get("q1_familiarity"),
+                            "q2": school_data.get("q2_accessibility"),
+                            "q3": school_data.get("q3_biggest_barrier"),
+                            "dbarr": district_barriers_str,
+                            "dbother": district_barriers_other
+                        }
+                    )
+                    saved_count += 1
+                else:
+                    # Save each census block
+                    for geoid, block_info in block_data.items():
+                        barriers = block_info.get("barriers", [])
+                        notes = block_info.get("notes")
+
+                        for b in barriers:
+                            reason_code = b.lower()
+                            comment = notes if b == "other" else None
+
+                            connection.execute(
+                                text("""INSERT INTO "allhsgrades24".teacher_reason_submissions
+                                        ("UNIQUESCHOOLID", teacher_id, geoid, reason_code, comment,
+                                         submitted_at, user_role, user_subjects, user_admin_level,
+                                         session_id, ip_hash, q1_familiarity, q2_accessibility,
+                                         q3_biggest_barrier, district_barriers, district_barriers_other)
+                                        VALUES (:sid, :tid, :geoid, :reason, :comment, :time,
+                                        :role, :subjects, :admin, :sess, :ip,
+                                        :q1, :q2, :q3, :dbarr, :dbother)"""),
+                                {
+                                    "sid": school_id,
+                                    "tid": teacher_id,
                                     "geoid": geoid,
-                                    "reason_code": reason_code,
+                                    "reason": reason_code,
                                     "comment": comment,
-                                    "submitted_at": submitted_at,
-                                    "user_role": user_role,
-                                    "user_subjects": user_subjects,
-                                    "user_admin_level": user_admin_level,
-                                    "session_id": client_session_id,
-                                    "ip_hash": ip_hash,
-                                    "q1_familiarity": q1_familiarity,
-                                    "q2_accessibility": q2_accessibility,
-                                    "q3_biggest_barrier": q3_biggest_barrier,
-                                    "district_barriers": district_barriers,
-                                    "district_barriers_other": district_barriers_other
-                                })
-                                
-                                logger.debug(f"✅ Saved barrier '{barrier}' for block {geoid}")
-                            
-                            blocks_saved_for_school += 1
-                            total_saved += 1
-                            
-                        except Exception as block_error:
-                            logger.error(f"❌ Failed to save block {geoid}: {str(block_error)}")
-                            total_failed += 1
-                    
-                    logger.info(f"✅ Saved {blocks_saved_for_school} blocks for {school_name}")
-                    schools_processed.append(school_name)
-                    
-                except Exception as school_error:
-                    import traceback
-                    logger.error(f"❌ Failed to process school {school_key}: {str(school_error)}")
-                    logger.error(traceback.format_exc())
-                    total_failed += 1
-        
-        logger.info(f"=== SESSION SAVE COMPLETE ===")
-        logger.info(f"✅ Saved: {total_saved} blocks across {len(schools_processed)} schools")
-        logger.info(f"❌ Failed: {total_failed} blocks")
-        logger.info(f"📚 Schools: {schools_processed}")
-        
-        # Clear Flask session after successful save
+                                    "time": submitted_at,
+                                    "role": user_role,
+                                    "subjects": user_subjects,
+                                    "admin": user_admin_level,
+                                    "sess": client_session_id,
+                                    "ip": ip_hash,
+                                    "q1": school_data.get("q1_familiarity"),
+                                    "q2": school_data.get("q2_accessibility"),
+                                    "q3": school_data.get("q3_biggest_barrier"),
+                                    "dbarr": district_barriers_str,
+                                    "dbother": district_barriers_other
+                                }
+                            )
+                            saved_count += 1
+
+        # ---- STORE DATA FOR REVIEW PAGE ----
+        token = str(uuid.uuid4())
+        review_cache[token] = {
+            "schools": []   # List of ALL schools and their details
+            }
+        for school_key, school_data in school_submissions.items():
+            district = school_data["district"]
+            school_name = school_data["school"]
+            # Pull matching block data
+            block_key = school_name.replace(" ", "_")
+            school_blocks = local_storage_data.get(f"school_{block_key}_submissions", "{}")
+            try:
+                school_blocks = json.loads(school_blocks)
+            except:
+                school_blocks = {}
+            
+            review_cache[token]["schools"].append({
+                "district": district,
+                "school": school_name,
+                "survey": {
+                    "q1": school_data.get("q1_familiarity"),
+                    "q2": school_data.get("q2_accessibility"),
+                    "q3": school_data.get("q3_biggest_barrier")
+                    },
+                    "district_barriers": school_data.get("district_barriers"),
+                    "district_barriers_other": school_data.get("district_barriers_other"),
+                    "blocks": school_blocks
+            })
+
+
+        # Clear session AFTER saving
         session.clear()
-        
+
+        # Redirect browser to Review Page
         return jsonify({
-            "success": True, 
-            "count": total_saved,
-            "schools": len(schools_processed),
-            "failed": total_failed,
-            "redirect": url_for('home')
+            "success": True,
+            "redirect": url_for("review_page", token=token)
         })
-        
+
     except Exception as e:
-        import traceback
-        logger.error(f"❌ Error in end_session: {str(e)}")
-        logger.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({"success": False, "error": str(e)}), 500
+    
+
+@app.route("/review")
+def review_page():
+
+    token = request.args.get("token")
+    if not token or token not in review_cache:
+        return "Invalid or expired review token", 404
+
+    data = review_cache[token]
+    return render_template("review.html", schools=data["schools"])
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=80, debug=False)
