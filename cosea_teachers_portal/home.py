@@ -501,7 +501,10 @@ def submit_barriers():
 
 @app.route("/end_session", methods=["POST"])
 def end_session():
-    """Save ALL user data to database, then redirect to Review Page."""
+    """Save ALL collected user data to database and redirect to review page."""
+    # ------------------------------------------------------
+    # 1. READ INPUT + SESSION-SAVED SURVEY DATA
+    # ------------------------------------------------------
     try:
         data = request.get_json()
         local_storage_data = data.get("localStorage", {})
@@ -514,89 +517,98 @@ def end_session():
         teacher_id = str(uuid.uuid4())
         client_session_id = session["session_id"]
         ip_hash = session.get("ip_hash", get_ip_hash())
-        user_role = session.get('role')
+        user_role = session.get("role")
         user_subjects = ",".join(session.get("subjects", [])) if user_role == "teacher" else None
         user_admin_level = session.get("admin_level") if user_role == "administrator" else None
 
-        saved_count = 0
-        error_count = 0
-        
-        eastern = ZoneInfo("America/New_York")
-        submitted_at = datetime.now(eastern).replace(tzinfo=None)
-    except Exception as tz_error:
-        logger.error(f"Timezone load error: {tz_error}. Falling back to UTC.")
-        submitted_at = datetime.utcnow()
-        
+        # Timestamp
+        try:
+            eastern = ZoneInfo("America/New_York")
+            submitted_at = datetime.now(eastern).replace(tzinfo=None)
+        except:
+            submitted_at = datetime.utcnow()
 
-        # ---- SAVE TO DATABASE ----
-        with engine.begin() as connection:
+    except Exception as e:
+        logger.error(f"Error parsing end_session input: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+    # ------------------------------------------------------
+    # 2. WRITE ALL DATA TO DATABASE
+    # ------------------------------------------------------
+    try:
+        with engine.begin() as conn:
+
             for school_key, school_data in school_submissions.items():
                 district = school_data["district"]
                 school_name = school_data["school"]
 
                 # Get school ID
-                result = connection.execute(
-                    text("""SELECT "UNIQUESCHOOLID"
-                            FROM "allhsgrades24".tbl_approvedschools
-                            WHERE "SYSTEM_NAME" = :d AND "SCHOOL_NAME" = :s"""),
+                row = conn.execute(
+                    text("""
+                        SELECT "UNIQUESCHOOLID"
+                        FROM "allhsgrades24".tbl_approvedschools
+                        WHERE "SYSTEM_NAME" = :d AND "SCHOOL_NAME" = :s
+                    """),
                     {"d": district, "s": school_name}
                 ).fetchone()
 
-                if not result:
+                if not row:
                     continue
 
-                school_id = result[0]
+                school_id = row[0]
 
-                # Delete previous submissions for same session
-                connection.execute(
-                    text("""DELETE FROM "allhsgrades24".teacher_reason_submissions
-                            WHERE "UNIQUESCHOOLID" = :sid
-                            AND session_id = :sess"""),
+                # Remove old entries for same session
+                conn.execute(
+                    text("""
+                        DELETE FROM "allhsgrades24".teacher_reason_submissions
+                        WHERE "UNIQUESCHOOLID" = :sid AND session_id = :sess
+                    """),
                     {"sid": school_id, "sess": client_session_id}
                 )
 
-                # Insert district-level responses when there are no blocks
-                district_barriers_str = ",".join(school_data.get("district_barriers", []))
-                district_barriers_other = school_data.get("district_barriers_other")
+                # District-level barriers
+                db_barriers = ",".join(school_data.get("district_barriers", []))
+                db_other = school_data.get("district_barriers_other")
 
-                # Extract all census block submissions for this school
+                # Get census block data from local storage
                 block_key = school_name.replace(" ", "_")
-                block_data = local_storage_data.get(f"school_{block_key}_submissions", "{}")
+                block_json = local_storage_data.get(f"school_{block_key}_submissions", "{}")
                 try:
-                    block_data = json.loads(block_data)
+                    block_data = json.loads(block_json)
                 except:
                     block_data = {}
 
-                # If no block groups → save 1 row with geoid=NULL
+                # If no block groups → write one row
                 if not block_data:
-                    connection.execute(
-                        text("""INSERT INTO "allhsgrades24".teacher_reason_submissions
-                                ("UNIQUESCHOOLID", teacher_id, geoid, reason_code, comment,
-                                submitted_at, user_role, user_subjects, user_admin_level,
-                                session_id, ip_hash, q1_familiarity, q2_accessibility,
-                                q3_biggest_barrier, district_barriers, district_barriers_other)
-                                VALUES (:sid, :tid, NULL, 'no_census_assessment', NULL,
-                                :time, :role, :subjects, :admin, :sess, :ip,
-                                :q1, :q2, :q3, :dbarr, :dbother)"""),
+                    conn.execute(
+                        text("""
+                            INSERT INTO "allhsgrades24".teacher_reason_submissions
+                            ("UNIQUESCHOOLID", teacher_id, geoid, reason_code, comment,
+                             submitted_at, user_role, user_subjects, user_admin_level,
+                             session_id, ip_hash, q1_familiarity, q2_accessibility,
+                             q3_biggest_barrier, district_barriers, district_barriers_other)
+                            VALUES (:sid, :tid, NULL, 'no_census_assessment', NULL,
+                                    :time, :role, :subj, :admin, :sess, :ip,
+                                    :q1, :q2, :q3, :dbarr, :dbother)
+                        """),
                         {
                             "sid": school_id,
                             "tid": teacher_id,
                             "time": submitted_at,
                             "role": user_role,
-                            "subjects": user_subjects,
+                            "subj": user_subjects,
                             "admin": user_admin_level,
                             "sess": client_session_id,
                             "ip": ip_hash,
                             "q1": school_data.get("q1_familiarity"),
                             "q2": school_data.get("q2_accessibility"),
                             "q3": school_data.get("q3_biggest_barrier"),
-                            "dbarr": district_barriers_str,
-                            "dbother": district_barriers_other
+                            "dbarr": db_barriers,
+                            "dbother": db_other
                         }
                     )
-                    saved_count += 1
                 else:
-                    # Save each census block
+                    # Save each block row
                     for geoid, block_info in block_data.items():
                         barriers = block_info.get("barriers", [])
                         notes = block_info.get("notes")
@@ -605,15 +617,17 @@ def end_session():
                             reason_code = b.lower()
                             comment = notes if b == "other" else None
 
-                            connection.execute(
-                                text("""INSERT INTO "allhsgrades24".teacher_reason_submissions
-                                        ("UNIQUESCHOOLID", teacher_id, geoid, reason_code, comment,
-                                         submitted_at, user_role, user_subjects, user_admin_level,
-                                         session_id, ip_hash, q1_familiarity, q2_accessibility,
-                                         q3_biggest_barrier, district_barriers, district_barriers_other)
-                                        VALUES (:sid, :tid, :geoid, :reason, :comment, :time,
-                                        :role, :subjects, :admin, :sess, :ip,
-                                        :q1, :q2, :q3, :dbarr, :dbother)"""),
+                            conn.execute(
+                                text("""
+                                    INSERT INTO "allhsgrades24".teacher_reason_submissions
+                                    ("UNIQUESCHOOLID", teacher_id, geoid, reason_code, comment,
+                                     submitted_at, user_role, user_subjects, user_admin_level,
+                                     session_id, ip_hash, q1_familiarity, q2_accessibility,
+                                     q3_biggest_barrier, district_barriers, district_barriers_other)
+                                    VALUES (:sid, :tid, :geoid, :reason, :comment, :time,
+                                            :role, :subj, :admin, :sess, :ip,
+                                            :q1, :q2, :q3, :dbarr, :dbother)
+                                """),
                                 {
                                     "sid": school_id,
                                     "tid": teacher_id,
@@ -622,60 +636,59 @@ def end_session():
                                     "comment": comment,
                                     "time": submitted_at,
                                     "role": user_role,
-                                    "subjects": user_subjects,
+                                    "subj": user_subjects,
                                     "admin": user_admin_level,
                                     "sess": client_session_id,
                                     "ip": ip_hash,
                                     "q1": school_data.get("q1_familiarity"),
                                     "q2": school_data.get("q2_accessibility"),
                                     "q3": school_data.get("q3_biggest_barrier"),
-                                    "dbarr": district_barriers_str,
-                                    "dbother": district_barriers_other
+                                    "dbarr": db_barriers,
+                                    "dbother": db_other
                                 }
                             )
-                            saved_count += 1
-
-        # ---- STORE DATA FOR REVIEW PAGE ----
-        token = str(uuid.uuid4())
-        review_cache[token] = {
-            "schools": []   # List of ALL schools and their details
-            }
-        for school_key, school_data in school_submissions.items():
-            district = school_data["district"]
-            school_name = school_data["school"]
-            # Pull matching block data
-            block_key = school_name.replace(" ", "_")
-            school_blocks = local_storage_data.get(f"school_{block_key}_submissions", "{}")
-            try:
-                school_blocks = json.loads(school_blocks)
-            except:
-                school_blocks = {}
-            
-            review_cache[token]["schools"].append({
-                "district": district,
-                "school": school_name,
-                "survey": {
-                    "q1": school_data.get("q1_familiarity"),
-                    "q2": school_data.get("q2_accessibility"),
-                    "q3": school_data.get("q3_biggest_barrier")
-                    },
-                    "district_barriers": school_data.get("district_barriers"),
-                    "district_barriers_other": school_data.get("district_barriers_other"),
-                    "blocks": school_blocks
-            })
-
-
-        # Clear session AFTER saving
-        session.clear()
-
-        # Redirect browser to Review Page
-        return jsonify({
-            "success": True,
-            "redirect": url_for("review_page", token=token)
-        })
 
     except Exception as e:
+        logger.error(f"Database write error in end_session: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
+
+    # ------------------------------------------------------
+    # 3. BUILD REVIEW TOKEN + STORE REVIEW DATA
+    # ------------------------------------------------------
+    token = str(uuid.uuid4())
+    review_cache[token] = {"schools": []}
+
+    for school_key, school_data in school_submissions.items():
+        district = school_data["district"]
+        school_name = school_data["school"]
+
+        block_key = school_name.replace(" ", "_")
+        block_json = local_storage_data.get(f"school_{block_key}_submissions", "{}")
+        try:
+            school_blocks = json.loads(block_json)
+        except:
+            school_blocks = {}
+
+        review_cache[token]["schools"].append({
+            "district": district,
+            "school": school_name,
+            "survey": {
+                "q1": school_data.get("q1_familiarity"),
+                "q2": school_data.get("q2_accessibility"),
+                "q3": school_data.get("q3_biggest_barrier")
+            },
+            "district_barriers": school_data.get("district_barriers"),
+            "district_barriers_other": school_data.get("district_barriers_other"),
+            "blocks": school_blocks
+        })
+
+    # Session can now be cleared
+    session.clear()
+
+    return jsonify({
+        "success": True,
+        "redirect": url_for("review_page", token=token)
+    })
     
 
 @app.route("/review")
