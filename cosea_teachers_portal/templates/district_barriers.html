@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styling.css') }}">
     <style>
         .barriers-container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 100px auto;
             padding: 40px;
             background-color: white;
@@ -72,73 +72,221 @@
             line-height: 1.6;
         }
         
+        /* Selected Barriers - Priority List */
+        .selected-barriers-container {
+            margin-bottom: 30px;
+            display: none;
+        }
+        
+        .selected-barriers-container.has-items {
+            display: block;
+        }
+        
+        .selected-barriers-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #0039a6;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .selected-barriers-title svg {
+            width: 24px;
+            height: 24px;
+            margin-right: 8px;
+            color: #4CAF50;
+        }
+        
+        .selected-barrier-item {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            border: 2px solid #2196F3;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            cursor: move;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .selected-barrier-item:hover {
+            box-shadow: 0 6px 20px rgba(0, 57, 166, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .selected-barrier-item.dragging {
+            opacity: 0.5;
+            transform: scale(0.98);
+        }
+        
+        .selected-barrier-item.drag-over {
+            border-color: #0039a6;
+            box-shadow: 0 8px 25px rgba(0, 57, 166, 0.3);
+            transform: scale(1.02);
+        }
+        
+        .barrier-priority-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #0039a6, #0050d4);
+            color: white;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 16px;
+            margin-right: 12px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(0, 57, 166, 0.3);
+        }
+        
+        .selected-barrier-content {
+            display: flex;
+            align-items: center;
+        }
+        
+        .selected-barrier-text {
+            flex: 1;
+        }
+        
+        .selected-barrier-label {
+            font-weight: 600;
+            font-size: 17px;
+            color: #0039a6;
+            margin-bottom: 4px;
+        }
+        
+        .selected-barrier-desc {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.4;
+        }
+        
+        .remove-barrier-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            margin-left: 12px;
+        }
+        
+        .remove-barrier-btn:hover {
+            background: #d32f2f;
+            transform: scale(1.1);
+        }
+        
+        /* Available Barriers */
         .barriers-section {
             margin-bottom: 30px;
-            padding: 25px;
-            background: #f8f9fa;
-            border-radius: 8px;
         }
         
         .barriers-section label {
             display: block;
             font-weight: 600;
-            font-size: 18px;
+            font-size: 20px;
             color: #333;
             margin-bottom: 20px;
         }
         
         .barrier-item {
             margin: 12px 0;
-            padding: 15px;
+            padding: 20px;
             background: white;
-            border-radius: 5px;
-            transition: background-color 0.2s ease;
-            border: 2px solid transparent;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            border: 2px solid #e0e0e0;
+            cursor: pointer;
+            position: relative;
         }
         
         .barrier-item:hover {
-            background-color: #f0f7ff;
-            border-color: #e3f2fd;
+            background-color: #f8f9fa;
+            border-color: #2196F3;
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
         
-        .barrier-item input[type="checkbox"] {
-            margin-right: 12px;
-            cursor: pointer;
-            width: 20px;
-            height: 20px;
-            accent-color: #0039a6;
+        .barrier-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: #f5f5f5;
         }
         
-        .barrier-item label {
-            cursor: pointer;
+        .barrier-item.disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .barrier-item-content {
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .barrier-item-text {
+            flex: 1;
+        }
+        
+        .barrier-item-text strong {
+            color: #0039a6;
             font-size: 16px;
-            color: #333;
-            font-weight: normal;
-            margin: 0;
-            display: inline;
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .barrier-item-text span {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .add-icon {
+            margin-left: 12px;
+            color: #2196F3;
+            flex-shrink: 0;
+            transition: transform 0.3s ease;
+        }
+        
+        .barrier-item:hover .add-icon {
+            transform: translateX(5px);
         }
         
         .barrier-item.none-option {
-            background: #fff3cd;
-            border-color: #ffc107;
+            background: #fff9c4;
+            border-color: #fbc02d;
         }
         
-        .barrier-item.other-option {
-            background: #e8f5e9;
+        .barrier-item.none-option:hover {
+            background: #fff59d;
+            border-color: #f9a825;
+        }
+        
+        .barrier-item.none-option.selected {
+            background: #fdd835;
+            border-color: #f9a825;
         }
         
         #other-text {
             width: 100%;
             padding: 12px 15px;
-            margin-top: 10px;
+            margin-top: 15px;
             margin-bottom: 10px;
             border: 2px solid #ddd;
-            border-radius: 5px;
+            border-radius: 8px;
             font-family: 'Lato', sans-serif;
             font-size: 16px;
             resize: vertical;
-            min-height: 80px;
+            min-height: 100px;
             display: none;
+            transition: border-color 0.3s ease;
         }
         
         #other-text:focus {
@@ -161,55 +309,53 @@
             display: flex;
             gap: 15px;
             margin-top: 30px;
+            align-items: stretch;
         }
         
-        .btn-back, #submit {
+        .btn-back, #submit-btn {
             height: 48px;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
             font-weight: 600;
             font-family: 'Lato', sans-serif;
-            transition: background-color 0.3s ease, transform 0.2s ease;
+            transition: all 0.3s ease;
+            padding: 0 20px;
+            line-height: 48px;
+            text-align: center;
             box-sizing: border-box;
             margin: 0;
-            vertical-align: middle;
         }
         
         .btn-back {
             flex: 1;
-            background: #0039a6;
+            background: #6c757d;
             color: white;
             text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
+            display: block;
         }
         
         .btn-back:hover {
-            background: #0050d4;
+            background: #5a6268;
             transform: translateY(-2px);
-            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
         
-        .btn-back:active {
-            transform: translateY(0);
-        }
-        
-        #submit {
+        #submit-btn {
             flex: 2;
-            background-color: #0039a6;
+            background: linear-gradient(135deg, #0039a6, #0050d4);
             color: white;
         }
         
-        #submit:hover {
-            background-color: #0050d4;
+        #submit-btn:hover:not(:disabled) {
             transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 57, 166, 0.4);
         }
         
-        #submit:active {
-            transform: translateY(0);
+        #submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -233,149 +379,205 @@
         </div>
         
         <div class="info-box">
-            <p><strong>📝 Instructions:</strong> We would like to understand why some students at your school (or school district if you're an admin) may not be enrolling in Computer Science classes if offered. With this in mind, please select from the limiting factors below that may contribute to students not participating in Computer Science classes.</p>
+            <p><strong>📝 Instructions:</strong> We would like to understand why some students at your school (or school district if you're an admin) may not be enrolling in Computer Science classes if offered. With this in mind, please select from the limiting factors below to add them to your priority list, that may contribute to students not participating in Computer Science classes. Drag selected barriers to reorder by priority (top = highest priority). Click "None" if no barriers exist.</p>
         </div>
         
         <div id="error-message" class="error-message"></div>
         
+        <!-- Selected Barriers - Priority List -->
+        <div id="selected-barriers-container" class="selected-barriers-container">
+            <div class="selected-barriers-title">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Selected Barriers (Drag to Reorder by Priority)
+            </div>
+            <div id="selected-barriers-list"></div>
+        </div>
+        
         <form action="{{ url_for('district_barriers') }}" method="POST" id="barriers-form">
             <div class="barriers-section">
-                <label>Select all limiting factors that apply to your school or school district:</label>
+                <label id="available-label">Select Limiting Factors (Click to Add)</label>
                 
-                <div class="barrier-item">
-                    <input type="checkbox" name="barriers" value="student_demographics" id="barrier-demo">
-                    <label for="barrier-demo"><strong>Student Demographics:</strong> Underrepresented groups (race/ethnicity, gender, etc.) often have less exposure to CS education</label>
-                </div>
-                
-                <div class="barrier-item">
-                    <input type="checkbox" name="barriers" value="economic_barriers" id="barrier-econ">
-                    <label for="barrier-econ"><strong>Economic Barriers:</strong> Many students face financial hardship, limiting their ability to access CS resources and programs</label>
-                </div>
-                
-                <div class="barrier-item">
-                    <input type="checkbox" name="barriers" value="language_barriers" id="barrier-lang">
-                    <label for="barrier-lang"><strong>Language Barriers:</strong> Students in households where English is not the primary language may struggle with CS coursework</label>
-                </div>
-                
-                <div class="barrier-item">
-                    <input type="checkbox" name="barriers" value="parent_education" id="barrier-parent">
-                    <label for="barrier-parent"><strong>Parental Education Level:</strong> Students with limited exposure to CS at home may have less encouragement or understanding of CS opportunities</label>
-                </div>
-                
-                <div class="barrier-item">
-                    <input type="checkbox" name="barriers" value="no_computer_home" id="barrier-computer">
-                    <label for="barrier-computer"><strong>Limited or No Computer at Home:</strong> Some students lack access to a personal computer, making it harder to practice CS skills outside school</label>
-                </div>
-                
-                <div class="barrier-item">
-                    <input type="checkbox" name="barriers" value="no_internet_home" id="barrier-internet">
-                    <label for="barrier-internet"><strong>Limited or No Reliable Internet Access:</strong> Without a stable internet connection, students may struggle with online CS resources and coursework</label>
-                </div>
-                
-                <div class="barrier-item">
-                    <input type="checkbox" name="barriers" value="distance_issues" id="barrier-distance">
-                    <label for="barrier-distance"><strong>Distance Challenges:</strong> A long commute or lack of transportation may prevent students from attending CS programs or extracurricular activities</label>
-                </div>
-                
-                <div class="barrier-item">
-                    <input type="checkbox" name="barriers" value="lack_cs_intro_courses" id="barrier-intro">
-                    <label for="barrier-intro"><strong>No or Limited Introductory CS Courses:</strong> Some schools do not offer foundational CS courses, preventing early exposure to the field</label>
-                </div>
-                
-                <div class="barrier-item">
-                    <input type="checkbox" name="barriers" value="lack_cs_advanced_courses" id="barrier-advanced">
-                    <label for="barrier-advanced"><strong>No or Limited Advanced CS Courses:</strong> Schools may lack advanced CS coursework, restricting students' ability to deepen their knowledge</label>
-                </div>
-                
-                <div class="barrier-item other-option">
-                    <input type="checkbox" name="barriers" value="other" id="barrier-other">
-                    <label for="barrier-other"><strong>Other Contributing Factors:</strong> Please specify additional reasons that impact CS education access in your area</label>
+                <div id="available-barriers">
+                    <div class="barrier-item" data-value="student_demographics">
+                        <div class="barrier-item-content">
+                            <div class="barrier-item-text">
+                                <strong>Student Demographics</strong>
+                                <span>Underrepresented groups often have less exposure to CS education</span>
+                            </div>
+                            <svg class="add-icon" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="barrier-item" data-value="economic_barriers">
+                        <div class="barrier-item-content">
+                            <div class="barrier-item-text">
+                                <strong>Economic Barriers</strong>
+                                <span>Financial hardship limits access to CS resources and programs</span>
+                            </div>
+                            <svg class="add-icon" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="barrier-item" data-value="language_barriers">
+                        <div class="barrier-item-content">
+                            <div class="barrier-item-text">
+                                <strong>Language Barriers</strong>
+                                <span>Non-English speakers may struggle with CS coursework</span>
+                            </div>
+                            <svg class="add-icon" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="barrier-item" data-value="parent_education">
+                        <div class="barrier-item-content">
+                            <div class="barrier-item-text">
+                                <strong>Parental Education Level</strong>
+                                <span>Limited home exposure to CS opportunities</span>
+                            </div>
+                            <svg class="add-icon" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="barrier-item" data-value="no_computer_home">
+                        <div class="barrier-item-content">
+                            <div class="barrier-item-text">
+                                <strong>Limited or No Computer at Home</strong>
+                                <span>Lack of personal computer access</span>
+                            </div>
+                            <svg class="add-icon" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="barrier-item" data-value="no_internet_home">
+                        <div class="barrier-item-content">
+                            <div class="barrier-item-text">
+                                <strong>Limited or No Reliable Internet Access</strong>
+                                <span>No stable internet connection</span>
+                            </div>
+                            <svg class="add-icon" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="barrier-item" data-value="distance_issues">
+                        <div class="barrier-item-content">
+                            <div class="barrier-item-text">
+                                <strong>Distance Challenges</strong>
+                                <span>Long commute prevents program attendance</span>
+                            </div>
+                            <svg class="add-icon" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="barrier-item" data-value="lack_cs_intro_courses">
+                        <div class="barrier-item-content">
+                            <div class="barrier-item-text">
+                                <strong>No or Limited Introductory CS Courses</strong>
+                                <span>No foundational CS courses offered</span>
+                            </div>
+                            <svg class="add-icon" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="barrier-item" data-value="lack_cs_advanced_courses">
+                        <div class="barrier-item-content">
+                            <div class="barrier-item-text">
+                                <strong>No or Limited Advanced CS Courses</strong>
+                                <span>Limited advanced coursework</span>
+                            </div>
+                            <svg class="add-icon" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="barrier-item" data-value="other">
+                        <div class="barrier-item-content">
+                            <div class="barrier-item-text">
+                                <strong>Other Contributing Factors</strong>
+                                <span>Specify additional barriers</span>
+                            </div>
+                            <svg class="add-icon" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </div>
                 </div>
                 
                 <textarea id="other-text" name="other_specify" placeholder="Please describe other contributing factors..."></textarea>
                 
-                <div class="barrier-item none-option">
-                    <input type="checkbox" name="barriers" value="none" id="barrier-none">
-                    <label for="barrier-none"><strong>None</strong> - No barriers identified</label>
+                <!-- None Option - Exclusive -->
+                <div class="barrier-item none-option" data-value="none" style="margin-top: 20px;">
+                    <div class="barrier-item-content">
+                        <div class="barrier-item-text">
+                            <strong>None - No barriers identified</strong>
+                            <span>Select this if no limiting factors apply to your school/district</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             
+            <!-- Hidden input to store ordered barriers -->
+            <input type="hidden" name="barriers_json" id="barriers-json">
+            
             <div class="button-group">
                 <a href="{{ url_for('survey_questions') }}" class="btn-back">← Back to Survey</a>
-                <button type="submit" id="submit">Continue to Map Selection →</button>
+                <button type="submit" id="submit-btn">Continue to Map Selection →</button>
             </div>
         </form>
     </div>
 
     <script>
-        const noneCheckbox = document.getElementById('barrier-none');
-        const otherCheckbox = document.getElementById('barrier-other');
-        const otherText = document.getElementById('other-text');
-        const errorMessage = document.getElementById('error-message');
-        const allBarriers = document.querySelectorAll('input[name="barriers"]');
-        const otherBarriers = Array.from(allBarriers).filter(cb => cb.id !== 'barrier-none');
+        let selectedBarriers = [];
+        let draggedIndex = null;
+        const barrierLabels = {
+            'student_demographics': 'Student Demographics',
+            'economic_barriers': 'Economic Barriers',
+            'language_barriers': 'Language Barriers',
+            'parent_education': 'Parental Education Level',
+            'no_computer_home': 'Limited or No Computer at Home',
+            'no_internet_home': 'Limited or No Reliable Internet Access',
+            'distance_issues': 'Distance Challenges',
+            'lack_cs_intro_courses': 'No or Limited Introductory CS Courses',
+            'lack_cs_advanced_courses': 'No or Limited Advanced CS Courses',
+            'other': 'Other Contributing Factors'
+        };
         
-        // Handle "None" checkbox - auto-deselect all others
-        noneCheckbox.addEventListener('change', function() {
-            if (this.checked) {
-                otherBarriers.forEach(cb => {
-                    cb.checked = false;
-                });
-                // Hide and clear "Other" text box
-                otherText.style.display = 'none';
-                otherText.value = '';
-                errorMessage.style.display = 'none';
-            }
-        });
+        const barrierDescriptions = {
+            'student_demographics': 'Underrepresented groups often have less exposure to CS education',
+            'economic_barriers': 'Financial hardship limits access to CS resources',
+            'language_barriers': 'Non-English speakers may struggle with CS coursework',
+            'parent_education': 'Limited home exposure to CS opportunities',
+            'no_computer_home': 'Lack of personal computer access',
+            'no_internet_home': 'No stable internet connection',
+            'distance_issues': 'Long commute prevents program attendance',
+            'lack_cs_intro_courses': 'No foundational CS courses offered',
+            'lack_cs_advanced_courses': 'Limited advanced coursework',
+            'other': 'Specify additional barriers'
+        };
         
-        // Handle any other barrier checkbox - auto-deselect "None"
-        otherBarriers.forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                if (this.checked && noneCheckbox.checked) {
-                    noneCheckbox.checked = false;
-                }
-            });
-        });
+        // Load saved data if exists
+        const savedBarriersRaw = '{{ saved_barriers | tojson | safe }}';
+        const savedOtherRaw = '{{ saved_other if saved_other else "" }}';
         
-        // Handle "Other" checkbox - show/hide text box
-        otherCheckbox.addEventListener('change', function() {
-            if (this.checked) {
-                otherText.style.display = 'block';
-                otherText.focus();
-            } else {
-                otherText.style.display = 'none';
-                otherText.value = '';
-            }
-        });
-        
-        // Form validation
-        document.getElementById('barriers-form').addEventListener('submit', function(e) {
-            const checkedBarriers = Array.from(allBarriers).filter(cb => cb.checked);
-            
-            if (checkedBarriers.length === 0) {
-                e.preventDefault();
-                errorMessage.textContent = '⚠️ Please select at least one barrier option.';
-                errorMessage.style.display = 'block';
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                return false;
-            }
-            
-            if (otherCheckbox.checked && !otherText.value.trim()) {
-                e.preventDefault();
-                errorMessage.textContent = '⚠️ Please specify the "Other Contributing Factors" in the text area.';
-                errorMessage.style.display = 'block';
-                otherText.focus();
-                return false;
-            }
-            
-            errorMessage.style.display = 'none';
-        });
-        
-        // Pre-fill form if data exists
         document.addEventListener('DOMContentLoaded', function() {
-            const savedBarriersRaw = '{{ saved_barriers | tojson | safe }}';
-            const savedOtherRaw = '{{ saved_other if saved_other else "" }}';
-            
             let savedBarriers = [];
             try {
                 if (savedBarriersRaw && savedBarriersRaw !== 'null' && savedBarriersRaw !== '[]') {
@@ -385,41 +587,251 @@
                 console.error('Error parsing saved barriers:', e);
             }
             
+            // Load saved barriers in order
             if (savedBarriers && savedBarriers.length > 0) {
                 savedBarriers.forEach(barrier => {
-                    const barrierMap = {
-                        'none': 'barrier-none',
-                        'student_demographics': 'barrier-demo',
-                        'economic_barriers': 'barrier-econ',
-                        'language_barriers': 'barrier-lang',
-                        'parent_education': 'barrier-parent',
-                        'no_computer_home': 'barrier-computer',
-                        'no_internet_home': 'barrier-internet',
-                        'distance_issues': 'barrier-distance',
-                        'lack_cs_intro_courses': 'barrier-intro',
-                        'lack_cs_advanced_courses': 'barrier-advanced',
-                        'other': 'barrier-other'
-                    };
-                    
-                    const checkboxId = barrierMap[barrier];
-                    const checkbox = document.getElementById(checkboxId);
-                    
-                    if (checkbox) {
-                        checkbox.checked = true;
-                        
-                        if (barrier === 'other') {
-                            otherText.style.display = 'block';
-                        }
+                    if (barrier !== 'none') {
+                        addBarrierToSelected(barrier);
+                    } else {
+                        selectNone();
                     }
                 });
             }
             
+            // Load saved "other" text
             if (savedOtherRaw && savedOtherRaw !== "" && savedOtherRaw !== "None") {
-                otherText.value = savedOtherRaw;
-                if (otherCheckbox.checked) {
-                    otherText.style.display = 'block';
+                document.getElementById('other-text').value = savedOtherRaw;
+            }
+            
+            updateUI();
+        });
+        
+        // Click handlers for available barriers
+        document.querySelectorAll('.barrier-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const value = this.getAttribute('data-value');
+                
+                if (value === 'none') {
+                    selectNone();
+                } else {
+                    if (selectedBarriers.includes('none')) {
+                        // If "none" is selected, clear it first
+                        selectedBarriers = [];
+                    }
+                    addBarrierToSelected(value);
+                }
+                
+                updateUI();
+            });
+        });
+        
+        function selectNone() {
+            // Clear all selected barriers
+            selectedBarriers = ['none'];
+            document.getElementById('other-text').style.display = 'none';
+            document.getElementById('other-text').value = '';
+        }
+        
+        function addBarrierToSelected(value) {
+            if (value !== 'none') {
+                // If "none" was selected, clear it and start fresh with only this barrier
+                if (selectedBarriers.includes('none')) {
+                    selectedBarriers = [value];
+                } else if (!selectedBarriers.includes(value)) {
+                    // Otherwise just add to existing selections
+                    selectedBarriers.push(value);
+                }
+                
+                if (value === 'other') {
+                    document.getElementById('other-text').style.display = 'block';
                 }
             }
+        }
+        
+        function updateUI() {
+            const container = document.getElementById('selected-barriers-container');
+            const list = document.getElementById('selected-barriers-list');
+            const availableLabel = document.getElementById('available-label');
+            const errorMessage = document.getElementById('error-message');
+            
+            errorMessage.style.display = 'none';
+            
+            // Update submit button
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = selectedBarriers.length === 0;
+            
+            // If "none" is selected
+            if (selectedBarriers.includes('none')) {
+                container.classList.remove('has-items');
+                
+                // Show ALL barriers in available section (including previously selected ones)
+                document.querySelectorAll('.barrier-item').forEach(item => {
+                    const value = item.getAttribute('data-value');
+                    if (value !== 'none') {
+                        item.style.display = 'block'; // Show all barriers
+                        item.classList.add('disabled'); // Grey them out
+                    } else {
+                        item.classList.add('selected');
+                    }
+                });
+                availableLabel.textContent = 'Select Limiting Factors (Click to Add)';
+                return;
+            }
+            
+            // Remove "selected" class from none option
+            document.querySelector('.barrier-item[data-value="none"]').classList.remove('selected');
+            
+            // Show/hide selected container
+            if (selectedBarriers.length > 0) {
+                container.classList.add('has-items');
+                availableLabel.textContent = 'Available Barriers (Click to Add)';
+            } else {
+                container.classList.remove('has-items');
+                availableLabel.textContent = 'Select Limiting Factors (Click to Add)';
+            }
+            
+            // Render selected barriers
+            list.innerHTML = '';
+            selectedBarriers.forEach((value, index) => {
+                const div = document.createElement('div');
+                div.className = 'selected-barrier-item';
+                div.draggable = true;
+                div.setAttribute('data-index', index);
+                div.setAttribute('data-value', value);
+                
+                div.innerHTML = `
+                    <div class="selected-barrier-content">
+                        <span class="barrier-priority-badge">${index + 1}</span>
+                        <div class="selected-barrier-text">
+                            <div class="selected-barrier-label">${barrierLabels[value]}</div>
+                            <div class="selected-barrier-desc">${barrierDescriptions[value]}</div>
+                        </div>
+                        <button type="button" class="remove-barrier-btn" onclick="removeBarrier(${index})">✕</button>
+                    </div>
+                `;
+                
+                // Drag events
+                div.addEventListener('dragstart', handleDragStart);
+                div.addEventListener('dragover', handleDragOver);
+                div.addEventListener('drop', handleDrop);
+                div.addEventListener('dragend', handleDragEnd);
+                div.addEventListener('dragleave', handleDragLeave);
+                
+                list.appendChild(div);
+            });
+            
+            // Update available barriers - hide selected ones, show unselected ones
+            document.querySelectorAll('.barrier-item').forEach(item => {
+                const value = item.getAttribute('data-value');
+                if (value !== 'none') {
+                    if (selectedBarriers.includes(value)) {
+                        item.style.display = 'none'; // Hide if selected
+                    } else {
+                        item.style.display = 'block'; // Show if not selected
+                        item.classList.remove('disabled'); // Un-grey
+                    }
+                }
+            });
+            
+            // Show/hide "other" textarea
+            if (selectedBarriers.includes('other')) {
+                document.getElementById('other-text').style.display = 'block';
+            } else {
+                document.getElementById('other-text').style.display = 'none';
+                document.getElementById('other-text').value = '';
+            }
+        }
+        
+        function removeBarrier(index) {
+            selectedBarriers.splice(index, 1);
+            updateUI();
+        }
+        
+        // Drag and drop handlers
+        function handleDragStart(e) {
+            draggedIndex = parseInt(this.getAttribute('data-index'));
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            const targetIndex = parseInt(this.getAttribute('data-index'));
+            if (draggedIndex !== null && draggedIndex !== targetIndex) {
+                this.classList.add('drag-over');
+            }
+        }
+        
+        function handleDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            const targetIndex = parseInt(this.getAttribute('data-index'));
+            
+            if (draggedIndex !== null && draggedIndex !== targetIndex) {
+                const [movedItem] = selectedBarriers.splice(draggedIndex, 1);
+                selectedBarriers.splice(targetIndex, 0, movedItem);
+                updateUI();
+            }
+            
+            this.classList.remove('drag-over');
+        }
+        
+        function handleDragEnd(e) {
+            document.querySelectorAll('.selected-barrier-item').forEach(item => {
+                item.classList.remove('dragging', 'drag-over');
+            });
+            draggedIndex = null;
+        }
+        
+        // Form submission
+        document.getElementById('barriers-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            console.log('Form submit triggered');
+            console.log('Selected barriers:', selectedBarriers);
+            
+            const errorMessage = document.getElementById('error-message');
+            const form = this;
+            
+            if (selectedBarriers.length === 0) {
+                console.log('Validation failed: No barriers selected');
+                errorMessage.textContent = '⚠️ Please select at least one barrier option.';
+                errorMessage.style.display = 'block';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return false;
+            }
+            
+            if (selectedBarriers.includes('other') && !document.getElementById('other-text').value.trim()) {
+                console.log('Validation failed: Other selected but no text provided');
+                errorMessage.textContent = '⚠️ Please specify the "Other Contributing Factors" in the text area.';
+                errorMessage.style.display = 'block';
+                document.getElementById('other-text').focus();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return false;
+            }
+            
+            // Remove any existing hidden barrier inputs
+            const existingInputs = form.querySelectorAll('input[name="barriers"]');
+            existingInputs.forEach(input => input.remove());
+            
+            // Create hidden inputs for barriers in order
+            selectedBarriers.forEach((barrier) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'barriers';
+                input.value = barrier;
+                form.appendChild(input);
+                console.log('Added hidden input:', barrier);
+            });
+            
+            errorMessage.style.display = 'none';
+            
+            console.log('Submitting form...');
+            // Use HTMLFormElement.prototype.submit to avoid conflict with button id
+            HTMLFormElement.prototype.submit.call(form);
         });
     </script>
 </body>

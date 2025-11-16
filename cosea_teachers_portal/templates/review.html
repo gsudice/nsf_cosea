@@ -62,11 +62,22 @@
 
         .answer-box {
             background: #f8f9fc;
-            padding: 12px 15px;
+            padding: 12px 20px;
             border-radius: 6px;
             border: 1px solid #e0e6ef;
             margin-bottom: 10px;
             white-space: pre-line;
+            color: #333;
+            font-size: 16px;
+            line-height: 1.4;
+            text-align: left;
+        }
+        
+        .answer-box strong,
+        .answer-box br,
+        .answer-box p {
+            margin: 0;
+            padding: 0;
         }
 
         .barrier-tag {
@@ -142,6 +153,9 @@
             .school-card {
                 box-shadow: none;
                 border: 1px solid #ccc !important;
+                page-break-after: auto;
+            }
+            .school-card:not(:last-child) {
                 page-break-after: always;
             }
         }
@@ -162,26 +176,19 @@
 
         <!-- Q1 -->
         <div class="section-title">1. Opinion on CS Availability</div>
-        <div class="answer-box">
-            {{ school.survey.q1 if school.survey.q1 else "No answer provided." }}
-        </div>
+        <div class="answer-box">{{ school.survey.q1 if school.survey.q1 else "No answer provided." }}</div>
 
         <!-- Q2 -->
         <div class="section-title">2. Barriers Limiting CS Enrollment</div>
-        <div class="answer-box">
-            {{ school.survey.q2 if school.survey.q2 else "No barriers listed." }}
-        </div>
+        <div class="answer-box">{{ school.survey.q2 if school.survey.q2 else "No barriers listed." }}</div>
 
         <!-- Q3 -->
         <div class="section-title">3. Improvements (Top Priorities)</div>
-        <div class="answer-box">
-            {{ school.survey.q3 if school.survey.q3 else "No improvements listed." }}
-        </div>
+        <div class="answer-box">{{ school.survey.q3 if school.survey.q3 else "No improvements listed." }}</div>
 
         <!-- District Barriers -->
         <div class="section-title">District-Level Barriers</div>
-        <div>
-            {% if school.district_barriers %}
+        <div>{% if school.district_barriers %}
                 {% for b in school.district_barriers %}
                     <span class="barrier-tag">{{ b }}</span>
                 {% endfor %}
@@ -191,9 +198,7 @@
         </div>
 
         {% if school.district_barriers_other %}
-            <div class="answer-box" style="margin-top:10px;">
-                <strong>Other Notes:</strong><br>{{ school.district_barriers_other }}
-            </div>
+            <div class="answer-box" style="margin-top:10px;"><strong>Other Notes:</strong><br>{{ school.district_barriers_other }}</div>
         {% endif %}
 
         <!-- Block Groups -->

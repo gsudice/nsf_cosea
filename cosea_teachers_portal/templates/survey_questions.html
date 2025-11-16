@@ -49,6 +49,63 @@
             margin-bottom: 15px;
         }
         
+        .optional-badge {
+            display: inline-block;
+            background: #e3f2fd;
+            color: #1976D2;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .radio-option {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .radio-option:hover {
+            border-color: #2196F3;
+            background: #f8f9fa;
+            transform: translateX(5px);
+        }
+        
+        .radio-option input[type="radio"] {
+            margin-right: 12px;
+            cursor: pointer;
+            width: 20px;
+            height: 20px;
+            accent-color: #0039a6;
+        }
+        
+        .radio-option label {
+            cursor: pointer;
+            font-size: 16px;
+            color: #333;
+            font-weight: 500;
+            margin: 0;
+            flex: 1;
+        }
+        
+        .radio-option.selected {
+            border-color: #0039a6;
+            background: #e3f2fd;
+        }
+        
         .answer-textarea {
             width: 100%;
             padding: 15px;
@@ -65,6 +122,35 @@
         .answer-textarea:focus {
             outline: none;
             border-color: #0039a6;
+        }
+        
+        /* Compact textareas for Q3 - horizontal layout, each 1/3 height */
+        .priority-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+        
+        .answer-textarea-compact {
+            min-height: 40px; /* 1/3 of 120px */
+            height: 40px;
+            resize: vertical; /* Only allow vertical resizing like Q2 */
+        }
+        
+        .answer-textarea-compact:not(:last-child) {
+            margin-bottom: 0;
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+        
+        .answer-textarea-compact:not(:first-child) {
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+            border-top: none;
+        }
+        
+        .answer-textarea-compact:not(:first-child):not(:last-child) {
+            border-radius: 0;
         }
         
         .error-message {
@@ -104,6 +190,7 @@
             display: flex;
             gap: 15px;
             margin-top: 30px;
+            align-items: stretch;
         }
         
         .btn-back, #submit {
@@ -111,18 +198,21 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             font-family: 'Lato', sans-serif;
             transition: background-color 0.3s ease, transform 0.2s ease;
             box-sizing: border-box;
             margin: 0;
             vertical-align: middle;
+            padding: 0 20px;
+            line-height: 48px;
+            text-align: center;
         }
         
         .btn-back {
             flex: 1;
-            background: #0039a6;
+            background: #6c757d;
             color: white;
             text-decoration: none;
             display: inline-flex;
@@ -131,7 +221,7 @@
         }
         
         .btn-back:hover {
-            background: #0050d4;
+            background: #5a6268;
             transform: translateY(-2px);
             text-decoration: none;
         }
@@ -191,26 +281,34 @@
         <form action="{{ url_for('survey_questions') }}" method="POST" id="survey-form">
             <!-- Question 1 -->
             <div class="question-section">
-                <label>1. What is your opinion on the availability of Computer Science (CS) classes in your high school or school district? Choose one appropriate answer:</label>
-                <div style="margin-top: 15px;">
-                    <input type="radio" name="q1_familiarity" value="sufficient" required>
-                        Sufficient opportunities are available given the size of our student body
-                    <br><br>
-                    <input type="radio" name="q1_familiarity" value="somewhat">
-                        Somewhat available, but not enough for the students in our school/or district
-                    <br><br>
-                    <input type="radio" name="q1_familiarity" value="rare">
-                        Opportunities are rare
-                    <br><br>
-                    <input type="radio" name="q1_familiarity" value="none">
-                        No opportunities at all
-                    <br><br>
+                <label>
+                    1. What is your opinion on the availability of Computer Science (CS) classes in your high school or school district?
+                </label>
+                <div class="radio-group">
+                    <div class="radio-option" data-value="sufficient">
+                        <input type="radio" name="q1_familiarity" value="sufficient" id="q1-sufficient" {{ 'checked' if q1_value == 'sufficient' else '' }}>
+                        <label for="q1-sufficient">Sufficient opportunities are available given the size of our student body</label>
+                    </div>
+                    <div class="radio-option" data-value="somewhat">
+                        <input type="radio" name="q1_familiarity" value="somewhat" id="q1-somewhat" {{ 'checked' if q1_value == 'somewhat' else '' }}>
+                        <label for="q1-somewhat">Somewhat available, but not enough for the students in our school/or district</label>
+                    </div>
+                    <div class="radio-option" data-value="rare">
+                        <input type="radio" name="q1_familiarity" value="rare" id="q1-rare" {{ 'checked' if q1_value == 'rare' else '' }}>
+                        <label for="q1-rare">Opportunities are rare</label>
+                    </div>
+                    <div class="radio-option" data-value="none">
+                        <input type="radio" name="q1_familiarity" value="none" id="q1-none" {{ 'checked' if q1_value == 'none' else '' }}>
+                        <label for="q1-none">No opportunities at all</label>
+                    </div>
                 </div>
             </div>
             
             <!-- Question 2 -->
             <div class="question-section">
-                <label>2. Can you think of any barriers that would prevent or limit students from enrolling in Computer Science (CS) classes during grades 9 through 12?</label>
+                <label>
+                    2. Can you think of any barriers that would prevent or limit students from enrolling in Computer Science (CS) classes during grades 9 through 12?
+                </label>
                 <textarea 
                     name="q2_accessibility" 
                     id="q2_text" 
@@ -220,22 +318,26 @@
             
             <!-- Question 3 -->
             <div class="question-section">
-                <label>3. In what ways could your school or district improve or facilitate access to Computer Science classes? Please list up to three top priorities below:</label>
-                <textarea 
-                    name="q3_1" 
-                    id="q3_text" 
-                    class="answer-textarea" 
-                    placeholder="Please list your Priority 1...">{{ q3_value if q3_value else '' }}</textarea>
-                <textarea 
-                    name="q3_2" 
-                    id="q3_text" 
-                    class="answer-textarea" 
-                    placeholder="Please list your Priority 2...">{{ q3_value if q3_value else '' }}</textarea>
-                <textarea 
-                    name="q3_3" 
-                    id="q3_text" 
-                    class="answer-textarea" 
-                    placeholder="Please list your Priority 3...">{{ q3_value if q3_value else '' }}</textarea>
+                <label>
+                    3. In what ways could your school or district improve or facilitate access to Computer Science classes? Please list up to three top priorities below:
+                </label>
+                <div class="priority-inputs">
+                    <textarea 
+                        name="q3_1" 
+                        id="q3_1_text" 
+                        class="answer-textarea answer-textarea-compact" 
+                        placeholder="Priority 1...">{{ q3_1_value if q3_1_value else '' }}</textarea>
+                    <textarea 
+                        name="q3_2" 
+                        id="q3_2_text" 
+                        class="answer-textarea answer-textarea-compact" 
+                        placeholder="Priority 2...">{{ q3_2_value if q3_2_value else '' }}</textarea>
+                    <textarea 
+                        name="q3_3" 
+                        id="q3_3_text" 
+                        class="answer-textarea answer-textarea-compact" 
+                        placeholder="Priority 3...">{{ q3_3_value if q3_3_value else '' }}</textarea>
+                </div>
             </div>
             
             <div class="button-group">
@@ -246,9 +348,30 @@
     </div>
     
     <script>
-        // No validation - form can be submitted with empty fields
+        // Highlight selected radio option
+        document.querySelectorAll('.radio-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const radio = this.querySelector('input[type="radio"]');
+                radio.checked = true;
+                
+                // Remove selected class from all options in this group
+                this.closest('.radio-group').querySelectorAll('.radio-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                
+                // Add selected class to this option
+                this.classList.add('selected');
+            });
+        });
+        
+        // Set initial selected state on page load
+        document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
+            radio.closest('.radio-option').classList.add('selected');
+        });
+        
+        // No validation - form can be submitted with empty fields (all optional)
         document.getElementById('survey-form').addEventListener('submit', function(e) {
-            // Allow submission even if fields are empty
+            // Allow submission even if all fields are empty
             return true;
         });
     </script>
