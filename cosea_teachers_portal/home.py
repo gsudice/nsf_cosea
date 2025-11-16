@@ -139,6 +139,14 @@ def district():
             session['q1_familiarity'] = school_data.get('q1_familiarity')
             session['q2_accessibility'] = school_data.get('q2_accessibility')
             session['q3_biggest_barrier'] = school_data.get('q3_biggest_barrier')
+            
+            # Load individual Q3 values
+            q3_text = school_data.get('q3_biggest_barrier', '')
+            q3_parts = q3_text.split('\n') if q3_text else []
+            session['q3_1'] = q3_parts[0] if len(q3_parts) > 0 else ''
+            session['q3_2'] = q3_parts[1] if len(q3_parts) > 1 else ''
+            session['q3_3'] = q3_parts[2] if len(q3_parts) > 2 else ''
+            
             session['district_barriers'] = school_data.get('district_barriers', [])
             session['district_barriers_other'] = school_data.get('district_barriers_other', '')
             logger.info(f"✅ Loaded previous data for {school_key}")
@@ -148,6 +156,9 @@ def district():
             session.pop('q1_familiarity', None)
             session.pop('q2_accessibility', None)
             session.pop('q3_biggest_barrier', None)
+            session.pop('q3_1', None)
+            session.pop('q3_2', None)
+            session.pop('q3_3', None)
             session.pop('district_barriers', None)
             session.pop('district_barriers_other', None)
             logger.info(f"Starting fresh for new school: {school_key}")
@@ -190,13 +201,18 @@ def survey_questions():
         return redirect(url_for('district'))
     
     if request.method == "POST":
-        # Save survey responses to session - NO VALIDATION, all optional
+        # Save survey responses to session
         session['q1_familiarity'] = request.form.get('q1_familiarity', '')
         session['q2_accessibility'] = request.form.get('q2_accessibility', '')
         q3_1 = request.form.get('q3_1', '').strip()
         q3_2 = request.form.get('q3_2', '').strip()
         q3_3 = request.form.get('q3_3', '').strip()
         session['q3_biggest_barrier'] = "\n".join([x for x in [q3_1, q3_2, q3_3] if x])
+        
+        # Save individual Q3 values
+        session['q3_1'] = q3_1
+        session['q3_2'] = q3_2
+        session['q3_3'] = q3_3
         
         # Save to school_submissions immediately after survey
         school_key = get_school_key(session['selected_district'], session['selected_school'])
@@ -225,7 +241,9 @@ def survey_questions():
                          selected_district=session.get('selected_district'),
                          q1_value=session.get('q1_familiarity'),
                          q2_value=session.get('q2_accessibility'),
-                         q3_value=session.get('q3_biggest_barrier'))
+                         q3_1_value=session.get('q3_1'),
+                         q3_2_value=session.get('q3_2'),
+                         q3_3_value=session.get('q3_3'))
 
 @app.route("/district_barriers", methods=["GET", "POST"])
 def district_barriers():
