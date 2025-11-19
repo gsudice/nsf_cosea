@@ -6,6 +6,7 @@
     <title>Role Selection - CoSea Teachers Portal</title>
     <link rel="icon" href="{{ url_for('static', filename='Gsulogo.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styling.css') }}">
+
     <style>
         .role-section {
             margin: 30px 0;
@@ -32,16 +33,17 @@
         }
     </style>
 </head>
+
 <body>
     <div class="district_menu">
         <h2 id="dropdown-label">User Information</h2>
-        
+
         {% if error_message %}
         <div class="error-message">
             {{ error_message }}
         </div>
         {% endif %}
-        
+
         <form action="{{ url_for('role_selection') }}" method="POST" id="role-form">
 
             <!-- Role Selection -->
@@ -59,7 +61,7 @@
                 </div>
             </div>
 
-            <!-- Teacher CS Question (shown if teacher selected) -->
+            <!-- Teacher CS Question -->
             <div class="role-section hidden" id="teacher-subjects">
                 <label><strong>Are you currently or have you ever taught a Computer Science or related course?</strong></label><br>
 
@@ -106,33 +108,41 @@
         const adminLevel = document.getElementById('admin-level');
 
         // Show teacher CS section
-        teacherRadio.addEventListener('change', function() {
-            if (this.checked) {
-                teacherSubjects.classList.remove('hidden');
-                adminLevel.classList.add('hidden');
-                document.querySelectorAll('input[name="admin_level"]').forEach(input => input.checked = false);
-            }
+        teacherRadio.addEventListener('change', () => {
+            teacherSubjects.classList.remove('hidden');
+            adminLevel.classList.add('hidden');
+            document.querySelectorAll('input[name="admin_level"]').forEach(i => i.checked = false);
         });
 
-        // Show admin level section
-        adminRadio.addEventListener('change', function() {
-            if (this.checked) {
-                adminLevel.classList.remove('hidden');
-                teacherSubjects.classList.add('hidden');
-                document.querySelectorAll('input[name="cs_teaching"]').forEach(input => input.checked = false);
-            }
+        // Show admin section
+        adminRadio.addEventListener('change', () => {
+            adminLevel.classList.remove('hidden');
+            teacherSubjects.classList.add('hidden');
+            document.querySelectorAll('input[name="cs_teaching"]').forEach(i => i.checked = false);
         });
 
-        // Validation before submit
+        // ⭐ FIXED: Correct label-click behavior for all radios
+        document.querySelectorAll('label[for]').forEach(lbl => {
+            lbl.addEventListener('click', () => {
+                const id = lbl.getAttribute("for");
+                const input = document.getElementById(id);
+                if (input) {
+                    input.checked = true;
+                    input.dispatchEvent(new Event("change"));
+                }
+            });
+        });
+
+        // Validation
         document.getElementById('role-form').addEventListener('submit', function(e) {
             const role = document.querySelector('input[name="role"]:checked');
-            
+
             if (!role) {
                 e.preventDefault();
                 alert('Please select a role.');
                 return false;
             }
-            
+
             if (role.value === 'teacher') {
                 const csTeaching = document.querySelector('input[name="cs_teaching"]:checked');
                 if (!csTeaching) {
@@ -150,15 +160,6 @@
                     return false;
                 }
             }
-        });
-
-        // ⭐ CRITICAL FIX: Ensure label clicks trigger the radio change event
-        document.querySelectorAll('label[for="role-teacher"], label[for="role-admin"]').forEach(lbl => {
-            lbl.addEventListener('click', function() {
-                const input = document.getElementById(this.htmlFor);
-                input.checked = true;
-                input.dispatchEvent(new Event('change'));
-            });
         });
     </script>
 
