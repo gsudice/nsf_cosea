@@ -77,18 +77,12 @@ def role_selection():
         session['role'] = role
         
         if role == 'teacher':
-            subjects = request.form.getlist('subjects')
-            if not subjects:
+            cs_teaching = request.form.get('cs_teaching')
+            if not cs_teaching:
                 return render_template('role_selection.html', 
-                                     error_message="Please select at least one subject.")
+                                     error_message="Please answer the Computer Science teaching question.")
             
-            # Handle "other" subject - replace with "other(specified text)"
-            subject_other_specify = request.form.get('subject_other_specify', '').strip()
-            if 'other' in subjects and subject_other_specify:
-                # Replace "other" with "other(text)"
-                subjects = [s if s != 'other' else f'other({subject_other_specify})' for s in subjects]
-            
-            session['subjects'] = subjects
+            session['cs_teaching'] = cs_teaching
             session.pop('admin_level', None)
             
         elif role == 'administrator':
@@ -97,7 +91,7 @@ def role_selection():
                 return render_template('role_selection.html',
                                      error_message="Please select your administrative level.")
             session['admin_level'] = admin_level
-            session.pop('subjects', None)
+            session.pop('cs_teaching', None)
         
         logger.info(f"User role saved: {role}, Session ID: {session['session_id']}")
         return redirect(url_for('district'))
@@ -703,3 +697,4 @@ def review_page():
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=80, debug=False)
+
