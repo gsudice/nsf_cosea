@@ -82,6 +82,7 @@ def role_selection():
                 return render_template('role_selection.html', 
                                      error_message="Please answer the Computer Science teaching question.")
             
+            # save yes/no
             session['cs_teaching'] = cs_teaching
             session.pop('admin_level', None)
             
@@ -462,7 +463,10 @@ def render_select():
                 school_submissions=session.get('school_submissions', {}),
                 user_info={
                     'role': session.get('role', 'unknown'),
+                    
+                    # UPDATE HERE IF YOU EVER STORE SUBJECTS AGAIN
                     'subjects': ','.join(session.get('subjects', [])) if session.get('role') == 'teacher' else None,
+                    
                     'admin_level': session.get('admin_level') if session.get('role') == 'administrator' else None
                 }
             )
@@ -496,9 +500,7 @@ def submit_barriers():
 @app.route("/end_session", methods=["POST"])
 def end_session():
     """Save ALL collected user data to database and redirect to review page."""
-    # ------------------------------------------------------
-    # 1. READ INPUT + SESSION-SAVED SURVEY DATA
-    # ------------------------------------------------------
+    
     try:
         data = request.get_json()
         local_storage_data = data.get("localStorage", {})
@@ -512,7 +514,13 @@ def end_session():
         client_session_id = session["session_id"]
         ip_hash = session.get("ip_hash", get_ip_hash())
         user_role = session.get("role")
-        user_subjects = ",".join(session.get("subjects", [])) if user_role == "teacher" else None
+
+        # ⭐ FINAL FIX — STORE YES/NO
+        if user_role == "teacher":
+            user_subjects = session.get("cs_teaching")  # YES or NO
+        else:
+            user_subjects = None
+
         user_admin_level = session.get("admin_level") if user_role == "administrator" else None
 
         # Timestamp
@@ -526,9 +534,6 @@ def end_session():
         logger.error(f"Error parsing end_session input: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-    # ------------------------------------------------------
-    # 2. WRITE ALL DATA TO DATABASE
-    # ------------------------------------------------------
     try:
         with engine.begin() as conn:
 
@@ -536,7 +541,6 @@ def end_session():
                 district = school_data["district"]
                 school_name = school_data["school"]
 
-                # Get school ID
                 row = conn.execute(
                     text("""
                         SELECT "UNIQUESCHOOLID"
@@ -551,7 +555,6 @@ def end_session():
 
                 school_id = row[0]
 
-                # Remove old entries for same session
                 conn.execute(
                     text("""
                         DELETE FROM "allhsgrades24".teacher_reason_submissions
@@ -560,19 +563,17 @@ def end_session():
                     {"sid": school_id, "sess": client_session_id}
                 )
 
-                # District-level barriers
                 db_barriers = ",".join(school_data.get("district_barriers", []))
                 db_other = school_data.get("district_barriers_other")
 
-                # Get census block data from local storage
                 block_key = school_name.replace(" ", "_")
                 block_json = local_storage_data.get(f"school_{block_key}_submissions", "{}")
+                
                 try:
                     block_data = json.loads(block_json)
                 except:
                     block_data = {}
 
-                # If no block groups → write one row
                 if not block_data:
                     conn.execute(
                         text("""
@@ -602,7 +603,6 @@ def end_session():
                         }
                     )
                 else:
-                    # Save each block row
                     for geoid, block_info in block_data.items():
                         barriers = block_info.get("barriers", [])
                         notes = block_info.get("notes")
@@ -646,9 +646,6 @@ def end_session():
         logger.error(f"Database write error in end_session: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-    # ------------------------------------------------------
-    # 3. BUILD REVIEW TOKEN + STORE REVIEW DATA
-    # ------------------------------------------------------
     token = str(uuid.uuid4())
     review_cache[token] = {"schools": []}
 
@@ -658,6 +655,7 @@ def end_session():
 
         block_key = school_name.replace(" ", "_")
         block_json = local_storage_data.get(f"school_{block_key}_submissions", "{}")
+        
         try:
             school_blocks = json.loads(block_json)
         except:
@@ -676,14 +674,12 @@ def end_session():
             "blocks": school_blocks
         })
 
-    # Session can now be cleared
     session.clear()
 
     return jsonify({
         "success": True,
         "redirect": url_for("review_page", token=token)
     })
-    
 
 @app.route("/review")
 def review_page():
@@ -697,5 +693,3 @@ def review_page():
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=False)
-
-
