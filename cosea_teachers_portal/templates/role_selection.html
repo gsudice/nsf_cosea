@@ -43,13 +43,16 @@
         {% endif %}
         
         <form action="{{ url_for('role_selection') }}" method="POST" id="role-form">
+
             <!-- Role Selection -->
             <div class="role-section">
                 <label><strong>Select Your Role:</strong></label><br>
+
                 <div class="role-option">
                     <input type="radio" name="role" value="teacher" id="role-teacher" required>
                     <label for="role-teacher">Teacher</label>
                 </div>
+
                 <div class="role-option">
                     <input type="radio" name="role" value="administrator" id="role-admin">
                     <label for="role-admin">Administrator</label>
@@ -59,27 +62,32 @@
             <!-- Teacher CS Question (shown if teacher selected) -->
             <div class="role-section hidden" id="teacher-subjects">
                 <label><strong>Are you currently or have you ever taught a Computer Science or related course?</strong></label><br>
+
                 <div class="role-option">
                     <input type="radio" name="cs_teaching" value="yes" id="cs-yes">
                     <label for="cs-yes">Yes</label>
                 </div>
+
                 <div class="role-option">
                     <input type="radio" name="cs_teaching" value="no" id="cs-no">
                     <label for="cs-no">No</label>
                 </div>
             </div>
 
-            <!-- Admin Level (shown if administrator selected) -->
+            <!-- Admin Level -->
             <div class="role-section hidden" id="admin-level">
                 <label><strong>Select Administrative Level:</strong></label><br>
+
                 <div class="role-option">
                     <input type="radio" name="admin_level" value="school" id="admin-school">
                     <label for="admin-school">School Level Administrator</label>
                 </div>
+
                 <div class="role-option">
                     <input type="radio" name="admin_level" value="district" id="admin-district">
                     <label for="admin-district">District Level Administrator</label>
                 </div>
+
                 <div class="role-option">
                     <input type="radio" name="admin_level" value="state" id="admin-state">
                     <label for="admin-state">State Level Administrator</label>
@@ -97,25 +105,25 @@
         const teacherSubjects = document.getElementById('teacher-subjects');
         const adminLevel = document.getElementById('admin-level');
 
+        // Show teacher CS section
         teacherRadio.addEventListener('change', function() {
             if (this.checked) {
                 teacherSubjects.classList.remove('hidden');
                 adminLevel.classList.add('hidden');
-                // Clear admin selections
                 document.querySelectorAll('input[name="admin_level"]').forEach(input => input.checked = false);
             }
         });
 
+        // Show admin level section
         adminRadio.addEventListener('change', function() {
             if (this.checked) {
                 adminLevel.classList.remove('hidden');
                 teacherSubjects.classList.add('hidden');
-                // Clear teacher selections
                 document.querySelectorAll('input[name="cs_teaching"]').forEach(input => input.checked = false);
             }
         });
 
-        // Form validation
+        // Validation before submit
         document.getElementById('role-form').addEventListener('submit', function(e) {
             const role = document.querySelector('input[name="role"]:checked');
             
@@ -132,7 +140,9 @@
                     alert('Please answer the Computer Science teaching question.');
                     return false;
                 }
-            } else if (role.value === 'administrator') {
+            }
+
+            if (role.value === 'administrator') {
                 const adminLevelSelected = document.querySelector('input[name="admin_level"]:checked');
                 if (!adminLevelSelected) {
                     e.preventDefault();
@@ -141,6 +151,16 @@
                 }
             }
         });
+
+        // ⭐ CRITICAL FIX: Ensure label clicks trigger the radio change event
+        document.querySelectorAll('label[for="role-teacher"], label[for="role-admin"]').forEach(lbl => {
+            lbl.addEventListener('click', function() {
+                const input = document.getElementById(this.htmlFor);
+                input.checked = true;
+                input.dispatchEvent(new Event('change'));
+            });
+        });
     </script>
+
 </body>
 </html>
