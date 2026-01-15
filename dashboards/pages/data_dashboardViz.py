@@ -60,40 +60,43 @@ def get_course_display(course_key: str) -> str:
 
 def filter_by_courses(df, courses_filter, courses_filter_mode):
     """Apply course filtering to a dataframe based on selected courses and mode.
-    
+
     Args:
         df: DataFrame with UNIQUESCHOOLID column
         courses_filter: List of course names to filter by
         courses_filter_mode: "all", "any", or "none"
-    
+
     Returns:
         Filtered DataFrame
     """
     if not courses_filter:
         return df
-    
+
     if courses_filter_mode == "all":
         # All selected courses must be offered
         return df[df['UNIQUESCHOOLID'].apply(lambda x: all(
             course.lower() in data_loader.SCHOOLDATA["courses"].get(str(x), {}) and (
-                data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + 
-                data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0
+                data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] +
+                data_loader.SCHOOLDATA["courses"][str(
+                    x)][course.lower()]['inperson'] > 0
             ) for course in courses_filter
         ))]
     elif courses_filter_mode == "any":
         # At least one selected course must be offered
         return df[df['UNIQUESCHOOLID'].apply(lambda x: any(
             course.lower() in data_loader.SCHOOLDATA["courses"].get(str(x), {}) and (
-                data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + 
-                data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0
+                data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] +
+                data_loader.SCHOOLDATA["courses"][str(
+                    x)][course.lower()]['inperson'] > 0
             ) for course in courses_filter
         ))]
     elif courses_filter_mode == "none":
         # None of the selected courses should be offered
         return df[df['UNIQUESCHOOLID'].apply(lambda x: not any(
             course.lower() in data_loader.SCHOOLDATA["courses"].get(str(x), {}) and (
-                data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + 
-                data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0
+                data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] +
+                data_loader.SCHOOLDATA["courses"][str(
+                    x)][course.lower()]['inperson'] > 0
             ) for course in courses_filter
         ))]
     else:
@@ -102,18 +105,19 @@ def filter_by_courses(df, courses_filter, courses_filter_mode):
 
 def calculate_total_offered(df):
     """Add a total_offered column counting approved courses offered at each school.
-    
+
     Args:
         df: DataFrame with UNIQUESCHOOLID column
-    
+
     Returns:
         DataFrame with total_offered column added
     """
     df["total_offered"] = df['UNIQUESCHOOLID'].apply(lambda x: sum(
-        1 for course in APPROVED_COURSES 
+        1 for course in APPROVED_COURSES
         if course.lower() in data_loader.SCHOOLDATA["courses"].get(str(x), {}) and (
-            data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + 
-            data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0
+            data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] +
+            data_loader.SCHOOLDATA["courses"][str(
+                x)][course.lower()]['inperson'] > 0
         )
     ))
     return df
@@ -121,50 +125,53 @@ def calculate_total_offered(df):
 
 def apply_location_filter_and_get_center(df, selected_school, default_zoom=6.5, school_zoom=11, area_zoom=10):
     """Filter dataframe by selected school/district/city and calculate map center/zoom.
-    
+
     Args:
         df: DataFrame with location columns (UNIQUESCHOOLID, SYSTEM_NAME, School City, lat, lon)
         selected_school: Selection string in format "school:ID", "district:NAME", or "city:NAME"
         default_zoom: Zoom level when no selection (default 6.5)
         school_zoom: Zoom level when school selected (default 11)
         area_zoom: Zoom level when district/city selected (default 10)
-    
+
     Returns:
         Tuple of (filtered_df, center_dict, zoom_level)
     """
     default_center = {"lat": 32.9, "lon": -83.5}
-    
+
     if not selected_school:
         return df, default_center, default_zoom
-    
+
     if selected_school.startswith("school:"):
         school_id = selected_school.split(":", 1)[1]
         school_row = data_loader.SCHOOLDATA["approved_all"][
             data_loader.SCHOOLDATA["approved_all"]["UNIQUESCHOOLID"] == school_id]
         if not school_row.empty:
-            center = {"lat": school_row["lat"].iloc[0], "lon": school_row["lon"].iloc[0]}
+            center = {"lat": school_row["lat"].iloc[0],
+                      "lon": school_row["lon"].iloc[0]}
             return df, center, school_zoom
         else:
             return df, default_center, default_zoom
-            
+
     elif selected_school.startswith("district:"):
         district_name = selected_school.split(":", 1)[1]
         filtered_df = df[df['SYSTEM_NAME'] == district_name]
         if filtered_df.empty:
             return filtered_df, default_center, default_zoom
         else:
-            center = {"lat": filtered_df["lat"].mean(), "lon": filtered_df["lon"].mean()}
+            center = {"lat": filtered_df["lat"].mean(
+            ), "lon": filtered_df["lon"].mean()}
             return filtered_df, center, area_zoom
-            
+
     elif selected_school.startswith("city:"):
         city_name = selected_school.split(":", 1)[1]
         filtered_df = df[df['School City'] == city_name]
         if filtered_df.empty:
             return filtered_df, default_center, default_zoom
         else:
-            center = {"lat": filtered_df["lat"].mean(), "lon": filtered_df["lon"].mean()}
+            center = {"lat": filtered_df["lat"].mean(
+            ), "lon": filtered_df["lon"].mean()}
             return filtered_df, center, area_zoom
-    
+
     return df, default_center, default_zoom
 
 
@@ -520,11 +527,15 @@ layout = html.Div([
                     html.H3("How does the Courses Offered filter work?"),
                     html.P("The courses listed are the approved CS courses at each school, based on Georgia State Bill 108. Select one or more courses and choose a filter mode:"),
                     html.Ul([
-                        html.Li([html.Strong("All"), " (default): Shows schools that offer ALL of the selected courses"]),
-                        html.Li([html.Strong("Any"), ": Shows schools that offer at least ONE of the selected courses"]),
-                        html.Li([html.Strong("None"), ": Shows schools that do NOT offer any of the selected courses"]),
+                        html.Li([html.Strong(
+                            "All"), " (default): Shows schools that offer ALL of the selected courses"]),
+                        html.Li([html.Strong(
+                            "Any"), ": Shows schools that offer at least ONE of the selected courses"]),
+                        html.Li([html.Strong(
+                            "None"), ": Shows schools that do NOT offer any of the selected courses"]),
                     ]),
-                    html.P("A course is counted as offered if it is available either virtually or in-person (or both)."),
+                    html.P(
+                        "A course is counted as offered if it is available either virtually or in-person (or both)."),
                 ], className="faq-item"),
 
                 html.Div([
@@ -708,7 +719,11 @@ def toggle_ri_threshold(school):
     prevent_initial_call=True
 )
 def reset_filters(n_clicks):
-    return [], [], "all", [], [], [0, 2500], [-1.0, 1.0], [0, 16]
+    # Calculate initial max_course_total from all data
+    all_schools = data_loader.SCHOOLDATA["approved_all"]
+    all_schools_with_courses = calculate_total_offered(all_schools.copy())
+    initial_max = int(all_schools_with_courses['total_offered'].max()) if not all_schools_with_courses.empty else 16
+    return [], [], "all", [], [], [0, 2500], [-1.0, 1.0], [0, initial_max]
 
 
 @callback(
@@ -717,6 +732,8 @@ def reset_filters(n_clicks):
         Output("custom-legend-container", "children"),
         Output("ratio-threshold", "max"),
         Output("ratio-threshold", "marks"),
+        Output("course-total-offered", "max"),
+        Output("course-total-offered", "marks"),
     ],
     [
         Input("map-options-toggle", "value"),
@@ -996,11 +1013,14 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
 
         # Course total offered filter
         merged = calculate_total_offered(merged)
+        # Calculate max course total before applying filter
+        max_course_total = int(merged['total_offered'].max()) if not merged.empty else 16
         merged = merged[(merged['total_offered'] >= course_total_offered[0]) & (
             merged['total_offered'] <= course_total_offered[1])]
 
         # Selected school/district/city filter and center/zoom
-        merged, center, zoom = apply_location_filter_and_get_center(merged, selected_school)
+        merged, center, zoom = apply_location_filter_and_get_center(
+            merged, selected_school)
 
         modality_counts = merged["Classification"].value_counts()
         # Choose color map based on modality type
@@ -1121,7 +1141,8 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
             schools = schools[schools['Locale'].isin(locale_filter)]
 
         # Courses filter
-        schools = filter_by_courses(schools, courses_filter, courses_filter_mode)
+        schools = filter_by_courses(
+            schools, courses_filter, courses_filter_mode)
 
         # Modality filter not applied for disparity
         # Extra teachers not applied for disparity
@@ -1135,11 +1156,14 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
 
         # Course total offered filter
         schools = calculate_total_offered(schools)
+        # Calculate max course total before applying filter
+        max_course_total = int(schools['total_offered'].max()) if not schools.empty else 16
         schools = schools[(schools['total_offered'] >= course_total_offered[0]) & (
             schools['total_offered'] <= course_total_offered[1])]
 
         # Selected school/district/city filter and center/zoom
-        schools, center, zoom = apply_location_filter_and_get_center(schools, selected_school, school_zoom=12)
+        schools, center, zoom = apply_location_filter_and_get_center(
+            schools, selected_school, school_zoom=12)
 
         ri_cols = ["RI_Asian", "RI_Black",
                    "RI_Hispanic", "RI_White", "RI_Female"]
@@ -1258,7 +1282,8 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
             schools = schools[schools['Locale'].isin(locale_filter)]
 
         # Courses filter
-        schools = filter_by_courses(schools, courses_filter, courses_filter_mode)
+        schools = filter_by_courses(
+            schools, courses_filter, courses_filter_mode)
 
         # Modality and extra teachers not applied for gender
 
@@ -1271,11 +1296,14 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
 
         # Course total offered filter
         schools = calculate_total_offered(schools)
+        # Calculate max course total before applying filter
+        max_course_total = int(schools['total_offered'].max()) if not schools.empty else 16
         schools = schools[(schools['total_offered'] >= course_total_offered[0]) & (
             schools['total_offered'] <= course_total_offered[1])]
 
         # Selected school/district/city filter and center/zoom
-        schools, center, zoom = apply_location_filter_and_get_center(schools, selected_school, school_zoom=12)
+        schools, center, zoom = apply_location_filter_and_get_center(
+            schools, selected_school, school_zoom=12)
 
         color_bins = GENDER_COLOR_BINS
         legend_labels = [
@@ -1350,8 +1378,13 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
     max_ratio = 2500
     marks = {0: '0', 500: '500', 1000: '1000',
              1500: '1500', 2000: '2000', 2500: '2500'}
+    
+    # Dynamic course total marks
+    course_marks = {i: str(i) for i in range(0, max_course_total + 1, max(1, max_course_total // 4))}
+    if max_course_total not in course_marks:
+        course_marks[max_course_total] = str(max_course_total)
 
-    return fig, legend_combined, max_ratio, marks
+    return fig, legend_combined, max_ratio, marks, max_course_total, course_marks
 
 
 @callback(
