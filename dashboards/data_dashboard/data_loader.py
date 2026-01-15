@@ -101,10 +101,12 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
                 total_demographics_displays.append(val_display)
                 # Underline if this matches the selected disparity column
                 if ri_key == disparity_col:
-                    total_race_vals_list.append(f"   - <u>{total_label}: {val_display}</u>")
+                    total_race_vals_list.append(
+                        f"   - <u>{total_label}: {val_display}</u>")
                 else:
-                    total_race_vals_list.append(f"   - {total_label}: {val_display}")
-        
+                    total_race_vals_list.append(
+                        f"   - {total_label}: {val_display}")
+
         # Add female and male
         female = row.get("Female", None)
         if pd.notnull(female):
@@ -112,16 +114,18 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
             total_demographics_displays.append(female_display)
             # Underline if Female is selected
             if disparity_col == "RI_Female":
-                total_race_vals_list.append(f"   - <u>Total Female: {female_display}</u>")
+                total_race_vals_list.append(
+                    f"   - <u>Total Female: {female_display}</u>")
             else:
-                total_race_vals_list.append(f"   - Total Female: {female_display}")
+                total_race_vals_list.append(
+                    f"   - Total Female: {female_display}")
         male = row.get("Male", None)
         if pd.notnull(male):
             male_display = suppress_value(male)
             total_demographics_displays.append(male_display)
             # Note: Male is not a disparity option, so no underlining needed
             total_race_vals_list.append(f"   - Total Male: {male_display}")
-        
+
         # If any demographic is suppressed, suppress Total Students
         total_students = row.get("Total Student Count", None)
         if pd.notnull(total_students):
@@ -129,7 +133,8 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
                 total_student_display = "suppressed"
             else:
                 total_student_display = suppress_value(total_students)
-            total_race_vals_list.append(f"   - Total Students: {total_student_display}")
+            total_race_vals_list.append(
+                f"   - Total Students: {total_student_display}")
         total_race_vals = "<br>".join(total_race_vals_list)
 
         # Collect CS demographic values - always show all
@@ -161,7 +166,7 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
                 else:
                     cs_race_vals_list.append(
                         f"   - {cs_race_labels[cs_col]}: {val_display}")
-        
+
         # Add CS Female and CS Male
         cs_female = row.get('CS_Female', None)
         if pd.notnull(cs_female):
@@ -169,16 +174,18 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
             cs_demographics_displays.append(cs_female_display)
             # Underline if Female is selected
             if disparity_col == "RI_Female":
-                cs_race_vals_list.append(f"   - <u>CS Female: {cs_female_display}</u>")
+                cs_race_vals_list.append(
+                    f"   - <u>CS Female: {cs_female_display}</u>")
             else:
-                cs_race_vals_list.append(f"   - CS Female: {cs_female_display}")
+                cs_race_vals_list.append(
+                    f"   - CS Female: {cs_female_display}")
         cs_male = row.get('CS_Male', None)
         if pd.notnull(cs_male):
             cs_male_display = suppress_value(cs_male)
             cs_demographics_displays.append(cs_male_display)
             # Note: Male is not a disparity option, so no underlining needed
             cs_race_vals_list.append(f"   - CS Male: {cs_male_display}")
-        
+
         cs_race_vals = "<br>".join(cs_race_vals_list)
 
         # If any CS demographic is suppressed, suppress CS Total
@@ -214,7 +221,7 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
                 val_display = suppress_value(val)
                 total_demographics_displays.append(val_display)
                 total_race_vals_list.append(f"   - {label}: {val_display}")
-        
+
         # Add female and male to demographics list
         female = row.get("Female", None)
         if pd.notnull(female):
@@ -226,7 +233,7 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
             male_display = suppress_value(male)
             total_demographics_displays.append(male_display)
             total_race_vals_list.append(f"   - Total Male: {male_display}")
-        
+
         # If any demographic is suppressed, suppress Total Students
         total_students = row.get("Total Student Count", None)
         if pd.notnull(total_students):
@@ -234,7 +241,8 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
                 total_students_display = "suppressed"
             else:
                 total_students_display = suppress_value(total_students)
-            total_race_vals_list.append(f"   - Total Students: {total_students_display}")
+            total_race_vals_list.append(
+                f"   - Total Students: {total_students_display}")
         total_race_vals = "<br>".join(total_race_vals_list)
 
         # Fetch disparity data for CS race and RI
@@ -259,7 +267,7 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
                     cs_demographics_displays.append(val_display)
                     cs_race_vals_list.append(
                         f"   - {cs_race_labels[cs_col]}: {val_display}")
-            
+
             # Also check CS Female and CS Male
             cs_female = drow.get('CS_Female', None)
             if pd.notnull(cs_female):
@@ -267,13 +275,13 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
             cs_male = drow.get('CS_Male', None)
             if pd.notnull(cs_male):
                 cs_demographics_displays.append(suppress_value(cs_male))
-            
+
             # If any CS demographic is suppressed, suppress CS Total
             if has_suppression(cs_demographics_displays):
                 cs_total = "suppressed"
             else:
                 cs_total = suppress_value(drow.get('CS_Enrollment', 0))
-            
+
             cs_race_vals = "<br>".join(cs_race_vals_list)
 
             ri_vals_list = []

@@ -58,6 +58,116 @@ def get_course_display(course_key: str) -> str:
     return COURSE_DISPLAY_MAP.get(course_key, course_key.title())
 
 
+def filter_by_courses(df, courses_filter, courses_filter_mode):
+    """Apply course filtering to a dataframe based on selected courses and mode.
+    
+    Args:
+        df: DataFrame with UNIQUESCHOOLID column
+        courses_filter: List of course names to filter by
+        courses_filter_mode: "all", "any", or "none"
+    
+    Returns:
+        Filtered DataFrame
+    """
+    if not courses_filter:
+        return df
+    
+    if courses_filter_mode == "all":
+        # All selected courses must be offered
+        return df[df['UNIQUESCHOOLID'].apply(lambda x: all(
+            course.lower() in data_loader.SCHOOLDATA["courses"].get(str(x), {}) and (
+                data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + 
+                data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0
+            ) for course in courses_filter
+        ))]
+    elif courses_filter_mode == "any":
+        # At least one selected course must be offered
+        return df[df['UNIQUESCHOOLID'].apply(lambda x: any(
+            course.lower() in data_loader.SCHOOLDATA["courses"].get(str(x), {}) and (
+                data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + 
+                data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0
+            ) for course in courses_filter
+        ))]
+    elif courses_filter_mode == "none":
+        # None of the selected courses should be offered
+        return df[df['UNIQUESCHOOLID'].apply(lambda x: not any(
+            course.lower() in data_loader.SCHOOLDATA["courses"].get(str(x), {}) and (
+                data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + 
+                data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0
+            ) for course in courses_filter
+        ))]
+    else:
+        return df
+
+
+def calculate_total_offered(df):
+    """Add a total_offered column counting approved courses offered at each school.
+    
+    Args:
+        df: DataFrame with UNIQUESCHOOLID column
+    
+    Returns:
+        DataFrame with total_offered column added
+    """
+    df["total_offered"] = df['UNIQUESCHOOLID'].apply(lambda x: sum(
+        1 for course in APPROVED_COURSES 
+        if course.lower() in data_loader.SCHOOLDATA["courses"].get(str(x), {}) and (
+            data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + 
+            data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0
+        )
+    ))
+    return df
+
+
+def apply_location_filter_and_get_center(df, selected_school, default_zoom=6.5, school_zoom=11, area_zoom=10):
+    """Filter dataframe by selected school/district/city and calculate map center/zoom.
+    
+    Args:
+        df: DataFrame with location columns (UNIQUESCHOOLID, SYSTEM_NAME, School City, lat, lon)
+        selected_school: Selection string in format "school:ID", "district:NAME", or "city:NAME"
+        default_zoom: Zoom level when no selection (default 6.5)
+        school_zoom: Zoom level when school selected (default 11)
+        area_zoom: Zoom level when district/city selected (default 10)
+    
+    Returns:
+        Tuple of (filtered_df, center_dict, zoom_level)
+    """
+    default_center = {"lat": 32.9, "lon": -83.5}
+    
+    if not selected_school:
+        return df, default_center, default_zoom
+    
+    if selected_school.startswith("school:"):
+        school_id = selected_school.split(":", 1)[1]
+        school_row = data_loader.SCHOOLDATA["approved_all"][
+            data_loader.SCHOOLDATA["approved_all"]["UNIQUESCHOOLID"] == school_id]
+        if not school_row.empty:
+            center = {"lat": school_row["lat"].iloc[0], "lon": school_row["lon"].iloc[0]}
+            return df, center, school_zoom
+        else:
+            return df, default_center, default_zoom
+            
+    elif selected_school.startswith("district:"):
+        district_name = selected_school.split(":", 1)[1]
+        filtered_df = df[df['SYSTEM_NAME'] == district_name]
+        if filtered_df.empty:
+            return filtered_df, default_center, default_zoom
+        else:
+            center = {"lat": filtered_df["lat"].mean(), "lon": filtered_df["lon"].mean()}
+            return filtered_df, center, area_zoom
+            
+    elif selected_school.startswith("city:"):
+        city_name = selected_school.split(":", 1)[1]
+        filtered_df = df[df['School City'] == city_name]
+        if filtered_df.empty:
+            return filtered_df, default_center, default_zoom
+        else:
+            center = {"lat": filtered_df["lat"].mean(), "lon": filtered_df["lon"].mean()}
+            return filtered_df, center, area_zoom
+    
+    return df, default_center, default_zoom
+
+
 courses_options = [{"label": get_course_display(course), "value": course}
                    for course in APPROVED_COURSES]
 
@@ -100,7 +210,8 @@ layout = html.Div([
     html.Div([
         html.Div([
             html.Div([
-                html.Button("?", id="faq-button", className="faq-button", title="Help & FAQ"),
+                html.Button("?", id="faq-button",
+                            className="faq-button", title="Help & FAQ"),
             ], className="sidebar-header-right"),
             dcc.Dropdown(
                 id="school-search",
@@ -232,14 +343,25 @@ layout = html.Div([
                 ], style={'flex': '1'}),
             ], style={'display': 'flex', 'gap': '20px', 'margin-bottom': '24px'}),
             html.Div([
-                html.Strong([
-                    "Courses Offered",
+                html.Div([
+                    html.Strong("Courses Offered"),
+                    dcc.RadioItems(
+                        id="courses-filter-mode",
+                        options=[
+                            {"label": "All", "value": "all"},
+                            {"label": "Any", "value": "any"},
+                            {"label": "None", "value": "none"},
+                        ],
+                        value="all",
+                        inline=True,
+                        className="courses-filter-mode-radio"
+                    ),
                     html.Span(
                         "i",
-                        title="These are the available CS courses at each school, based on Georgia State Bill 108. Select a course to filter schools that offer that course (either virtually or in-person). Multiple selections will show schools that offer ALL of the selected courses.",
+                        title="Select courses and choose a filter mode: 'All' requires schools to offer ALL selected courses, 'Any' requires at least one selected course, and 'None' excludes schools offering any selected courses.",
                         className="sidebar-info-icon"
                     )
-                ]),
+                ], style={"display": "flex", "alignItems": "center", "gap": "8px", "marginBottom": "8px"}),
                 dcc.Checklist(
                     id="courses-filter",
                     options=courses_options,
@@ -314,21 +436,24 @@ layout = html.Div([
             html.Div(id="course-list", className="course-list-box")
         ], className="sidebar-section course-list-section"),
     ], className="sidebar"),
-    
+
     # FAQ Modal
     html.Div([
         html.Div([
             html.Div([
                 html.H2("Resources & Information"),
-                html.Button("×", id="close-faq", className="close-modal-button"),
+                html.Button("×", id="close-faq",
+                            className="close-modal-button"),
             ], className="modal-header"),
-            
+
             # Tab Navigation
             html.Div([
-                html.Button("FAQ", id="tab-faq", className="tab-button active-tab"),
-                html.Button("Data Request", id="tab-data-request", className="tab-button"),
+                html.Button("FAQ", id="tab-faq",
+                            className="tab-button active-tab"),
+                html.Button("Data Request", id="tab-data-request",
+                            className="tab-button"),
             ], className="tab-navigation"),
-            
+
             # FAQ Tab Content
             html.Div([
                 html.Div([
@@ -341,18 +466,20 @@ layout = html.Div([
                     html.H3("What does 'suppressed' mean?"),
                     html.P("When you see 'suppressed' instead of a number, it means the value is between 1 and 4. We suppress these small numbers to protect student privacy and prevent identification of individual students."),
                 ], className="faq-item"),
-                
+
                 html.Div([
                     html.H3("Where does the data come from?"),
                     html.Ul([
                         html.Li([
-                            html.Strong("Georgia Department of Education (GaDOE): "),
+                            html.Strong(
+                                "Georgia Department of Education (GaDOE): "),
                             "School-level enrollment and CS course demographics. ",
                             html.A("Data Requests", href="https://georgiainsights.gadoe.org/contact-request-data/",
                                    target="_blank", rel="noopener noreferrer")
                         ]),
                         html.Li([
-                            html.Strong("National Center for Education Statistics (NCES): "),
+                            html.Strong(
+                                "National Center for Education Statistics (NCES): "),
                             "District characteristics and locale classifications. ",
                             html.A("DataLab", href="https://nces.ed.gov/datalab/",
                                    target="_blank", rel="noopener noreferrer")
@@ -368,91 +495,108 @@ layout = html.Div([
                         ])
                     ]),
                 ], className="faq-item"),
-                
+
                 html.Div([
                     html.H3("What are Course Modalities?"),
                     html.P("Course modality indicates how CS courses are offered at the school: In Person Only, Virtual Only, Both In Person and Virtual, or No approved CS classes."),
                 ], className="faq-item"),
-                
+
                 html.Div([
                     html.H3("What is the Representation Index (RI)?"),
                     html.P("The RI shows how well different groups are represented in CS courses compared to their overall school population. Values between -0.05 and 0.05 indicate parity (balanced representation). Negative values mean under-representation in CS, while positive values mean over-representation."),
                 ], className="faq-item"),
-                
+
                 html.Div([
                     html.H3("What are Extra Certified Teachers?"),
                     html.P("These are teachers who are certified to teach CS but do not currently teach a CS course listed in the Courses Offered section. They represent potential CS teaching capacity at the school."),
                 ], className="faq-item"),
-                
+
                 html.Div([
                     html.H3("How is the Student-to-CS-Teacher Ratio calculated?"),
                     html.P("This ratio is calculated as Total Student Count divided by the sum of approved CS teachers and extra certified teachers at the school. It helps indicate how many students each CS teacher potentially serves."),
                 ], className="faq-item"),
-                
+
                 html.Div([
                     html.H3("How does the Courses Offered filter work?"),
-                    html.P("The courses listed are the approved CS courses at each school, based on Georgia State Bill 108. When you select a course, it filters to show schools that offer that course (either virtually or in-person). Selecting multiple courses shows only schools that offer ALL of the selected courses."),
+                    html.P("The courses listed are the approved CS courses at each school, based on Georgia State Bill 108. Select one or more courses and choose a filter mode:"),
+                    html.Ul([
+                        html.Li([html.Strong("All"), " (default): Shows schools that offer ALL of the selected courses"]),
+                        html.Li([html.Strong("Any"), ": Shows schools that offer at least ONE of the selected courses"]),
+                        html.Li([html.Strong("None"), ": Shows schools that do NOT offer any of the selected courses"]),
+                    ]),
+                    html.P("A course is counted as offered if it is available either virtually or in-person (or both)."),
                 ], className="faq-item"),
-                
+
                 html.Div([
                     html.H3("What is Course Total Offered?"),
                     html.P("This is the number of distinct approved CS courses offered at a school. A course is counted if it is offered either virtually or in-person (or both)."),
                 ], className="faq-item"),
-                
+
                 html.P([
                     "Questions? Contact: ",
-                    html.A("placeholder@placeholder.com", href="mailto:placeholder@placeholder.com")
+                    html.A("placeholder@placeholder.com",
+                           href="mailto:placeholder@placeholder.com")
                 ], className="form-footer"),
             ], id="faq-content", className="modal-body tab-content"),
-            
+
             # Data Request Tab Content
             html.Div([
                 html.H3("Request Access to Research Data"),
                 html.P("Please complete the form below to request access to the underlying research data. We will review your request and respond as soon as possible.", className="data-request-intro"),
-                
+
                 html.Div([
-                    html.Label("Contact Information", className="form-section-header"),
-                    
+                    html.Label("Contact Information",
+                               className="form-section-header"),
+
                     html.Div([
                         html.Label("Full Name *"),
-                        dcc.Input(id="req-name", type="text", placeholder="Enter your full name", className="form-input"),
+                        dcc.Input(id="req-name", type="text",
+                                  placeholder="Enter your full name", className="form-input"),
                     ], className="form-group"),
-                    
+
                     html.Div([
                         html.Label("Email Address *"),
-                        dcc.Input(id="req-email", type="email", placeholder="your.email@institution.edu", className="form-input"),
+                        dcc.Input(id="req-email", type="email",
+                                  placeholder="your.email@institution.edu", className="form-input"),
                     ], className="form-group"),
-                    
+
                     html.Div([
                         html.Label("Institution/Organization *"),
-                        dcc.Input(id="req-institution", type="text", placeholder="University or organization name", className="form-input"),
+                        dcc.Input(id="req-institution", type="text",
+                                  placeholder="University or organization name", className="form-input"),
                     ], className="form-group"),
-                    
+
                     html.Div([
                         html.Label("Position/Role *"),
-                        dcc.Input(id="req-role", type="text", placeholder="e.g., Graduate Student, Faculty, Researcher", className="form-input"),
+                        dcc.Input(id="req-role", type="text",
+                                  placeholder="e.g., Graduate Student, Faculty, Researcher", className="form-input"),
                     ], className="form-group"),
                 ]),
-                
+
                 html.Div([
-                    html.Label("Research Purpose", className="form-section-header"),
-                    
+                    html.Label("Research Purpose",
+                               className="form-section-header"),
+
                     html.Div([
                         html.Label("Research Question/Purpose *"),
-                        dcc.Textarea(id="req-purpose", placeholder="Briefly describe your research question and how you plan to use this data", className="form-textarea"),
+                        dcc.Textarea(
+                            id="req-purpose", placeholder="Briefly describe your research question and how you plan to use this data", className="form-textarea"),
                     ], className="form-group"),
                 ]),
-                
+
                 html.Div([
-                    html.Button("Submit Data Request", id="submit-data-request", className="submit-button", disabled=True),
-                    html.Div(id="data-request-output", className="form-output"),
+                    html.Button("Submit Data Request", id="submit-data-request",
+                                className="submit-button", disabled=True),
+                    html.Div(id="data-request-output",
+                             className="form-output"),
                 ], className="form-submit-section"),
-                
+
                 html.P([
                     "Questions? Contact: ",
-                    html.A("placeholder@placeholder.com", href="mailto:placeholder@placeholder.com")
+                    html.A("placeholder@placeholder.com",
+                           href="mailto:placeholder@placeholder.com")
                 ], className="form-footer"),
-                
+
             ], id="data-request-content", className="modal-body tab-content", style={"display": "none"}),
         ], className="modal-content"),
     ], id="faq-modal", className="modal", style={"display": "none"}),
@@ -487,9 +631,9 @@ def switch_tabs(faq_clicks, data_clicks):
     ctx = callback_context
     if not ctx.triggered:
         return {"display": "block"}, {"display": "none"}, "tab-button active-tab", "tab-button"
-    
+
     button_id = ctx.triggered[0]["prop_id"].split(".")[0]
-    
+
     if button_id == "tab-faq":
         return {"display": "block"}, {"display": "none"}, "tab-button active-tab", "tab-button"
     else:  # tab-data-request
@@ -506,14 +650,14 @@ def toggle_faq_modal(open_clicks, close_clicks, current_style):
     ctx = callback_context
     if not ctx.triggered:
         return {"display": "none"}
-    
+
     button_id = ctx.triggered[0]["prop_id"].split(".")[0]
-    
+
     if button_id == "faq-button":
         return {"display": "block"}
     elif button_id == "close-faq":
         return {"display": "none"}
-    
+
     return current_style if current_style else {"display": "none"}
 
 
@@ -553,6 +697,7 @@ def toggle_ri_threshold(school):
     [
         Output("locale-filter", "value"),
         Output("courses-filter", "value"),
+        Output("courses-filter-mode", "value"),
         Output("modality-filter", "value"),
         Output("extra-teachers-filter", "value"),
         Output("ratio-threshold", "value"),
@@ -563,7 +708,7 @@ def toggle_ri_threshold(school):
     prevent_initial_call=True
 )
 def reset_filters(n_clicks):
-    return [], [], [], [], [0, 2500], [-1.0, 1.0], [0, 16]
+    return [], [], "all", [], [], [0, 2500], [-1.0, 1.0], [0, 16]
 
 
 @callback(
@@ -581,6 +726,7 @@ def reset_filters(n_clicks):
         Input("school-search", "value"),
         Input("locale-filter", "value"),
         Input("courses-filter", "value"),
+        Input("courses-filter-mode", "value"),
         Input("modality-filter", "value"),
         Input("extra-teachers-filter", "value"),
         Input("ratio-threshold", "value"),
@@ -588,7 +734,7 @@ def reset_filters(n_clicks):
         Input("course-total-offered", "value"),
     ]
 )
-def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_school, locale_filter, courses_filter, modality_filter, extra_teachers_filter, ratio_threshold, ri_threshold, course_total_offered):
+def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_school, locale_filter, courses_filter, courses_filter_mode, modality_filter, extra_teachers_filter, ratio_threshold, ri_threshold, course_total_offered):
 
     ctx = callback_context
     triggered = ctx.triggered if ctx else []
@@ -835,10 +981,8 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         if locale_filter:
             merged = merged[merged['Locale'].isin(locale_filter)]
 
-        # Courses filter
-        if courses_filter:
-            merged = merged[merged['UNIQUESCHOOLID'].apply(lambda x: all(course.lower() in data_loader.SCHOOLDATA["courses"].get(str(x), {}) and (
-                data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0) for course in courses_filter))]
+        # Courses filter with mode (All/Any/None)
+        merged = filter_by_courses(merged, courses_filter, courses_filter_mode)
 
         if modality_filter:
             merged = merged[merged['Classification'].isin(modality_filter)]
@@ -851,50 +995,12 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
             merged['student_teacher_ratio'] <= ratio_threshold[1])]
 
         # Course total offered filter
-        merged["total_offered"] = merged['UNIQUESCHOOLID'].apply(lambda x: sum(1 for course in APPROVED_COURSES if course.lower() in data_loader.SCHOOLDATA["courses"].get(
-            str(x), {}) and (data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0)))
+        merged = calculate_total_offered(merged)
         merged = merged[(merged['total_offered'] >= course_total_offered[0]) & (
             merged['total_offered'] <= course_total_offered[1])]
 
         # Selected school/district/city filter and center/zoom
-        if selected_school:
-            if selected_school.startswith("school:"):
-                school_id = selected_school.split(":", 1)[1]
-                school_row = data_loader.SCHOOLDATA["approved_all"][
-                    data_loader.SCHOOLDATA["approved_all"]["UNIQUESCHOOLID"] == school_id]
-                if not school_row.empty:
-                    center_lat = school_row["lat"].iloc[0]
-                    center_lon = school_row["lon"].iloc[0]
-                    center = {"lat": center_lat, "lon": center_lon}
-                    zoom = 11
-                else:
-                    center = {"lat": 32.9, "lon": -83.5}
-                    zoom = 6.5
-            elif selected_school.startswith("district:"):
-                district_name = selected_school.split(":", 1)[1]
-                merged = merged[merged['SYSTEM_NAME'] == district_name]
-                if merged.empty:
-                    center = {"lat": 32.9, "lon": -83.5}
-                    zoom = 6.5
-                else:
-                    center_lat = merged["lat"].mean()
-                    center_lon = merged["lon"].mean()
-                    center = {"lat": center_lat, "lon": center_lon}
-                    zoom = 10
-            elif selected_school.startswith("city:"):
-                city_name = selected_school.split(":", 1)[1]
-                merged = merged[merged['School City'] == city_name]
-                if merged.empty:
-                    center = {"lat": 32.9, "lon": -83.5}
-                    zoom = 6.5
-                else:
-                    center_lat = merged["lat"].mean()
-                    center_lon = merged["lon"].mean()
-                    center = {"lat": center_lat, "lon": center_lon}
-                    zoom = 10
-        else:
-            center = {"lat": 32.9, "lon": -83.5}
-            zoom = 6.5
+        merged, center, zoom = apply_location_filter_and_get_center(merged, selected_school)
 
         modality_counts = merged["Classification"].value_counts()
         # Choose color map based on modality type
@@ -1015,9 +1121,7 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
             schools = schools[schools['Locale'].isin(locale_filter)]
 
         # Courses filter
-        if courses_filter:
-            schools = schools[schools['UNIQUESCHOOLID'].apply(lambda x: all(course.lower() in data_loader.SCHOOLDATA["courses"].get(str(x), {}) and (
-                data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0) for course in courses_filter))]
+        schools = filter_by_courses(schools, courses_filter, courses_filter_mode)
 
         # Modality filter not applied for disparity
         # Extra teachers not applied for disparity
@@ -1030,63 +1134,12 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
             schools[disparity_col] <= ri_threshold[1])]
 
         # Course total offered filter
-        schools["total_offered"] = schools['UNIQUESCHOOLID'].apply(lambda x: sum(1 for course in APPROVED_COURSES if course.lower() in data_loader.SCHOOLDATA["courses"].get(
-            str(x), {}) and (data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0)))
+        schools = calculate_total_offered(schools)
         schools = schools[(schools['total_offered'] >= course_total_offered[0]) & (
             schools['total_offered'] <= course_total_offered[1])]
 
         # Selected school/district/city filter and center/zoom
-        if selected_school:
-            if selected_school.startswith("school:"):
-                school_id = selected_school.split(":", 1)[1]
-                school_row = data_loader.SCHOOLDATA["approved_all"][
-                    data_loader.SCHOOLDATA["approved_all"]["UNIQUESCHOOLID"] == school_id]
-                if not school_row.empty:
-                    center_lat = school_row["lat"].iloc[0]
-                    center_lon = school_row["lon"].iloc[0]
-                    center = {"lat": center_lat, "lon": center_lon}
-                    zoom = 12
-                else:
-                    center = {"lat": 32.9, "lon": -83.5}
-                    zoom = 6.5
-            elif selected_school.startswith("district:"):
-                district_name = selected_school.split(":", 1)[1]
-                schools = schools[schools['SYSTEM_NAME'] == district_name]
-                if schools.empty:
-                    center = {"lat": 32.9, "lon": -83.5}
-                    zoom = 6.5
-                else:
-                    center_lat = schools["lat"].mean()
-                    center_lon = schools["lon"].mean()
-                    center = {"lat": center_lat, "lon": center_lon}
-                    zoom = 10
-            elif selected_school.startswith("city:"):
-                city_name = selected_school.split(":", 1)[1]
-                schools = schools[schools['School City'] == city_name]
-                if schools.empty:
-                    center = {"lat": 32.9, "lon": -83.5}
-                    zoom = 6.5
-                else:
-                    center_lat = schools["lat"].mean()
-                    center_lon = schools["lon"].mean()
-                    center = {"lat": center_lat, "lon": center_lon}
-                    zoom = 10
-        else:
-            center = {"lat": 32.9, "lon": -83.5}
-            zoom = 6.5
-
-        # Set center and zoom based on filtered data
-        if selected_school:
-            if schools.empty:
-                center = {"lat": 32.9, "lon": -83.5}
-                zoom = 6.5
-            else:
-                center_lat = schools["lat"].mean()
-                center_lon = schools["lon"].mean()
-                zoom = 12 if len(schools) == 1 else 10
-        else:
-            center = {"lat": 32.9, "lon": -83.5}
-            zoom = 6.5
+        schools, center, zoom = apply_location_filter_and_get_center(schools, selected_school, school_zoom=12)
 
         ri_cols = ["RI_Asian", "RI_Black",
                    "RI_Hispanic", "RI_White", "RI_Female"]
@@ -1205,9 +1258,7 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
             schools = schools[schools['Locale'].isin(locale_filter)]
 
         # Courses filter
-        if courses_filter:
-            schools = schools[schools['UNIQUESCHOOLID'].apply(lambda x: all(course.lower() in data_loader.SCHOOLDATA["courses"].get(str(x), {}) and (
-                data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0) for course in courses_filter))]
+        schools = filter_by_courses(schools, courses_filter, courses_filter_mode)
 
         # Modality and extra teachers not applied for gender
 
@@ -1219,50 +1270,12 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
             schools[gender_col] <= ri_threshold[1])]
 
         # Course total offered filter
-        schools["total_offered"] = schools['UNIQUESCHOOLID'].apply(lambda x: sum(1 for course in APPROVED_COURSES if course.lower() in data_loader.SCHOOLDATA["courses"].get(
-            str(x), {}) and (data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] + data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['inperson'] > 0)))
+        schools = calculate_total_offered(schools)
         schools = schools[(schools['total_offered'] >= course_total_offered[0]) & (
             schools['total_offered'] <= course_total_offered[1])]
 
         # Selected school/district/city filter and center/zoom
-        if selected_school:
-            if selected_school.startswith("school:"):
-                school_id = selected_school.split(":", 1)[1]
-                school_row = data_loader.SCHOOLDATA["approved_all"][
-                    data_loader.SCHOOLDATA["approved_all"]["UNIQUESCHOOLID"] == school_id]
-                if not school_row.empty:
-                    center_lat = school_row["lat"].iloc[0]
-                    center_lon = school_row["lon"].iloc[0]
-                    center = {"lat": center_lat, "lon": center_lon}
-                    zoom = 12
-                else:
-                    center = {"lat": 32.9, "lon": -83.5}
-                    zoom = 6.5
-            elif selected_school.startswith("district:"):
-                district_name = selected_school.split(":", 1)[1]
-                schools = schools[schools['SYSTEM_NAME'] == district_name]
-                if schools.empty:
-                    center = {"lat": 32.9, "lon": -83.5}
-                    zoom = 6.5
-                else:
-                    center_lat = schools["lat"].mean()
-                    center_lon = schools["lon"].mean()
-                    center = {"lat": center_lat, "lon": center_lon}
-                    zoom = 10
-            elif selected_school.startswith("city:"):
-                city_name = selected_school.split(":", 1)[1]
-                schools = schools[schools['School City'] == city_name]
-                if schools.empty:
-                    center = {"lat": 32.9, "lon": -83.5}
-                    zoom = 6.5
-                else:
-                    center_lat = schools["lat"].mean()
-                    center_lon = schools["lon"].mean()
-                    center = {"lat": center_lat, "lon": center_lon}
-                    zoom = 10
-        else:
-            center = {"lat": 32.9, "lon": -83.5}
-            zoom = 6.5
+        schools, center, zoom = apply_location_filter_and_get_center(schools, selected_school, school_zoom=12)
 
         color_bins = GENDER_COLOR_BINS
         legend_labels = [
@@ -1335,7 +1348,8 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         legend_combined = None
 
     max_ratio = 2500
-    marks = {0: '0', 500: '500', 1000: '1000', 1500: '1500', 2000: '2000', 2500: '2500'}
+    marks = {0: '0', 500: '500', 1000: '1000',
+             1500: '1500', 2000: '2000', 2500: '2500'}
 
     return fig, legend_combined, max_ratio, marks
 
@@ -1349,6 +1363,7 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         Input("underlay-dropdown", "value"),
         Input("locale-filter", "value"),
         Input("courses-filter", "value"),
+        Input("courses-filter-mode", "value"),
         Input("modality-filter", "value"),
         Input("extra-teachers-filter", "value"),
         Input("ratio-threshold", "value"),
@@ -1356,7 +1371,7 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         Input("course-total-offered", "value"),
     ]
 )
-def update_loading_message(map_options, school, dots_dropdown, underlay_dropdown, locale_filter, courses_filter, modality_filter, extra_teachers_filter, ratio_threshold, ri_threshold, course_total_offered):
+def update_loading_message(map_options, school, dots_dropdown, underlay_dropdown, locale_filter, courses_filter, courses_filter_mode, modality_filter, extra_teachers_filter, ratio_threshold, ri_threshold, course_total_offered):
     components = []
     messages = []
     if underlay_dropdown != DEFAULT_UNDERLAY_OPTION:

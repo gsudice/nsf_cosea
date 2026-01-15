@@ -5,7 +5,7 @@ APPROVED_COURSES = [
     "ib computer science, year one",
     "ib computer science, year two",
     "computer science principles",
-    "programming, games, apps, and society",
+    "programming, games, apps and society",
     "web development",
     "embedded computing",
     "game design: animation and simulation",
