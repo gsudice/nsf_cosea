@@ -1,5 +1,6 @@
 # keep this at the top to silence warning
 import data_dashboard.data_loader as data_loader
+from data_dashboard.data_loader import suppress_value
 from data_dashboard.settings import *
 from data_dashboard.settings import APPROVED_COURSES, COURSE_DISPLAY_MAP, CITY_LABEL_OFFSETS_M, CITY_LABEL_TEXT_SETTINGS, CITY_LABEL_TEXT_SIZE
 from sqlalchemy import create_engine
@@ -98,6 +99,9 @@ layout = html.Div([
     ], className="main-map-area"),
     html.Div([
         html.Div([
+            html.Div([
+                html.Button("?", id="faq-button", className="faq-button", title="Help & FAQ"),
+            ], className="sidebar-header-right"),
             dcc.Dropdown(
                 id="school-search",
                 options=all_search_options,
@@ -310,7 +314,207 @@ layout = html.Div([
             html.Div(id="course-list", className="course-list-box")
         ], className="sidebar-section course-list-section"),
     ], className="sidebar"),
+    
+    # FAQ Modal
+    html.Div([
+        html.Div([
+            html.Div([
+                html.H2("Resources & Information"),
+                html.Button("×", id="close-faq", className="close-modal-button"),
+            ], className="modal-header"),
+            
+            # Tab Navigation
+            html.Div([
+                html.Button("FAQ", id="tab-faq", className="tab-button active-tab"),
+                html.Button("Data Request", id="tab-data-request", className="tab-button"),
+            ], className="tab-navigation"),
+            
+            # FAQ Tab Content
+            html.Div([
+                html.Div([
+                    html.P([
+                        html.Strong("Important Notice: "),
+                        "CS enrollment numbers shown are estimates. Students may be enrolled in multiple CS courses, and we currently have no way to eliminate duplicates across courses. Therefore, CS enrollment counts may include the same student more than once."
+                    ], className="faq-notice")
+                ]),
+                html.Div([
+                    html.H3("What does 'suppressed' mean?"),
+                    html.P("When you see 'suppressed' instead of a number, it means the value is between 1 and 4. We suppress these small numbers to protect student privacy and prevent identification of individual students."),
+                ], className="faq-item"),
+                
+                html.Div([
+                    html.H3("Where does the data come from?"),
+                    html.Ul([
+                        html.Li([
+                            html.Strong("Georgia Department of Education (GaDOE): "),
+                            "School-level enrollment and CS course demographics. ",
+                            html.A("Data Requests", href="https://georgiainsights.gadoe.org/contact-request-data/",
+                                   target="_blank", rel="noopener noreferrer")
+                        ]),
+                        html.Li([
+                            html.Strong("National Center for Education Statistics (NCES): "),
+                            "District characteristics and locale classifications. ",
+                            html.A("DataLab", href="https://nces.ed.gov/datalab/",
+                                   target="_blank", rel="noopener noreferrer")
+                        ]),
+                        html.Li([
+                            html.Strong("U.S. Census Bureau: "),
+                            "Demographic, income, and educational data from the ",
+                            html.A("American Community Survey", href="https://www.census.gov/programs-surveys/acs.html",
+                                   target="_blank", rel="noopener noreferrer"),
+                            " and geographic boundaries from ",
+                            html.A("TIGER/Line shapefiles", href="https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html",
+                                   target="_blank", rel="noopener noreferrer")
+                        ])
+                    ]),
+                ], className="faq-item"),
+                
+                html.Div([
+                    html.H3("What are Course Modalities?"),
+                    html.P("Course modality indicates how CS courses are offered at the school: In Person Only, Virtual Only, Both In Person and Virtual, or No approved CS classes."),
+                ], className="faq-item"),
+                
+                html.Div([
+                    html.H3("What is the Representation Index (RI)?"),
+                    html.P("The RI shows how well different groups are represented in CS courses compared to their overall school population. Values between -0.05 and 0.05 indicate parity (balanced representation). Negative values mean under-representation in CS, while positive values mean over-representation."),
+                ], className="faq-item"),
+                
+                html.Div([
+                    html.H3("What are Extra Certified Teachers?"),
+                    html.P("These are teachers who are certified to teach CS but do not currently teach a CS course listed in the Courses Offered section. They represent potential CS teaching capacity at the school."),
+                ], className="faq-item"),
+                
+                html.Div([
+                    html.H3("How is the Student-to-CS-Teacher Ratio calculated?"),
+                    html.P("This ratio is calculated as Total Student Count divided by the sum of approved CS teachers and extra certified teachers at the school. It helps indicate how many students each CS teacher potentially serves."),
+                ], className="faq-item"),
+                
+                html.Div([
+                    html.H3("How does the Courses Offered filter work?"),
+                    html.P("The courses listed are the approved CS courses at each school, based on Georgia State Bill 108. When you select a course, it filters to show schools that offer that course (either virtually or in-person). Selecting multiple courses shows only schools that offer ALL of the selected courses."),
+                ], className="faq-item"),
+                
+                html.Div([
+                    html.H3("What is Course Total Offered?"),
+                    html.P("This is the number of distinct approved CS courses offered at a school. A course is counted if it is offered either virtually or in-person (or both)."),
+                ], className="faq-item"),
+                
+                html.P([
+                    "Questions? Contact: ",
+                    html.A("placeholder@placeholder.com", href="mailto:placeholder@placeholder.com")
+                ], className="form-footer"),
+            ], id="faq-content", className="modal-body tab-content"),
+            
+            # Data Request Tab Content
+            html.Div([
+                html.H3("Request Access to Research Data"),
+                html.P("Please complete the form below to request access to the underlying research data. We will review your request and respond as soon as possible.", className="data-request-intro"),
+                
+                html.Div([
+                    html.Label("Contact Information", className="form-section-header"),
+                    
+                    html.Div([
+                        html.Label("Full Name *"),
+                        dcc.Input(id="req-name", type="text", placeholder="Enter your full name", className="form-input"),
+                    ], className="form-group"),
+                    
+                    html.Div([
+                        html.Label("Email Address *"),
+                        dcc.Input(id="req-email", type="email", placeholder="your.email@institution.edu", className="form-input"),
+                    ], className="form-group"),
+                    
+                    html.Div([
+                        html.Label("Institution/Organization *"),
+                        dcc.Input(id="req-institution", type="text", placeholder="University or organization name", className="form-input"),
+                    ], className="form-group"),
+                    
+                    html.Div([
+                        html.Label("Position/Role *"),
+                        dcc.Input(id="req-role", type="text", placeholder="e.g., Graduate Student, Faculty, Researcher", className="form-input"),
+                    ], className="form-group"),
+                ]),
+                
+                html.Div([
+                    html.Label("Research Purpose", className="form-section-header"),
+                    
+                    html.Div([
+                        html.Label("Research Question/Purpose *"),
+                        dcc.Textarea(id="req-purpose", placeholder="Briefly describe your research question and how you plan to use this data", className="form-textarea"),
+                    ], className="form-group"),
+                ]),
+                
+                html.Div([
+                    html.Button("Submit Data Request", id="submit-data-request", className="submit-button", disabled=True),
+                    html.Div(id="data-request-output", className="form-output"),
+                ], className="form-submit-section"),
+                
+                html.P([
+                    "Questions? Contact: ",
+                    html.A("placeholder@placeholder.com", href="mailto:placeholder@placeholder.com")
+                ], className="form-footer"),
+                
+            ], id="data-request-content", className="modal-body tab-content", style={"display": "none"}),
+        ], className="modal-content"),
+    ], id="faq-modal", className="modal", style={"display": "none"}),
 ], className="app-root")
+
+
+@callback(
+    Output("submit-data-request", "disabled"),
+    [Input("req-name", "value"),
+     Input("req-email", "value"),
+     Input("req-institution", "value"),
+     Input("req-role", "value"),
+     Input("req-purpose", "value")]
+)
+def toggle_submit_button(name, email, institution, role, purpose):
+    # Button is enabled (disabled=False) only if all fields have values
+    if all([name, email, institution, role, purpose]):
+        return False
+    return True
+
+
+@callback(
+    [Output("faq-content", "style"),
+     Output("data-request-content", "style"),
+     Output("tab-faq", "className"),
+     Output("tab-data-request", "className")],
+    [Input("tab-faq", "n_clicks"),
+     Input("tab-data-request", "n_clicks")],
+    prevent_initial_call=True
+)
+def switch_tabs(faq_clicks, data_clicks):
+    ctx = callback_context
+    if not ctx.triggered:
+        return {"display": "block"}, {"display": "none"}, "tab-button active-tab", "tab-button"
+    
+    button_id = ctx.triggered[0]["prop_id"].split(".")[0]
+    
+    if button_id == "tab-faq":
+        return {"display": "block"}, {"display": "none"}, "tab-button active-tab", "tab-button"
+    else:  # tab-data-request
+        return {"display": "none"}, {"display": "block"}, "tab-button", "tab-button active-tab"
+
+
+@callback(
+    Output("faq-modal", "style"),
+    [Input("faq-button", "n_clicks"), Input("close-faq", "n_clicks")],
+    [State("faq-modal", "style")],
+    prevent_initial_call=True
+)
+def toggle_faq_modal(open_clicks, close_clicks, current_style):
+    ctx = callback_context
+    if not ctx.triggered:
+        return {"display": "none"}
+    
+    button_id = ctx.triggered[0]["prop_id"].split(".")[0]
+    
+    if button_id == "faq-button":
+        return {"display": "block"}
+    elif button_id == "close-faq":
+        return {"display": "none"}
+    
+    return current_style if current_style else {"display": "none"}
 
 
 @callback(
@@ -1227,7 +1431,8 @@ def update_course_list(hoverData, selected_school, school_toggles):
         if not school_row.empty and "Total Student Count" in school_row:
             total_students = school_row["Total Student Count"].iloc[0]
         if total_students is not None:
-            summary += f" | Total Students: {total_students}"
+            total_students_display = suppress_value(total_students)
+            summary += f" | Total Students: {total_students_display}"
 
     course_items = []
     for course in APPROVED_COURSES:

@@ -508,3 +508,355 @@ input[type="radio"]:checked {
   background-color: white;
   border: 1px solid #0039a6;
 }
+
+/* FAQ Button and Modal */
+.sidebar-header-right {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+}
+
+.faq-button {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: #0039a6;
+  color: white;
+  border: none;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.2s, transform 0.1s;
+  position: relative;
+  top: -10px;
+  line-height: 1;
+  padding: 0;
+}
+
+.faq-button:hover {
+  background-color: #0050d4;
+  transform: scale(1.05);
+}
+
+.faq-button:active {
+  transform: scale(0.95);
+}
+
+.modal {
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 6vh;
+}
+
+.modal-content {
+  background-color: white;
+  margin: auto;
+  border-radius: 8px;
+  width: 95%;
+  max-width: 1000px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e0e0e0;
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 1;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: #2a3b4c;
+  font-size: 1.5em;
+}
+
+.close-modal-button {
+  background: none;
+  border: none;
+  font-size: 32px;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.close-modal-button:hover {
+  color: #333;
+}
+
+.modal-body {
+  padding: 20px 24px 24px 24px;
+}
+
+.faq-notice {
+  background-color: #fff3cd;
+  border-left: 4px solid #ffc107;
+  padding: 16px;
+  margin-bottom: 24px;
+  border-radius: 4px;
+  line-height: 1.6;
+  color: #856404;
+}
+
+.faq-notice strong {
+  color: #664300;
+}
+
+.faq-item {
+  margin-bottom: 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background-color: #f9f9f9;
+  transition: all 0.2s;
+}
+
+.faq-item:hover {
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+.faq-item h3 {
+  color: #0039a6;
+  margin: 0;
+  padding: 14px 16px;
+  font-size: 1.05em;
+  font-weight: 600;
+  background-color: #f0f4f8;
+  border-radius: 6px 6px 0 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.faq-item p {
+  margin: 0;
+  padding: 14px 16px;
+  line-height: 1.6;
+  color: #333;
+}
+
+.faq-item ul {
+  margin: 0;
+  padding: 0 16px 14px 36px;
+  line-height: 1.6;
+}
+
+.faq-item li {
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.faq-item a {
+  color: #0071ce;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.faq-item a:hover {
+  text-decoration: underline;
+}
+
+/* Tab Navigation */
+.tab-navigation {
+  display: flex;
+  border-bottom: 2px solid #e0e0e0;
+  background-color: #f9f9f9;
+  padding: 0 24px;
+}
+
+.tab-button {
+  background: none;
+  border: none;
+  padding: 14px 24px;
+  font-size: 1em;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+  position: relative;
+  bottom: -2px;
+}
+
+.tab-button:hover {
+  color: #0039a6;
+  background-color: rgba(0, 57, 166, 0.05);
+}
+
+.tab-button.active-tab {
+  color: #0039a6;
+  border-bottom-color: #0039a6;
+  background-color: white;
+}
+
+.tab-content {
+  display: block;
+}
+
+/* Data Request Form Styling */
+.data-request-intro {
+  background-color: #e8f4f8;
+  border-left: 4px solid #0071ce;
+  padding: 14px;
+  margin-bottom: 24px;
+  border-radius: 4px;
+  line-height: 1.6;
+  color: #2a3b4c;
+}
+
+.form-section-header {
+  display: block;
+  font-size: 1.1em;
+  font-weight: 600;
+  color: #0039a6;
+  margin: 24px 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.form-group {
+  margin-bottom: 18px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #2a3b4c;
+  font-size: 0.95em;
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.95em;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #0071ce;
+  box-shadow: 0 0 0 2px rgba(0, 113, 206, 0.1);
+}
+
+.form-textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.95em;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.form-textarea:focus {
+  outline: none;
+  border-color: #0071ce;
+  box-shadow: 0 0 0 2px rgba(0, 113, 206, 0.1);
+}
+
+.form-dropdown {
+  width: 100%;
+}
+
+.form-checklist {
+  padding: 12px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+}
+
+.form-checklist label {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #333;
+}
+
+.form-checklist input[type="checkbox"] {
+  margin-right: 8px;
+  margin-top: 3px;
+}
+
+.form-submit-section {
+  margin-top: 32px;
+  text-align: center;
+}
+
+.submit-button {
+  background-color: #0071ce;
+  color: white;
+  border: none;
+  padding: 12px 32px;
+  font-size: 1em;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submit-button:hover:not(:disabled) {
+  background-color: #005aa3;
+}
+
+.submit-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.form-output {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 4px;
+  font-size: 0.95em;
+}
+
+.form-footer {
+  margin-top: 24px;
+  text-align: center;
+  color: #666;
+  font-size: 0.9em;
+}
+
+.form-footer a {
+  color: #0071ce;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.form-footer a:hover {
+  text-decoration: underline;
+}
