@@ -109,26 +109,28 @@ LABELS = {
 # ---------- HOVER INFO ----------
 HOVER_TEMPLATES = {
     "unified": (
-        "<b><u>{SCHOOL_NAME}</u></b><br>"
-        "📍 District: {district}<br>"
-        "📍 City: {city}<br>"
-        "📍 Locale Type: {locale}<br>"
-        "📍 Grades: {GRADE_RANGE}<br>"
+        "<b><u><span style='font-size:18px'>{SCHOOL_NAME}</span></u></b><br>"
+        "<span style='font-size:14px'>"
+        "   - District: {district}<br>"
+        "   - City: {city}<br>"
+        "   - Locale Type: {locale}<br>"
+        "   - Grades: {GRADE_RANGE}<br>"
         "<br>"
-        "<b>TOTAL STUDENT DEMOGRAPHICS</b><br>"
+        "<b>Total Student Demographics</b><br>"
         "{total_race_vals}<br>"
         "<br>"
-        "<b>CS TEACHING STAFF</b><br>"
+        "<b>CS Teaching Staff</b><br>"
         "   - CS Teachers: {approved_teachers}<br>"
         "   - Extra Certified Teachers: {extra_teachers}<br>"
         "   - Student-to-CS-Teacher Ratio: {ratio_display}<br>"
         "<br>"
-        "<b>CS ENROLLMENT</b><br>"
+        "<b>CS Enrollment</b><br>"
         "{cs_race_vals}<br>"
         "   - CS Total: {cs_total}<br>"
         "<br>"
-        "<b>REPRESENTATION INDEX (RI)</b><br>"
+        "<b>Representation Index (RI)</b><br>"
         "{ri_vals}"
+        "</span>"
     )
 }
 # ---------- COLORS ----------

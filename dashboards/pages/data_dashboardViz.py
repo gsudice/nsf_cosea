@@ -213,13 +213,15 @@ layout = html.Div([
             id="custom-legend-container",
             className="custom-legend-container"
         )
-    ], className="main-map-area"),
+    ], className="main-map-area", id="main-map-area"),
+    html.Button("▶", id="sidebar-toggle", className="sidebar-toggle-btn", title="Collapse Sidebar"),
     html.Div([
         html.Div([
             html.Div([
-                html.Button("?", id="faq-button",
-                            className="faq-button", title="Help & FAQ"),
-            ], className="sidebar-header-right"),
+                html.Div([
+                    html.Button("?", id="faq-button",
+                                className="faq-button", title="Help & FAQ"),
+                ], className="sidebar-header-right"),
             dcc.Dropdown(
                 id="school-search",
                 options=all_search_options,
@@ -442,7 +444,19 @@ layout = html.Div([
         html.Div([
             html.Div(id="course-list", className="course-list-box")
         ], className="sidebar-section course-list-section"),
-    ], className="sidebar"),
+        ], id="sidebar-content", className="sidebar-content"),
+    ], id="sidebar", className="sidebar"),
+    
+    # Course Info Legend (visible when sidebar is collapsed)
+    html.Div([
+        html.Div([
+            html.Button("×", id="legend-minimize", className="legend-minimize-btn", title="Minimize Legend"),
+            html.Div(id="course-legend-list", className="course-legend-content")
+        ], id="course-legend-content-wrapper", className="course-legend-expanded"),
+        html.Button([
+            html.Img(src="/assets/images/laptop-svgrepo-com.svg", className="legend-expand-icon")
+        ], id="legend-expand", className="legend-expand-btn", title="Show Course Info", style={"display": "none"})
+    ], id="course-info-legend", className="course-info-legend", style={"display": "none"}),
 
     # FAQ Modal
     html.Div([
@@ -611,7 +625,7 @@ layout = html.Div([
             ], id="data-request-content", className="modal-body tab-content", style={"display": "none"}),
         ], className="modal-content"),
     ], id="faq-modal", className="modal", style={"display": "none"}),
-], className="app-root")
+], id="app-root", className="app-root")
 
 
 @callback(
@@ -1063,7 +1077,8 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
                     visible=True,
                     showlegend=False,
                     hovertemplate="%{customdata[0]}",
-                    customdata=df[["school_hover", "UNIQUESCHOOLID"]].values
+                    customdata=df[["school_hover", "UNIQUESCHOOLID"]].values,
+                    hoverlabel=dict(bgcolor="white", bordercolor=color, font_color="black")
                 ))
                 # Gray center
                 fig.add_trace(go.Scattermapbox(
@@ -1073,7 +1088,8 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
                     visible=True,
                     showlegend=False,
                     hovertemplate="%{customdata[0]}",
-                    customdata=df[["school_hover", "UNIQUESCHOOLID"]].values
+                    customdata=df[["school_hover", "UNIQUESCHOOLID"]].values,
+                    hoverlabel=dict(bgcolor="white", bordercolor=color, font_color="black")
                 ))
             else:
                 fig.add_trace(go.Scattermapbox(
@@ -1083,7 +1099,8 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
                     visible=True,
                     showlegend=False,
                     hovertemplate="%{customdata[0]}",
-                    customdata=df[["school_hover", "UNIQUESCHOOLID"]].values
+                    customdata=df[["school_hover", "UNIQUESCHOOLID"]].values,
+                    hoverlabel=dict(bgcolor="white", bordercolor=color, font_color="black")
                 ))
         if "show_legend" in map_options:
             if modality_type == "LOGIC_CLASS_2_TEACHERS":
@@ -1208,7 +1225,8 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
                 mode='markers', marker=dict(size=7, color='white', opacity=1),
                 name="", visible=True, showlegend=False,
                 hovertemplate="%{customdata[0]}",
-                customdata=df[["ri_hover", "UNIQUESCHOOLID"]].values
+                customdata=df[["ri_hover", "UNIQUESCHOOLID"]].values,
+                hoverlabel=dict(bgcolor="white", bordercolor="#cccccc", font_color="black")
             ))
         # Other bins
         for i in [0, 1, 3, 4]:
@@ -1223,7 +1241,8 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
                     mode='markers', marker=dict(size=9, color=color, opacity=1),
                     name="", visible=True, showlegend=False,
                     hovertemplate="%{customdata[0]}",
-                    customdata=df[["ri_hover", "UNIQUESCHOOLID"]].values
+                    customdata=df[["ri_hover", "UNIQUESCHOOLID"]].values,
+                    hoverlabel=dict(bgcolor="white", bordercolor=color, font_color="black")
                 ))
         legend_items = []
         for i in range(5):
@@ -1333,7 +1352,14 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         yaxis=dict(visible=False),
         paper_bgcolor="white",
         plot_bgcolor="white",
-        dragmode="pan"
+        dragmode="pan",
+        hoverlabel=dict(
+            bgcolor="white",
+            bordercolor="black",
+            font_color="black",
+            font_size=12,
+            font_family="Arial, sans-serif"
+        )
     )
     overlay_legend = None
     if "show_legend" in map_options:
@@ -1513,3 +1539,80 @@ def update_course_list(hoverData, selected_school, school_toggles):
         html.Ul(course_items, style={
                 'list-style': 'none', 'padding-left': '0'})
     ])
+
+
+# Callback for sidebar toggle functionality
+@callback(
+    [Output("sidebar", "className"),
+     Output("main-map-area", "className"),
+     Output("course-info-legend", "style"),
+     Output("sidebar-toggle", "children"),
+     Output("sidebar-toggle", "title")],
+    [Input("sidebar-toggle", "n_clicks"),
+     Input("course-list", "children")],
+    [State("sidebar", "className")]
+)
+def toggle_sidebar(n_clicks, course_list_content, current_sidebar_class):
+    ctx = callback_context
+    
+    # Check if there's actual course content
+    has_content = course_list_content and not (
+        isinstance(course_list_content, dict) and 
+        course_list_content.get('props', {}).get('children') == []
+    )
+    
+    # If no clicks yet, start with sidebar open
+    if not n_clicks:
+        return "sidebar", "main-map-area", {"display": "none"}, "▶", "Collapse Sidebar"
+    
+    # Only respond to sidebar toggle clicks, not course-list changes
+    if ctx.triggered and ctx.triggered[0]['prop_id'].split('.')[0] == "sidebar-toggle":
+        if "sidebar-collapsed" in (current_sidebar_class or ""):
+            # Expanding sidebar - hide legend
+            return "sidebar", "main-map-area", {"display": "none"}, "▶", "Collapse Sidebar"
+        else:
+            # Collapsing sidebar - show legend only if there's content
+            legend_style = {"display": "block"} if has_content else {"display": "none"}
+            return "sidebar sidebar-collapsed", "main-map-area sidebar-collapsed", legend_style, "◄", "Expand Sidebar"
+    
+    # For course-list changes, update legend visibility if sidebar is collapsed
+    if "sidebar-collapsed" in (current_sidebar_class or ""):
+        legend_style = {"display": "block"} if has_content else {"display": "none"}
+        return current_sidebar_class, "main-map-area sidebar-collapsed", legend_style, "◄", "Expand Sidebar"
+    
+    # Default state
+    return current_sidebar_class or "sidebar", "main-map-area", {"display": "none"}, "▶", "Collapse Sidebar"
+
+
+# Callback for legend minimize/expand functionality
+@callback(
+    [Output("course-legend-content-wrapper", "className"),
+     Output("legend-minimize", "style"),
+     Output("legend-expand", "style")],
+    [Input("legend-minimize", "n_clicks"),
+     Input("legend-expand", "n_clicks")],
+    [State("course-legend-content-wrapper", "className")]
+)
+def toggle_legend(minimize_clicks, expand_clicks, current_class):
+    ctx = callback_context
+    if not ctx.triggered:
+        return "course-legend-expanded", {"display": "block"}, {"display": "none"}
+    
+    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    
+    if button_id == "legend-minimize":
+        return "course-legend-minimized", {"display": "none"}, {"display": "block"}
+    elif button_id == "legend-expand":
+        return "course-legend-expanded", {"display": "block"}, {"display": "none"}
+    
+    return current_class, {"display": "block"}, {"display": "none"}
+
+
+# Callback to update course legend content based on current course list
+@callback(
+    Output("course-legend-list", "children"),
+    [Input("course-list", "children")]
+)
+def update_course_legend(course_list_content):
+    # Just return the course list content for the legend
+    return course_list_content or html.Div()

@@ -321,6 +321,229 @@
   padding: 30px 20px 20px 20px;
   z-index: 10;
   overflow-y: auto;
+  transition: width 0.3s ease;
+  position: relative;
+}
+
+.sidebar.sidebar-collapsed {
+  width: 0px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.sidebar-content {
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.sidebar.sidebar-collapsed .sidebar-content {
+  opacity: 0;
+}
+
+.sidebar-toggle-btn {
+  position: fixed;
+  top: 50%;
+  right: 595px;
+  width: 30px;
+  height: 60px;
+  background: #0039a6;
+  color: white;
+  border: none;
+  border-radius: 5px 0 0 5px;
+  font-size: 16px;
+  cursor: pointer;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  transform: translateY(-50%);
+}
+
+.sidebar-toggle-btn:hover {
+  background: #0050d4;
+}
+
+/* When sidebar is collapsed, move button to right edge of screen */
+.main-map-area.sidebar-collapsed + .sidebar-toggle-btn {
+  right: 0px;
+}
+
+.sidebar-toggle-btn:hover {
+  background: #0050d4;
+}
+
+/* Course Info Legend */
+.course-info-legend {
+  position: fixed;
+  bottom: 10px;
+  right: 32px;
+  background: white;
+  border: 2px solid #0039a6;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 15;
+  max-width: 600px;
+  min-width: 400px;
+  transition: all 0.3s ease;
+}
+
+.course-info-legend:has(.course-legend-minimized) {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.course-legend-expanded {
+  padding: 15px;
+  max-height: 80vh;
+  overflow-y: auto;
+  display: block;
+}
+
+.course-legend-minimized {
+  padding: 0;
+  max-height: 0;
+  overflow: hidden;
+  display: none;
+}
+
+.legend-minimize-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  background: transparent !important;
+  color: #666;
+  border: none !important;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.legend-minimize-btn:hover {
+  background: #f0f0f0 !important;
+  color: #333;
+}
+
+.legend-minimize-btn:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.course-legend-minimized .legend-minimize-btn {
+  display: none !important;
+}
+
+.legend-expand-btn {
+  position: fixed;
+  bottom: 10px;
+  right: 32px;
+  width: 50px;
+  height: 50px;
+  background: #0039a6;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 15;
+}
+
+.legend-expand-btn:hover {
+  background: #0050d4;
+}
+
+.legend-expand-icon {
+  width: 24px;
+  height: 24px;
+  filter: brightness(0) invert(1); /* Makes any icon white */
+  pointer-events: none;
+}
+
+.legend-course-title {
+  font-size: 16px;
+  color: #0039a6;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.course-legend-content {
+  font-size: 14px;
+  line-height: 1.4;
+  max-height: none;
+  overflow: visible;
+}
+
+.course-legend-content .course-list-title {
+  font-size: 1em;
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: block;
+  color: #333;
+}
+
+.course-legend-content .course-list-summary {
+  font-size: 0.9em;
+  color: #555;
+  margin-bottom: 6px;
+}
+
+.course-legend-content .course-list-ul {
+  margin: 0 0 12px 0;
+  padding-left: 16px;
+}
+
+.course-legend-content .sidebar-header {
+  background: transparent !important;
+  border-radius: 0 !important;
+  padding: 0 0 6px 0 !important;
+  margin-bottom: 8px !important;
+  font-size: 1em !important;
+  border-bottom: 2px solid #e0e0e0 !important;
+}
+
+.course-legend-content .course-list-summary {
+  font-size: 0.9em;
+  color: #555;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* Main map area adjustments for collapsed sidebar */
+.main-map-area.sidebar-collapsed {
+  width: 100vw;
+}
+
+.main-map-area {
+  transition: width 0.3s ease;
+}
+
+/* Plotly hover styling - attempt to make borders thicker */
+.hoverlayer .hovertext {
+  border-width: 3px !important;
+  border-style: solid !important;
+}
+
+/* Alternative approach for Plotly hover elements */
+g.hoverlayer path {
+  stroke-width: 3 !important;
+}
+
+.js-plotly-plot .hoverlayer .hovertext {
+  border-width: 3px !important;
 }
 
 .sidebar-title {

@@ -33,11 +33,11 @@ def has_suppression(values):
 
 def ratio_fmt(val):
     if pd.isnull(val) or val is None:
-        return '0.0 students per teacher'
+        return '0.0'
     try:
-        return f"{val:.1f} students per teacher"
+        return f"{val:.1f}"
     except Exception:
-        return '0.0 students per teacher'
+        return '0.0'
 
 
 def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
