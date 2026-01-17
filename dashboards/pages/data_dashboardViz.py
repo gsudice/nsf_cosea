@@ -214,7 +214,8 @@ layout = html.Div([
             className="custom-legend-container"
         )
     ], className="main-map-area", id="main-map-area"),
-    html.Button("▶", id="sidebar-toggle", className="sidebar-toggle-btn", title="Collapse Sidebar"),
+    html.Button("▶", id="sidebar-toggle",
+                className="sidebar-toggle-btn", title="Collapse Sidebar"),
     html.Div([
         html.Div([
             html.Div([
@@ -222,239 +223,245 @@ layout = html.Div([
                     html.Button("?", id="faq-button",
                                 className="faq-button", title="Help & FAQ"),
                 ], className="sidebar-header-right"),
-            dcc.Dropdown(
-                id="school-search",
-                options=all_search_options,
-                placeholder="Search for schools, districts, or cities...",
-                searchable=True,
-                clearable=True,
-                className="school-search"
-            ),
-        ], className="sidebar-section"),
-        html.Div([
-            html.Strong("Map Options", style={
-                        'font-size': '1.17em', 'font-weight': '700', 'color': '#2a3b4c'})
-        ], className="sidebar-header"),
-        dcc.Checklist(
-            id="map-options-toggle",
-            options=map_options_list,
-            value=DEFAULT_MAP_OPTIONS + ["highway_labels"],
-            className="sidebar-legend-toggle",
-            labelStyle={'display': 'inline-block',
-                        'margin-right': '6px', 'font-size': '0.9em'},
-            style={'display': 'flex', 'flex-direction': 'row',
-                   'gap': '6px', 'align-items': 'center'}
-        ),
-        html.Div([
-            html.Strong(LABELS["school_dots"]),
+                dcc.Dropdown(
+                    id="school-search",
+                    options=all_search_options,
+                    placeholder="Search for schools, districts, or cities...",
+                    searchable=True,
+                    clearable=True,
+                    className="school-search"
+                ),
+            ], className="sidebar-section"),
             html.Div([
-                html.Div([
-                    dcc.RadioItems(
-                        id="school-toggles",
-                        options=[
-                            {
-                                "label": html.Span([
-                                    opt["label"],
-                                    html.Span(
-                                        "i",
-                                        title=("Indicates how CS courses are offered at the school.") if opt.get("value") == "modalities" else (
-                                            "Shows how well different groups are represented in CS courses compared to the school population."),
-                                        className="sidebar-info-icon",
-                                        style={"margin-left": "6px"}
-                                    )
-                                ]),
-                                "value": opt["value"]
-                            }
-                            for opt in LABELS["school_toggles"]
-                        ],
-                        value=DEFAULT_SCHOOL_TOGGLE,
-                        className="sidebar-school-toggles",
-                        style={'display': 'flex',
-                               'flex-direction': 'row', 'gap': '10px'}
-                    ),
-                ], style={'display': 'flex', 'align-items': 'center'}),
-                html.Div([
-                    html.Label(id="dots-dropdown-label",
-                               className="sidebar-dots-dropdown-label"),
-                    dcc.Dropdown(
-                        id="dots-dropdown",
-                        options=[],
-                        value=None,
-                        clearable=False,
-                        className="sidebar-dots-dropdown"
-                    ),
-                ], style={'margin-left': '20px', 'flex': '1'}),
-            ], style={'display': 'flex', 'align-items': 'center'}),
-        ], className="sidebar-section", style={'margin-bottom': '-6px'}),
-        html.Div([
-            html.Strong("Underlays"),
-            dcc.Dropdown(
-                id="underlay-dropdown",
-                options=UNDERLAY_OPTIONS,
-                value=DEFAULT_UNDERLAY_OPTION,
-                clearable=False,
-                className="sidebar-underlay-dropdown"
-            ),
-        ], className="sidebar-section", style={'margin-bottom': '12px'}),
-        html.Details([
-            html.Summary([
-                html.Div([
-                    html.Span(
-                        "", style={'font-size': '12px', 'margin-right': '5px'}),
-                    html.Strong("Filters", style={
-                                'font-size': '1.17em', 'font-weight': '700', 'color': '#2a3b4c'})
-                ], style={'display': 'flex', 'align-items': 'center'}),
-                html.Button("Reset Filters", id="reset-filters",
-                            className="reset-button")
+                html.Strong("Map Options", style={
+                    'font-size': '1.17em', 'font-weight': '700', 'color': '#2a3b4c'})
             ], className="sidebar-header"),
+            dcc.Checklist(
+                id="map-options-toggle",
+                options=map_options_list,
+                value=DEFAULT_MAP_OPTIONS + ["highway_labels"],
+                className="sidebar-legend-toggle",
+                labelStyle={'display': 'inline-block',
+                            'margin-right': '6px', 'font-size': '0.9em'},
+                style={'display': 'flex', 'flex-direction': 'row',
+                       'gap': '6px', 'align-items': 'center'}
+            ),
             html.Div([
+                html.Strong(LABELS["school_dots"]),
                 html.Div([
-                    html.Strong("Locale Type"),
-                    dcc.Checklist(
-                        id="locale-filter",
-                        options=locale_options,
-                        value=[],
-                        className="sidebar-locale-checklist"
-                    ),
-                ], style={'flex': '1'}),
+                    html.Div([
+                        dcc.RadioItems(
+                            id="school-toggles",
+                            options=[
+                                {
+                                    "label": html.Span([
+                                        opt["label"],
+                                        html.Span(
+                                            "i",
+                                            title=("Indicates how CS courses are offered at the school.") if opt.get("value") == "modalities" else (
+                                                "Shows how well different groups are represented in CS courses compared to the school population."),
+                                            className="sidebar-info-icon",
+                                            style={"margin-left": "6px"}
+                                        )
+                                    ]),
+                                    "value": opt["value"]
+                                }
+                                for opt in LABELS["school_toggles"]
+                            ],
+                            value=DEFAULT_SCHOOL_TOGGLE,
+                            className="sidebar-school-toggles",
+                            style={'display': 'flex',
+                                   'flex-direction': 'row', 'gap': '10px'}
+                        ),
+                    ], style={'display': 'flex', 'align-items': 'center'}),
+                    html.Div([
+                        html.Label(id="dots-dropdown-label",
+                                   className="sidebar-dots-dropdown-label"),
+                        dcc.Dropdown(
+                            id="dots-dropdown",
+                            options=[],
+                            value=None,
+                            clearable=False,
+                            className="sidebar-dots-dropdown"
+                        ),
+                    ], style={'margin-left': '20px', 'flex': '1'}),
+                ], style={'display': 'flex', 'align-items': 'center'}),
+            ], className="sidebar-section", style={'margin-bottom': '-6px'}),
+            html.Div([
+                html.Strong("Underlays"),
+                dcc.Dropdown(
+                    id="underlay-dropdown",
+                    options=UNDERLAY_OPTIONS,
+                    value=DEFAULT_UNDERLAY_OPTION,
+                    clearable=False,
+                    className="sidebar-underlay-dropdown"
+                ),
+            ], className="sidebar-section", style={'margin-bottom': '12px'}),
+            html.Details([
+                html.Summary([
+                    html.Div([
+                        html.Span(
+                            "", style={'font-size': '12px', 'margin-right': '5px'}),
+                        html.Strong("Filters", style={
+                            'font-size': '1.17em', 'font-weight': '700', 'color': '#2a3b4c'})
+                    ], style={'display': 'flex', 'align-items': 'center'}),
+                    html.Button("Reset Filters", id="reset-filters",
+                                className="reset-button")
+                ], className="sidebar-header"),
                 html.Div([
-                    html.Strong([
-                        "Modality",
+                    html.Div([
+                        html.Strong("Locale Type"),
+                        dcc.Checklist(
+                            id="locale-filter",
+                            options=locale_options,
+                            value=[],
+                            className="sidebar-locale-checklist"
+                        ),
+                    ], style={'flex': '1'}),
+                    html.Div([
+                        html.Strong([
+                            "Modality",
+                            html.Span(
+                                "i",
+                                title="Indicates how CS courses are offered at the school.",
+                                className="sidebar-info-icon"
+                            )
+                        ]),
+                        dcc.Checklist(
+                            id="modality-filter",
+                            options=modality_options,
+                            value=[],
+                            className="sidebar-modality-checklist"
+                        ),
+                    ], style={'flex': '1'}),
+                    html.Div([
+                        html.Strong([
+                            "Extra Teachers",
+                            html.Span(
+                                "i",
+                                title="These are teachers who do not teach a CS course on the Courses Offered list below, but are certified to teach CS.",
+                                className="sidebar-info-icon"
+                            )
+                        ]),
+                        dcc.Checklist(
+                            id="extra-teachers-filter",
+                            options=[
+                                {"label": "Has Extra Teachers", "value": "extra"}],
+                            value=[],
+                            className="sidebar-extra-teachers-checklist"
+                        ),
+                    ], style={'flex': '1'}),
+                ], style={'display': 'flex', 'gap': '20px', 'margin-bottom': '24px'}),
+                html.Div([
+                    html.Div([
+                        html.Strong("Courses Offered"),
+                        dcc.RadioItems(
+                            id="courses-filter-mode",
+                            options=[
+                                {"label": "All", "value": "all"},
+                                {"label": "Any", "value": "any"},
+                                {"label": "None", "value": "none"},
+                            ],
+                            value="all",
+                            inline=True,
+                            className="courses-filter-mode-radio"
+                        ),
                         html.Span(
                             "i",
-                            title="Indicates how CS courses are offered at the school.",
+                            title="Select courses and choose a filter mode: 'All' requires schools to offer ALL selected courses, 'Any' requires at least one selected course, and 'None' excludes schools offering any selected courses.",
+                            className="sidebar-info-icon"
+                        )
+                    ], style={"display": "flex", "alignItems": "center", "gap": "8px", "marginBottom": "8px"}),
+                    dcc.Checklist(
+                        id="courses-filter",
+                        options=courses_options,
+                        value=[],
+                        className="sidebar-courses-checklist"
+                    ),
+                ], className="sidebar-section"),
+                html.Div([
+                    html.Strong([
+                        "Student-to-CS-Teacher Ratio",
+                        html.Span(
+                            "i",
+                            title="Number of total students per CS teacher. Calculated as Total Student Count divided by the sum of approved and extra CS teachers at the school.",
                             className="sidebar-info-icon"
                         )
                     ]),
-                    dcc.Checklist(
-                        id="modality-filter",
-                        options=modality_options,
-                        value=[],
-                        className="sidebar-modality-checklist"
+                    dcc.RangeSlider(
+                        id="ratio-threshold",
+                        min=0,
+                        max=2500,
+                        value=[0, 2500],
+                        step=1,
+                        marks={0: '0', 500: '500', 1000: '1000',
+                               1500: '1500', 2000: '2000', 2500: '2500'},
+                        tooltip={"placement": "bottom",
+                                 "always_visible": True},
+                        className="sidebar-ratio-slider"
                     ),
-                ], style={'flex': '1'}),
+                ], className="sidebar-section"),
                 html.Div([
                     html.Strong([
-                        "Extra Teachers",
+                        "RI Thresholds",
                         html.Span(
                             "i",
-                            title="These are teachers who do not teach a CS course on the Courses Offered list below, but are certified to teach CS.",
+                            title="Filter schools by how well different groups are represented in CS courses compared to their overall school population. Values between -0.05 and 0.05 indicate parity; negative or positive values indicate under- or over-representation.",
                             className="sidebar-info-icon"
                         )
                     ]),
-                    dcc.Checklist(
-                        id="extra-teachers-filter",
-                        options=[
-                            {"label": "Has Extra Teachers", "value": "extra"}],
-                        value=[],
-                        className="sidebar-extra-teachers-checklist"
+                    dcc.RangeSlider(
+                        id="ri-threshold",
+                        min=-1.0,
+                        max=1.0,
+                        step=0.01,
+                        value=[-1.0, 1.0],
+                        marks={-1: '-1', -0.05: '-0.05', 0.05: '0.05', 1: '1'},
+                        tooltip={"placement": "bottom",
+                                 "always_visible": True},
+                        className="sidebar-ri-slider"
                     ),
-                ], style={'flex': '1'}),
-            ], style={'display': 'flex', 'gap': '20px', 'margin-bottom': '24px'}),
-            html.Div([
+                ], id="ri-threshold-container", className="sidebar-section"),
                 html.Div([
-                    html.Strong("Courses Offered"),
-                    dcc.RadioItems(
-                        id="courses-filter-mode",
-                        options=[
-                            {"label": "All", "value": "all"},
-                            {"label": "Any", "value": "any"},
-                            {"label": "None", "value": "none"},
-                        ],
-                        value="all",
-                        inline=True,
-                        className="courses-filter-mode-radio"
+                    html.Strong([
+                        "Course Total Offered",
+                        html.Span(
+                            "i",
+                            title="Number of distinct approved CS courses that are offered at the school. A course is counted if it is offered virtually or in-person.",
+                            className="sidebar-info-icon",
+                            style={'margin-left': '6px'}
+                        )
+                    ]),
+                    dcc.RangeSlider(
+                        id="course-total-offered",
+                        min=0,
+                        max=16,
+                        value=[0, 16],
+                        step=1,
+                        marks={0: '0', 4: '4', 8: '8', 12: '12', 16: '16'},
+                        tooltip={"placement": "bottom",
+                                 "always_visible": True},
+                        className="sidebar-course-slider"
                     ),
-                    html.Span(
-                        "i",
-                        title="Select courses and choose a filter mode: 'All' requires schools to offer ALL selected courses, 'Any' requires at least one selected course, and 'None' excludes schools offering any selected courses.",
-                        className="sidebar-info-icon"
-                    )
-                ], style={"display": "flex", "alignItems": "center", "gap": "8px", "marginBottom": "8px"}),
-                dcc.Checklist(
-                    id="courses-filter",
-                    options=courses_options,
-                    value=[],
-                    className="sidebar-courses-checklist"
-                ),
-            ], className="sidebar-section"),
+                ], className="sidebar-section"),
+            ], open=True),
             html.Div([
-                html.Strong([
-                    "Student-to-CS-Teacher Ratio",
-                    html.Span(
-                        "i",
-                        title="Number of total students per CS teacher. Calculated as Total Student Count divided by the sum of approved and extra CS teachers at the school.",
-                        className="sidebar-info-icon"
-                    )
-                ]),
-                dcc.RangeSlider(
-                    id="ratio-threshold",
-                    min=0,
-                    max=2500,
-                    value=[0, 2500],
-                    step=1,
-                    marks={0: '0', 500: '500', 1000: '1000',
-                           1500: '1500', 2000: '2000', 2500: '2500'},
-                    tooltip={"placement": "bottom", "always_visible": True},
-                    className="sidebar-ratio-slider"
-                ),
-            ], className="sidebar-section"),
-            html.Div([
-                html.Strong([
-                    "RI Thresholds",
-                    html.Span(
-                        "i",
-                        title="Filter schools by how well different groups are represented in CS courses compared to their overall school population. Values between -0.05 and 0.05 indicate parity; negative or positive values indicate under- or over-representation.",
-                        className="sidebar-info-icon"
-                    )
-                ]),
-                dcc.RangeSlider(
-                    id="ri-threshold",
-                    min=-1.0,
-                    max=1.0,
-                    step=0.01,
-                    value=[-1.0, 1.0],
-                    marks={-1: '-1', -0.05: '-0.05', 0.05: '0.05', 1: '1'},
-                    tooltip={"placement": "bottom", "always_visible": True},
-                    className="sidebar-ri-slider"
-                ),
-            ], id="ri-threshold-container", className="sidebar-section"),
-            html.Div([
-                html.Strong([
-                    "Course Total Offered",
-                    html.Span(
-                        "i",
-                        title="Number of distinct approved CS courses that are offered at the school. A course is counted if it is offered virtually or in-person.",
-                        className="sidebar-info-icon",
-                        style={'margin-left': '6px'}
-                    )
-                ]),
-                dcc.RangeSlider(
-                    id="course-total-offered",
-                    min=0,
-                    max=16,
-                    value=[0, 16],
-                    step=1,
-                    marks={0: '0', 4: '4', 8: '8', 12: '12', 16: '16'},
-                    tooltip={"placement": "bottom", "always_visible": True},
-                    className="sidebar-course-slider"
-                ),
-            ], className="sidebar-section"),
-        ], open=True),
-        html.Div([
-            html.Div(id="course-list", className="course-list-box")
-        ], className="sidebar-section course-list-section"),
+                html.Div(id="course-list", className="course-list-box")
+            ], className="sidebar-section course-list-section"),
         ], id="sidebar-content", className="sidebar-content"),
     ], id="sidebar", className="sidebar"),
-    
+
     # Course Info Legend (visible when sidebar is collapsed)
     html.Div([
         html.Div([
-            html.Button("×", id="legend-minimize", className="legend-minimize-btn", title="Minimize Legend"),
-            html.Div(id="course-legend-list", className="course-legend-content")
+            html.Button("×", id="legend-minimize",
+                        className="legend-minimize-btn", title="Minimize Legend"),
+            html.Div(id="course-legend-list",
+                     className="course-legend-content")
         ], id="course-legend-content-wrapper", className="course-legend-expanded"),
         html.Button([
-            html.Img(src="/assets/images/laptop-svgrepo-com.svg", className="legend-expand-icon")
+            html.Img(src="/assets/images/laptop-svgrepo-com.svg",
+                     className="legend-expand-icon")
         ], id="legend-expand", className="legend-expand-btn", title="Show Course Info", style={"display": "none"})
     ], id="course-info-legend", className="course-info-legend", style={"display": "none"}),
 
@@ -736,7 +743,8 @@ def reset_filters(n_clicks):
     # Calculate initial max_course_total from all data
     all_schools = data_loader.SCHOOLDATA["approved_all"]
     all_schools_with_courses = calculate_total_offered(all_schools.copy())
-    initial_max = int(all_schools_with_courses['total_offered'].max()) if not all_schools_with_courses.empty else 16
+    initial_max = int(all_schools_with_courses['total_offered'].max(
+    )) if not all_schools_with_courses.empty else 16
     return [], [], "all", [], [], [0, 2500], [-1.0, 1.0], [0, initial_max]
 
 
@@ -1028,7 +1036,8 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         # Course total offered filter
         merged = calculate_total_offered(merged)
         # Calculate max course total before applying filter
-        max_course_total = int(merged['total_offered'].max()) if not merged.empty else 16
+        max_course_total = int(
+            merged['total_offered'].max()) if not merged.empty else 16
         merged = merged[(merged['total_offered'] >= course_total_offered[0]) & (
             merged['total_offered'] <= course_total_offered[1])]
 
@@ -1042,6 +1051,23 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
             color_map = TEACHER_MODALITY_COLOR_MAP
         else:
             color_map = MODALITY_COLOR_MAP
+
+        # Add red highlight for selected school (behind all other dots)
+        if selected_school and selected_school.startswith("school:"):
+            school_id = selected_school.split(":", 1)[1]
+            highlight_school = merged[merged["UNIQUESCHOOLID"] == school_id]
+            if not highlight_school.empty:
+                # Add larger red circle behind the selected school
+                fig.add_trace(go.Scattermapbox(
+                    lon=highlight_school["lon"], 
+                    lat=highlight_school["lat"],
+                    mode="markers", 
+                    marker=dict(size=15, color="red", opacity=0.8),
+                    name="",
+                    visible=True,
+                    showlegend=False,
+                    hoverinfo="skip"  # Don't show hover for the highlight circle
+                ))
 
         for modality, color in color_map.items():
             df = merged[merged["Classification"] == modality].copy()
@@ -1078,7 +1104,8 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
                     showlegend=False,
                     hovertemplate="%{customdata[0]}",
                     customdata=df[["school_hover", "UNIQUESCHOOLID"]].values,
-                    hoverlabel=dict(bgcolor="white", bordercolor=color, font_color="black")
+                    hoverlabel=dict(bgcolor="white",
+                                    bordercolor=color, font_color="black")
                 ))
                 # Gray center
                 fig.add_trace(go.Scattermapbox(
@@ -1089,7 +1116,8 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
                     showlegend=False,
                     hovertemplate="%{customdata[0]}",
                     customdata=df[["school_hover", "UNIQUESCHOOLID"]].values,
-                    hoverlabel=dict(bgcolor="white", bordercolor=color, font_color="black")
+                    hoverlabel=dict(bgcolor="white",
+                                    bordercolor=color, font_color="black")
                 ))
             else:
                 fig.add_trace(go.Scattermapbox(
@@ -1100,8 +1128,10 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
                     showlegend=False,
                     hovertemplate="%{customdata[0]}",
                     customdata=df[["school_hover", "UNIQUESCHOOLID"]].values,
-                    hoverlabel=dict(bgcolor="white", bordercolor=color, font_color="black")
+                    hoverlabel=dict(bgcolor="white",
+                                    bordercolor=color, font_color="black")
                 ))
+                
         if "show_legend" in map_options:
             if modality_type == "LOGIC_CLASS_2_TEACHERS":
                 modality_title = LABELS["legend_titles"]["teachers_modality"]
@@ -1174,7 +1204,8 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         # Course total offered filter
         schools = calculate_total_offered(schools)
         # Calculate max course total before applying filter
-        max_course_total = int(schools['total_offered'].max()) if not schools.empty else 16
+        max_course_total = int(
+            schools['total_offered'].max()) if not schools.empty else 16
         schools = schools[(schools['total_offered'] >= course_total_offered[0]) & (
             schools['total_offered'] <= course_total_offered[1])]
 
@@ -1204,6 +1235,23 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         schools['Color'] = schools['RI_bin'].map(
             lambda x: RI_BIN_COLORS[int(x)] if pd.notnull(x) else None)
 
+        # Add red highlight for selected school (behind all other dots)
+        if selected_school and selected_school.startswith("school:"):
+            school_id = selected_school.split(":", 1)[1]
+            highlight_school = schools[schools["UNIQUESCHOOLID"] == school_id]
+            if not highlight_school.empty:
+                # Add larger red circle behind the selected school
+                fig.add_trace(go.Scattermapbox(
+                    lon=highlight_school["lon"], 
+                    lat=highlight_school["lat"],
+                    mode="markers", 
+                    marker=dict(size=15, color="red", opacity=0.8),
+                    name="",
+                    visible=True,
+                    showlegend=False,
+                    hoverinfo="skip"  # Don't show hover for the highlight circle
+                ))
+
         # Parity bin (i=2) - outlined dots: black (outline) then white (center)
         i_parity = 2
         color = RI_BIN_COLORS[i_parity]
@@ -1226,7 +1274,8 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
                 name="", visible=True, showlegend=False,
                 hovertemplate="%{customdata[0]}",
                 customdata=df[["ri_hover", "UNIQUESCHOOLID"]].values,
-                hoverlabel=dict(bgcolor="white", bordercolor="#cccccc", font_color="black")
+                hoverlabel=dict(bgcolor="white",
+                                bordercolor="#cccccc", font_color="black")
             ))
         # Other bins
         for i in [0, 1, 3, 4]:
@@ -1242,8 +1291,10 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
                     name="", visible=True, showlegend=False,
                     hovertemplate="%{customdata[0]}",
                     customdata=df[["ri_hover", "UNIQUESCHOOLID"]].values,
-                    hoverlabel=dict(bgcolor="white", bordercolor=color, font_color="black")
+                    hoverlabel=dict(bgcolor="white",
+                                    bordercolor=color, font_color="black")
                 ))
+                
         legend_items = []
         for i in range(5):
             color = RI_BIN_COLORS[i]
@@ -1316,7 +1367,8 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         # Course total offered filter
         schools = calculate_total_offered(schools)
         # Calculate max course total before applying filter
-        max_course_total = int(schools['total_offered'].max()) if not schools.empty else 16
+        max_course_total = int(
+            schools['total_offered'].max()) if not schools.empty else 16
         schools = schools[(schools['total_offered'] >= course_total_offered[0]) & (
             schools['total_offered'] <= course_total_offered[1])]
 
@@ -1404,9 +1456,10 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
     max_ratio = 2500
     marks = {0: '0', 500: '500', 1000: '1000',
              1500: '1500', 2000: '2000', 2500: '2500'}
-    
+
     # Dynamic course total marks
-    course_marks = {i: str(i) for i in range(0, max_course_total + 1, max(1, max_course_total // 4))}
+    course_marks = {i: str(i) for i in range(
+        0, max_course_total + 1, max(1, max_course_total // 4))}
     if max_course_total not in course_marks:
         course_marks[max_course_total] = str(max_course_total)
 
@@ -1554,17 +1607,17 @@ def update_course_list(hoverData, selected_school, school_toggles):
 )
 def toggle_sidebar(n_clicks, course_list_content, current_sidebar_class):
     ctx = callback_context
-    
+
     # Check if there's actual course content
     has_content = course_list_content and not (
-        isinstance(course_list_content, dict) and 
+        isinstance(course_list_content, dict) and
         course_list_content.get('props', {}).get('children') == []
     )
-    
+
     # If no clicks yet, start with sidebar open
     if not n_clicks:
         return "sidebar", "main-map-area", {"display": "none"}, "▶", "Collapse Sidebar"
-    
+
     # Only respond to sidebar toggle clicks, not course-list changes
     if ctx.triggered and ctx.triggered[0]['prop_id'].split('.')[0] == "sidebar-toggle":
         if "sidebar-collapsed" in (current_sidebar_class or ""):
@@ -1572,14 +1625,16 @@ def toggle_sidebar(n_clicks, course_list_content, current_sidebar_class):
             return "sidebar", "main-map-area", {"display": "none"}, "▶", "Collapse Sidebar"
         else:
             # Collapsing sidebar - show legend only if there's content
-            legend_style = {"display": "block"} if has_content else {"display": "none"}
+            legend_style = {"display": "block"} if has_content else {
+                "display": "none"}
             return "sidebar sidebar-collapsed", "main-map-area sidebar-collapsed", legend_style, "◄", "Expand Sidebar"
-    
+
     # For course-list changes, update legend visibility if sidebar is collapsed
     if "sidebar-collapsed" in (current_sidebar_class or ""):
-        legend_style = {"display": "block"} if has_content else {"display": "none"}
+        legend_style = {"display": "block"} if has_content else {
+            "display": "none"}
         return current_sidebar_class, "main-map-area sidebar-collapsed", legend_style, "◄", "Expand Sidebar"
-    
+
     # Default state
     return current_sidebar_class or "sidebar", "main-map-area", {"display": "none"}, "▶", "Collapse Sidebar"
 
@@ -1597,14 +1652,14 @@ def toggle_legend(minimize_clicks, expand_clicks, current_class):
     ctx = callback_context
     if not ctx.triggered:
         return "course-legend-expanded", {"display": "block"}, {"display": "none"}
-    
+
     button_id = ctx.triggered[0]['prop_id'].split('.')[0]
-    
+
     if button_id == "legend-minimize":
         return "course-legend-minimized", {"display": "none"}, {"display": "block"}
     elif button_id == "legend-expand":
         return "course-legend-expanded", {"display": "block"}, {"display": "none"}
-    
+
     return current_class, {"display": "block"}, {"display": "none"}
 
 
