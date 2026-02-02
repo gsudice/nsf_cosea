@@ -48,6 +48,8 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
     locale = row.get("Locale", "") or row.get("locale", "")
     grade_range = row.get("GRADE_RANGE", "")
     total_students = row.get("Total Student Count", 0)
+    lunch_participants = row.get("lunch_student_count", 0)
+    lunch_eligible = row.get("lunch_student_eligible", 0)
     approved_teachers = row.get("approved_teachers", 0)
     extra_teachers = row.get("extra_teachers", 0)
     # Compute ratio using approved teachers plus extra certified teachers
@@ -307,12 +309,20 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
     else:
         extra_teachers_str = 0
 
+    # Format lunch metrics with suppression if needed
+    lunch_participants_str = suppress_value(
+        lunch_participants) if pd.notnull(lunch_participants) else "No data"
+    lunch_eligible_str = suppress_value(
+        lunch_eligible) if pd.notnull(lunch_eligible) else "No data"
+
     return template.format(
         SCHOOL_NAME=school_name,
         district=district,
         city=city,
         locale=locale,
         GRADE_RANGE=grade_range,
+        lunch_participants=lunch_participants_str,
+        lunch_eligible=lunch_eligible_str,
         approved_teachers=approved_teachers_str,
         extra_teachers=extra_teachers_str,
         ratio_display=ratio_display,
@@ -524,6 +534,14 @@ def load_all_school_data():
     city_label_df = pd.DataFrame([
         {"city": name, "lat": coords[0], "lon": coords[1]} for name, coords in city_labels.items()
     ])
+
+    # Merge lunch data from approved_all into gadoe for hover info
+    gadoe = gadoe.merge(
+        approved_all[["UNIQUESCHOOLID",
+                      "lunch_student_count", "lunch_student_eligible"]],
+        on="UNIQUESCHOOLID",
+        how="left"
+    )
 
     return {
         "gadoe": gadoe,

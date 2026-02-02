@@ -1059,9 +1059,9 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
             if not highlight_school.empty:
                 # Add larger red circle behind the selected school
                 fig.add_trace(go.Scattermapbox(
-                    lon=highlight_school["lon"], 
+                    lon=highlight_school["lon"],
                     lat=highlight_school["lat"],
-                    mode="markers", 
+                    mode="markers",
                     marker=dict(size=15, color="red", opacity=0.8),
                     name="",
                     visible=True,
@@ -1131,7 +1131,7 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
                     hoverlabel=dict(bgcolor="white",
                                     bordercolor=color, font_color="black")
                 ))
-                
+
         if "show_legend" in map_options:
             if modality_type == "LOGIC_CLASS_2_TEACHERS":
                 modality_title = LABELS["legend_titles"]["teachers_modality"]
@@ -1242,9 +1242,9 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
             if not highlight_school.empty:
                 # Add larger red circle behind the selected school
                 fig.add_trace(go.Scattermapbox(
-                    lon=highlight_school["lon"], 
+                    lon=highlight_school["lon"],
                     lat=highlight_school["lat"],
-                    mode="markers", 
+                    mode="markers",
                     marker=dict(size=15, color="red", opacity=0.8),
                     name="",
                     visible=True,
@@ -1294,7 +1294,7 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
                     hoverlabel=dict(bgcolor="white",
                                     bordercolor=color, font_color="black")
                 ))
-                
+
         legend_items = []
         for i in range(5):
             color = RI_BIN_COLORS[i]
