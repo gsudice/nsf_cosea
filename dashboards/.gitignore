@@ -1,0 +1,4 @@
+# Flask-Caching directory
+cache/
+*.pyc
+__pycache__/

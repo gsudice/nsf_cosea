@@ -2,12 +2,22 @@ import dash
 from dash import Dash, html, dcc, Input, Output
 import os
 from argparse import ArgumentParser
+from flask_caching import Cache
 
 
 app = Dash(
     __name__,
     use_pages=True
 )
+
+# Configure filesystem-based caching for server deployment
+# Cache clears on restart, so long timeout is fine for static data
+cache = Cache(app.server, config={
+    'CACHE_TYPE': 'filesystem',
+    'CACHE_DIR': 'cache',
+    'CACHE_DEFAULT_TIMEOUT': 7200,  # 2 hours (clears on restart anyway)
+    'CACHE_THRESHOLD': 3000  # Maximum number of cached filter combinations
+})
 
 
 page_options = [

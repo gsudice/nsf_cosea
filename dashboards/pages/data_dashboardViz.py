@@ -10,6 +10,7 @@ from dash import register_page, html, dcc, callback, Input, Output, State, callb
 import math
 from pyproj import Transformer
 import warnings
+from functools import lru_cache
 
 # this is how we make a page recognized by Dash, comment out to hide
 register_page(
@@ -59,7 +60,7 @@ def get_course_display(course_key: str) -> str:
 
 
 def filter_by_courses(df, courses_filter, courses_filter_mode):
-    """Apply course filtering to a dataframe based on selected courses and mode.
+    """Optimized course filtering using pre-computed columns.
 
     Args:
         df: DataFrame with UNIQUESCHOOLID column
@@ -71,40 +72,47 @@ def filter_by_courses(df, courses_filter, courses_filter_mode):
     """
     if not courses_filter:
         return df
-
+    
+    # Merge pre-computed course columns if not already present
+    if f"{courses_filter[0]}_offered" not in df.columns:
+        df = df.merge(
+            data_loader.SCHOOLDATA["course_columns"],
+            on="UNIQUESCHOOLID",
+            how="left"
+        )
+    
     if courses_filter_mode == "all":
         # All selected courses must be offered
-        return df[df['UNIQUESCHOOLID'].apply(lambda x: all(
-            course.lower() in data_loader.SCHOOLDATA["courses"].get(str(x), {}) and (
-                data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] +
-                data_loader.SCHOOLDATA["courses"][str(
-                    x)][course.lower()]['inperson'] > 0
-            ) for course in courses_filter
-        ))]
+        mask = pd.Series([True] * len(df), index=df.index)
+        for course in courses_filter:
+            col = f"{course}_offered"
+            if col in df.columns:
+                mask &= (df[col] == 1)
+        return df[mask]
+    
     elif courses_filter_mode == "any":
         # At least one selected course must be offered
-        return df[df['UNIQUESCHOOLID'].apply(lambda x: any(
-            course.lower() in data_loader.SCHOOLDATA["courses"].get(str(x), {}) and (
-                data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] +
-                data_loader.SCHOOLDATA["courses"][str(
-                    x)][course.lower()]['inperson'] > 0
-            ) for course in courses_filter
-        ))]
+        mask = pd.Series([False] * len(df), index=df.index)
+        for course in courses_filter:
+            col = f"{course}_offered"
+            if col in df.columns:
+                mask |= (df[col] == 1)
+        return df[mask]
+    
     elif courses_filter_mode == "none":
         # None of the selected courses should be offered
-        return df[df['UNIQUESCHOOLID'].apply(lambda x: not any(
-            course.lower() in data_loader.SCHOOLDATA["courses"].get(str(x), {}) and (
-                data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] +
-                data_loader.SCHOOLDATA["courses"][str(
-                    x)][course.lower()]['inperson'] > 0
-            ) for course in courses_filter
-        ))]
-    else:
-        return df
+        mask = pd.Series([True] * len(df), index=df.index)
+        for course in courses_filter:
+            col = f"{course}_offered"
+            if col in df.columns:
+                mask &= (df[col] == 0)
+        return df[mask]
+    
+    return df
 
 
 def calculate_total_offered(df):
-    """Add a total_offered column counting approved courses offered at each school.
+    """Optimized using pre-computed total_offered column.
 
     Args:
         df: DataFrame with UNIQUESCHOOLID column
@@ -112,14 +120,15 @@ def calculate_total_offered(df):
     Returns:
         DataFrame with total_offered column added
     """
-    df["total_offered"] = df['UNIQUESCHOOLID'].apply(lambda x: sum(
-        1 for course in APPROVED_COURSES
-        if course.lower() in data_loader.SCHOOLDATA["courses"].get(str(x), {}) and (
-            data_loader.SCHOOLDATA["courses"][str(x)][course.lower()]['virtual'] +
-            data_loader.SCHOOLDATA["courses"][str(
-                x)][course.lower()]['inperson'] > 0
+    # Merge pre-computed column if not already present
+    if "total_offered" not in df.columns:
+        df = df.merge(
+            data_loader.SCHOOLDATA["course_columns"][["UNIQUESCHOOLID", "total_offered"]],
+            on="UNIQUESCHOOLID",
+            how="left"
         )
-    ))
+        # Fill NaN with 0 for schools without course data
+        df["total_offered"] = df["total_offered"].fillna(0).astype(int)
     return df
 
 
@@ -180,6 +189,62 @@ courses_options = [{"label": get_course_display(course), "value": course}
 
 modality_options = [{"label": "Virtual", "value": "Virtual"}, {"label": "In Person", "value": "In Person"}, {
     "label": "Both", "value": "Both"}, {"label": "None", "value": "No"}]
+
+
+# CACHED STATIC TRACES FOR PERFORMANCE
+@lru_cache(maxsize=1)
+def get_georgia_outline_trace():
+    """Cached Georgia outline trace - only computed once."""
+    outline_lon = []
+    outline_lat = []
+    for x, y in data_loader.GEODATA["ga_outline"]:
+        outline_lon.extend(x + [None])
+        outline_lat.extend(y + [None])
+    
+    return go.Scattermapbox(
+        lon=outline_lon, lat=outline_lat, mode="lines",
+        line=dict(color="black", width=1),
+        opacity=1.0,
+        name="Georgia Outline", showlegend=False, visible=True,
+        hoverinfo="skip"
+    )
+
+
+@lru_cache(maxsize=1)
+def get_highway_traces():
+    """Cached highway line traces - only computed once."""
+    all_lon = []
+    all_lat = []
+    for x, y in data_loader.GEODATA["highway_lines"]:
+        all_lon.extend(x + [None])
+        all_lat.extend(y + [None])
+    
+    return go.Scattermapbox(
+        lon=all_lon, lat=all_lat, mode="lines",
+        line=dict(color="gray", width=1.5),
+        opacity=1.0,
+        name="Highways", showlegend=True, visible=True,
+        hoverinfo="skip"
+    )
+
+
+@lru_cache(maxsize=1)
+def get_county_traces():
+    """Cached county line traces - only computed once."""
+    all_lon = []
+    all_lat = []
+    for x, y in data_loader.GEODATA["county_lines"]:
+        all_lon.extend(x + [None])
+        all_lat.extend(y + [None])
+    
+    return go.Scattermapbox(
+        lon=all_lon, lat=all_lat, mode="lines",
+        line=dict(color="gray", width=0.5),
+        opacity=0.8,
+        name="County Lines", showlegend=True, visible=True,
+        hoverinfo="skip"
+    )
+
 
 layout = html.Div([
     html.Div([
@@ -783,18 +848,9 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         triggered_id = None
 
     fig = go.Figure()
-    outline_lon = []
-    outline_lat = []
-    for x, y in data_loader.GEODATA["ga_outline"]:
-        outline_lon.extend(x + [None])
-        outline_lat.extend(y + [None])
-    fig.add_trace(go.Scattermapbox(
-        lon=outline_lon, lat=outline_lat, mode="lines",
-        line=dict(color="black", width=1),
-        opacity=1.0,
-        name="Georgia Outline", showlegend=False, visible=True,
-        hoverinfo="skip"
-    ))
+    
+    # Use cached Georgia outline trace
+    fig.add_trace(get_georgia_outline_trace())
 
     # Add city labels if toggled
     if "city_labels" in map_options:
@@ -938,38 +994,19 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         ], className="legend-block legend-underlay-block")
 
     if "counties" in map_options:
-        all_lon = []
-        all_lat = []
-        for x, y in data_loader.GEODATA["county_lines"]:
-            all_lon.extend(x + [None])
-            all_lat.extend(y + [None])
-        fig.add_trace(go.Scattermapbox(
-            lon=all_lon, lat=all_lat, mode="lines",
-            line=dict(color="gray", width=0.5),
-            opacity=0.8,
-            name="County Lines", showlegend=True, visible=True,
-            hoverinfo="skip"
-        ))
+        # Use cached county traces
+        fig.add_trace(get_county_traces())
 
     if "highways" in map_options:
-        all_lon = []
-        all_lat = []
-        for x, y in data_loader.GEODATA["highway_lines"]:
-            all_lon.extend(x + [None])
-            all_lat.extend(y + [None])
-        fig.add_trace(go.Scattermapbox(
-            lon=all_lon, lat=all_lat, mode="lines",
-            line=dict(color="gray", width=1.5),
-            opacity=1.0,
-            name="Highways", showlegend=True, visible=True,
-            hoverinfo="skip"
-        ))
+        # Use cached highway traces
+        fig.add_trace(get_highway_traces())
 
     legend_html = None
     legend_extra = None
     if school == "modalities":
         modality_type = dots_dropdown
-        merged = data_loader.SCHOOLDATA["gadoe"].copy()
+        # Use view initially, only copy at the end after all filters
+        merged = data_loader.SCHOOLDATA["gadoe"]
         coords = data_loader.SCHOOLDATA["approved_all"][[
             "UNIQUESCHOOLID", "SCHOOL_NAME", "lat", "lon", "SYSTEM_NAME", "School City", "Locale",
             "Race: Asian", "Race: Black", "Ethnicity: Hispanic", "Race: White",
@@ -981,6 +1018,9 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
             "UNIQUESCHOOLID", "GRADE_RANGE", "virtual_course_count", "inperson_course_count", "virtual_course_count_2", "inperson_course_count_2", "approved_course_count", "approved_course_count_2"
         ]]
         merged = merged.merge(modality_info, on="UNIQUESCHOOLID", how="left")
+        
+        # Now copy once before adding computed columns
+        merged = merged.copy()
         merged["approved_teachers"] = merged["UNIQUESCHOOLID"].apply(
             lambda x: data_loader.SCHOOLDATA["approved_teachers_count"].get(str(x), 0))
         merged["extra_teachers"] = merged["UNIQUESCHOOLID"].apply(
@@ -1159,14 +1199,17 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
     elif school == "disparity":
         legend_items = []
         disparity_col = dots_dropdown
-        # Use preloaded data
+        # Use preloaded data - merge without copying first
         schools = data_loader.SCHOOLDATA["approved_all"][[
             "UNIQUESCHOOLID", "SCHOOL_NAME", "lat", "lon", "GRADE_RANGE",
             "Race: Asian", "Race: Black", "Ethnicity: Hispanic", "Race: White",
             "Total Student Count", "Female", "Male", "SYSTEM_NAME", "School City", "Locale"
-        ]].copy()
+        ]]
         disparity = data_loader.SCHOOLDATA["disparity"]
         schools = schools.merge(disparity, on="UNIQUESCHOOLID", how="inner")
+        
+        # Now copy once before adding computed columns
+        schools = schools.copy()
 
         # Calculate student teacher ratio for filtering
         schools["CS_Enrollment"] = schools["CS_Enrollment"].apply(

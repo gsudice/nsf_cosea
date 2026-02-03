@@ -543,6 +543,40 @@ def load_all_school_data():
         how="left"
     )
 
+    # PRE-COMPUTE COURSE COLUMNS FOR FAST FILTERING
+    print("Pre-computing course offering columns...")
+    course_columns_data = []
+    for school_id in approved_all["UNIQUESCHOOLID"].unique():
+        school_id_str = str(school_id)
+        row = {"UNIQUESCHOOLID": school_id}
+        
+        courses_at_school = courses_dict.get(school_id_str, {})
+        
+        # For each approved course, create binary column
+        for course in APPROVED_COURSES:
+            course_key = course.lower()
+            if course_key in courses_at_school:
+                row[f"{course}_offered"] = int(
+                    courses_at_school[course_key]['virtual'] + 
+                    courses_at_school[course_key]['inperson'] > 0
+                )
+            else:
+                row[f"{course}_offered"] = 0
+        
+        # Total courses offered
+        row["total_offered"] = sum(
+            1 for course in APPROVED_COURSES
+            if course.lower() in courses_at_school and (
+                courses_at_school[course.lower()]['virtual'] + 
+                courses_at_school[course.lower()]['inperson'] > 0
+            )
+        )
+        
+        course_columns_data.append(row)
+    
+    course_columns_df = pd.DataFrame(course_columns_data)
+    print(f"Pre-computed course data for {len(course_columns_df)} schools")
+
     return {
         "gadoe": gadoe,
         "course_logic": course_logic,
@@ -555,7 +589,8 @@ def load_all_school_data():
         "extra_teachers": extra_teachers,
         "approved_teachers_count": approved_teachers_count,
         "extra_teachers_count": extra_teachers_count,
-        "city_labels": city_label_df
+        "city_labels": city_label_df,
+        "course_columns": course_columns_df
     }
 
 
