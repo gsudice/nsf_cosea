@@ -76,10 +76,6 @@
   color: #333;
 }
 
-.legend-dot-no {
-  border: 1px solid white !important;
-}
-
 /* Legend block base styles */
 .legend-flex-8 {
   flex: 8 1 0%;
@@ -187,7 +183,7 @@
   background: #ffb300;
 }
 .legend-dot-no {
-  background: #636363;
+  background: #9B59B6;
 }
 
 /* Disparity color dots (by index) */
@@ -295,7 +291,7 @@
   border-radius: 50%;
   margin-right: 8px;
   border: 1.5px solid #222;
-  opacity: 0.5;
+  opacity: 1;
   vertical-align: middle;
 }
 .legend-dot-Both {
@@ -308,7 +304,7 @@
   background: #ffb300;
 }
 .legend-dot-No {
-  background: #636363;
+  background: #9B59B6;
 }
 
 

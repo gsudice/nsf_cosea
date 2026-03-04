@@ -72,7 +72,7 @@ def filter_by_courses(df, courses_filter, courses_filter_mode):
     """
     if not courses_filter:
         return df
-    
+
     # Merge pre-computed course columns if not already present
     if f"{courses_filter[0]}_offered" not in df.columns:
         df = df.merge(
@@ -80,7 +80,7 @@ def filter_by_courses(df, courses_filter, courses_filter_mode):
             on="UNIQUESCHOOLID",
             how="left"
         )
-    
+
     if courses_filter_mode == "all":
         # All selected courses must be offered
         mask = pd.Series([True] * len(df), index=df.index)
@@ -89,7 +89,7 @@ def filter_by_courses(df, courses_filter, courses_filter_mode):
             if col in df.columns:
                 mask &= (df[col] == 1)
         return df[mask]
-    
+
     elif courses_filter_mode == "any":
         # At least one selected course must be offered
         mask = pd.Series([False] * len(df), index=df.index)
@@ -98,7 +98,7 @@ def filter_by_courses(df, courses_filter, courses_filter_mode):
             if col in df.columns:
                 mask |= (df[col] == 1)
         return df[mask]
-    
+
     elif courses_filter_mode == "none":
         # None of the selected courses should be offered
         mask = pd.Series([True] * len(df), index=df.index)
@@ -107,7 +107,7 @@ def filter_by_courses(df, courses_filter, courses_filter_mode):
             if col in df.columns:
                 mask &= (df[col] == 0)
         return df[mask]
-    
+
     return df
 
 
@@ -123,7 +123,8 @@ def calculate_total_offered(df):
     # Merge pre-computed column if not already present
     if "total_offered" not in df.columns:
         df = df.merge(
-            data_loader.SCHOOLDATA["course_columns"][["UNIQUESCHOOLID", "total_offered"]],
+            data_loader.SCHOOLDATA["course_columns"][[
+                "UNIQUESCHOOLID", "total_offered"]],
             on="UNIQUESCHOOLID",
             how="left"
         )
@@ -200,7 +201,7 @@ def get_georgia_outline_trace():
     for x, y in data_loader.GEODATA["ga_outline"]:
         outline_lon.extend(x + [None])
         outline_lat.extend(y + [None])
-    
+
     return go.Scattermapbox(
         lon=outline_lon, lat=outline_lat, mode="lines",
         line=dict(color="black", width=1),
@@ -218,7 +219,7 @@ def get_highway_traces():
     for x, y in data_loader.GEODATA["highway_lines"]:
         all_lon.extend(x + [None])
         all_lat.extend(y + [None])
-    
+
     return go.Scattermapbox(
         lon=all_lon, lat=all_lat, mode="lines",
         line=dict(color="gray", width=1.5),
@@ -236,7 +237,7 @@ def get_county_traces():
     for x, y in data_loader.GEODATA["county_lines"]:
         all_lon.extend(x + [None])
         all_lat.extend(y + [None])
-    
+
     return go.Scattermapbox(
         lon=all_lon, lat=all_lat, mode="lines",
         line=dict(color="gray", width=0.5),
@@ -848,7 +849,7 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         triggered_id = None
 
     fig = go.Figure()
-    
+
     # Use cached Georgia outline trace
     fig.add_trace(get_georgia_outline_trace())
 
@@ -970,15 +971,36 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         if underlay_dropdown == "black_population_ratio":
             labels = ["Lowest 20%", "20–40%",
                       "40–60%", "60–80%", "Highest 20%"]
+        elif underlay_dropdown == "hispanic_population_ratio":
+            labels = ["Lowest 20%", "20–40%",
+                      "40–60%", "60–80%", "Highest 20%"]
+        elif underlay_dropdown == "asian_population_ratio":
+            labels = ["Lowest 20%", "20–40%",
+                      "40–60%", "60–80%", "Highest 20%"]
+        elif underlay_dropdown == "white_population_ratio":
+            labels = ["Lowest 20%", "20–40%",
+                      "40–60%", "60–80%", "Highest 20%"]
         elif underlay_dropdown == "median_household_income":
             labels = ["$2,499 - $53,240", "$53,240 - $84,175",
                       "$84,175 - $122,700", "$122,700 - $180,134", "$180,134 - $250,001"]
+        elif underlay_dropdown == "percapita_income_total":
+            labels = ["$0 - $20,000", "$20,000 - $30,000",
+                      "$30,000 - $40,000", "$40,000 - $55,000", "$55,000+"]
         elif underlay_dropdown == "edu_hs_or_more":
-            labels = ["0 - 508", "508 - 832", "832 - 1,199",
-                      "1,199 - 1,711", "1,711 - 3,965"]
+            labels = ["0% - 60%", "60% - 75%", "75% - 85%",
+                      "85% - 92%", "92% - 100%"]
+        elif underlay_dropdown == "edu_bachelor_or_more":
+            labels = ["0% - 60%", "60% - 75%", "75% - 85%",
+                      "85% - 92%", "92% - 100%"]
         elif underlay_dropdown == "households_with_subscription":
-            labels = ["0 - 288", "288 - 472",
-                      "472 - 679", "679 - 965", "965 - 2,070"]
+            labels = ["0% - 60%", "60% - 75%", "75% - 85%",
+                      "85% - 92%", "92% - 100%"]
+        elif underlay_dropdown == "households_with_computer":
+            labels = ["0% - 60%", "60% - 75%", "75% - 85%",
+                      "85% - 92%", "92% - 100%"]
+        elif underlay_dropdown == "households_no_internet":
+            labels = ["0% - 8%", "8% - 15%", "15% - 25%",
+                      "25% - 40%", "40% - 100%"]
         else:
             labels = ["Lowest 20%", "20–40%",
                       "40–60%", "60–80%", "Highest 20%"]
@@ -1018,7 +1040,7 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
             "UNIQUESCHOOLID", "GRADE_RANGE", "virtual_course_count", "inperson_course_count", "virtual_course_count_2", "inperson_course_count_2", "approved_course_count", "approved_course_count_2"
         ]]
         merged = merged.merge(modality_info, on="UNIQUESCHOOLID", how="left")
-        
+
         # Now copy once before adding computed columns
         merged = merged.copy()
         merged["approved_teachers"] = merged["UNIQUESCHOOLID"].apply(
@@ -1207,7 +1229,7 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
         ]]
         disparity = data_loader.SCHOOLDATA["disparity"]
         schools = schools.merge(disparity, on="UNIQUESCHOOLID", how="inner")
-        
+
         # Now copy once before adding computed columns
         schools = schools.copy()
 

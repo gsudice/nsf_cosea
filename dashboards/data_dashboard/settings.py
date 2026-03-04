@@ -142,7 +142,7 @@ MODALITY_COLOR_MAP = {
     "Both": "#47CEF5",
     "In Person": "#F54777",
     "Virtual": "#FFB300",
-    "No": "#636363"
+    "No": "#9B59B6"  # Purple - stands out on gray underlay
 }
 
 # Extended color map for teacher modality (same colors, will be differentiated by shape)
@@ -153,8 +153,8 @@ TEACHER_MODALITY_COLOR_MAP = {
     "In Person": "#F54777",
     "Virtual + Extra Teachers": "#FFB300",
     "Virtual": "#FFB300",
-    "No CS + Extra Teachers": "#636363",
-    "No": "#636363"
+    "No CS + Extra Teachers": "#9B59B6",  # Purple - stands out on gray underlay
+    "No": "#9B59B6"  # Purple - stands out on gray underlay
 }
 
 RI_BIN_COLORS = ['#7f2704', '#fdae6b', '#ffffff', '#9ecae1', '#08519c']
@@ -188,12 +188,26 @@ UNDERLAY_OPTIONS = [
     {"label": "None", "value": "none"},
     {"label": "Black Population Ratio",
      "value": "black_population_ratio"},
+    {"label": "Hispanic Population Ratio",
+     "value": "hispanic_population_ratio"},
+    {"label": "Asian Population Ratio",
+     "value": "asian_population_ratio"},
+    {"label": "White Non-Hispanic Population Ratio",
+     "value": "white_population_ratio"},
     {"label": "Median Household Income",
      "value": "median_household_income"},
-    {"label": "High School or More Education",
+    {"label": "Per Capita Income",
+     "value": "percapita_income_total"},
+    {"label": "High School or More (%)",
      "value": "edu_hs_or_more"},
-    {"label": "Internet Subscription",
-     "value": "households_with_subscription"}
+    {"label": "Bachelor's Degree or More (%)",
+     "value": "edu_bachelor_or_more"},
+    {"label": "Internet Subscription (%)",
+     "value": "households_with_subscription"},
+    {"label": "Households with Computer (%)",
+     "value": "households_with_computer"},
+    {"label": "Households with No Internet (%)",
+     "value": "households_no_internet"}
 ]
 
 UNDERLAY_COLORS = ['#f7f7f7', '#d9d9d9', '#bdbdbd', '#969696', '#636363']

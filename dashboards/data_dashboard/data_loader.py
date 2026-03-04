@@ -549,31 +549,31 @@ def load_all_school_data():
     for school_id in approved_all["UNIQUESCHOOLID"].unique():
         school_id_str = str(school_id)
         row = {"UNIQUESCHOOLID": school_id}
-        
+
         courses_at_school = courses_dict.get(school_id_str, {})
-        
+
         # For each approved course, create binary column
         for course in APPROVED_COURSES:
             course_key = course.lower()
             if course_key in courses_at_school:
                 row[f"{course}_offered"] = int(
-                    courses_at_school[course_key]['virtual'] + 
+                    courses_at_school[course_key]['virtual'] +
                     courses_at_school[course_key]['inperson'] > 0
                 )
             else:
                 row[f"{course}_offered"] = 0
-        
+
         # Total courses offered
         row["total_offered"] = sum(
             1 for course in APPROVED_COURSES
             if course.lower() in courses_at_school and (
-                courses_at_school[course.lower()]['virtual'] + 
+                courses_at_school[course.lower()]['virtual'] +
                 courses_at_school[course.lower()]['inperson'] > 0
             )
         )
-        
+
         course_columns_data.append(row)
-    
+
     course_columns_df = pd.DataFrame(course_columns_data)
     print(f"Pre-computed course data for {len(course_columns_df)} schools")
 
@@ -800,24 +800,69 @@ def load_cbg_underlay(selected_field, bins=5):
         acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
         acs_df[selected_field] = acs_df['black_alone_non_hispanic'] / \
             acs_df['total_population']
+    elif selected_field == "hispanic_population_ratio":
+        acs_query = 'SELECT geoid, "hispanic_or_latino", "total_population" FROM census.acs2023_combined'
+        acs_df = pd.read_sql(acs_query, engine)
+        acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
+        acs_df[selected_field] = pd.to_numeric(acs_df['hispanic_or_latino'], errors='coerce') / \
+            pd.to_numeric(acs_df['total_population'], errors='coerce')
+    elif selected_field == "asian_population_ratio":
+        acs_query = 'SELECT geoid, "asian_alone_non_hispanic", "total_population" FROM census.acs2023_combined'
+        acs_df = pd.read_sql(acs_query, engine)
+        acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
+        acs_df[selected_field] = pd.to_numeric(acs_df['asian_alone_non_hispanic'], errors='coerce') / \
+            pd.to_numeric(acs_df['total_population'], errors='coerce')
+    elif selected_field == "white_population_ratio":
+        acs_query = 'SELECT geoid, "white_alone_non_hispanic", "total_population" FROM census.acs2023_combined'
+        acs_df = pd.read_sql(acs_query, engine)
+        acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
+        acs_df[selected_field] = pd.to_numeric(acs_df['white_alone_non_hispanic'], errors='coerce') / \
+            pd.to_numeric(acs_df['total_population'], errors='coerce')
     elif selected_field == "median_household_income":
         acs_query = 'SELECT geoid, median_household_income FROM census.acs2023_combined'
         acs_df = pd.read_sql(acs_query, engine)
         acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
         acs_df[selected_field] = pd.to_numeric(
             acs_df[selected_field], errors='coerce')
+    elif selected_field == "percapita_income_total":
+        acs_query = 'SELECT geoid, percapita_income_total FROM census.acs2023_combined'
+        acs_df = pd.read_sql(acs_query, engine)
+        acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
+        acs_df[selected_field] = pd.to_numeric(
+            acs_df[selected_field], errors='coerce')
     elif selected_field == "edu_hs_or_more":
-        acs_query = 'SELECT geoid, edu_hs_or_more FROM census.acs2023_combined'
+        acs_query = 'SELECT geoid, pct_hs_or_more FROM census.acs2023_combined'
         acs_df = pd.read_sql(acs_query, engine)
         acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
         acs_df[selected_field] = pd.to_numeric(
-            acs_df[selected_field], errors='coerce')
+            acs_df['pct_hs_or_more'], errors='coerce')
+    elif selected_field == "edu_bachelor_or_more":
+        acs_query = 'SELECT geoid, pct_bachelor_or_more FROM census.acs2023_combined'
+        acs_df = pd.read_sql(acs_query, engine)
+        acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
+        acs_df[selected_field] = pd.to_numeric(
+            acs_df['pct_bachelor_or_more'], errors='coerce')
     elif selected_field == "households_with_subscription":
-        acs_query = 'SELECT geoid, households_with_subscription FROM census.acs2023_combined'
+        acs_query = 'SELECT geoid, households_with_subscription, total_households_internet FROM census.acs2023_combined'
         acs_df = pd.read_sql(acs_query, engine)
         acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
-        acs_df[selected_field] = pd.to_numeric(
-            acs_df[selected_field], errors='coerce')
+        # Calculate percentage of households with internet subscription
+        acs_df[selected_field] = (pd.to_numeric(acs_df['households_with_subscription'], errors='coerce') / 
+                                  pd.to_numeric(acs_df['total_households_internet'], errors='coerce')) * 100
+    elif selected_field == "households_with_computer":
+        acs_query = 'SELECT geoid, households_with_computer, total_households_devices FROM census.acs2023_combined'
+        acs_df = pd.read_sql(acs_query, engine)
+        acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
+        # Calculate percentage of households with computer
+        acs_df[selected_field] = (pd.to_numeric(acs_df['households_with_computer'], errors='coerce') / 
+                                  pd.to_numeric(acs_df['total_households_devices'], errors='coerce')) * 100
+    elif selected_field == "households_no_internet":
+        acs_query = 'SELECT geoid, households_no_internet, total_households_internet FROM census.acs2023_combined'
+        acs_df = pd.read_sql(acs_query, engine)
+        acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
+        # Calculate percentage of households with no internet
+        acs_df[selected_field] = (pd.to_numeric(acs_df['households_no_internet'], errors='coerce') / 
+                                  pd.to_numeric(acs_df['total_households_internet'], errors='coerce')) * 100
     else:
         acs_query = f'SELECT geoid, "{selected_field}" FROM census.acs2023_combined'
         acs_df = pd.read_sql(acs_query, engine)
@@ -832,14 +877,33 @@ def load_cbg_underlay(selected_field, bins=5):
         income_bins = [2499, 53240, 84175, 122700, 180134, 250001]
         block_groups['underlay_bin'] = pd.cut(
             block_groups[selected_field], bins=income_bins, labels=False, include_lowest=True)
-    elif selected_field == "edu_hs_or_more":
-        edu_bins = [0, 508, 832, 1199, 1711, 3965]
+    elif selected_field == "percapita_income_total":
+        # Per capita income bins
+        percapita_bins = [0, 20000, 30000, 40000, 55000, 150000]
+        block_groups['underlay_bin'] = pd.cut(
+            block_groups[selected_field], bins=percapita_bins, labels=False, include_lowest=True)
+    elif selected_field in ["black_population_ratio", "hispanic_population_ratio", "asian_population_ratio", "white_population_ratio"]:
+        # Use quantile binning for demographic ratios
+        if block_groups[selected_field].notnull().sum() > 0:
+            block_groups['underlay_bin'] = pd.qcut(
+                block_groups[selected_field], 5, labels=False, duplicates='drop')
+        else:
+            block_groups['underlay_bin'] = None
+    elif selected_field in ["edu_hs_or_more", "edu_bachelor_or_more"]:
+        # Percentage bins for education (0-100%)
+        edu_bins = [0, 60, 75, 85, 92, 100]
         block_groups['underlay_bin'] = pd.cut(
             block_groups[selected_field], bins=edu_bins, labels=False, include_lowest=True)
-    elif selected_field == "households_with_subscription":
-        internet_bins = [0, 288, 472, 679, 965, 2070]
+    elif selected_field in ["households_with_subscription", "households_with_computer"]:
+        # Percentage bins for internet/computer (0-100%)
+        tech_bins = [0, 60, 75, 85, 92, 100]
         block_groups['underlay_bin'] = pd.cut(
-            block_groups[selected_field], bins=internet_bins, labels=False, include_lowest=True)
+            block_groups[selected_field], bins=tech_bins, labels=False, include_lowest=True)
+    elif selected_field == "households_no_internet":
+        # Inverse bins for no internet (higher % is worse)
+        no_internet_bins = [0, 8, 15, 25, 40, 100]
+        block_groups['underlay_bin'] = pd.cut(
+            block_groups[selected_field], bins=no_internet_bins, labels=False, include_lowest=True)
     else:
         if block_groups[selected_field].notnull().sum() > 0:
             block_groups['underlay_bin'] = pd.qcut(
@@ -861,8 +925,12 @@ print("Loading geo data...")
 GEODATA = load_geodata()
 print("Loading CBG underlay data...")
 CBGDATA = {}
-underlay_fields = ["black_population_ratio", "median_household_income",
-                   "edu_hs_or_more", "households_with_subscription"]
+underlay_fields = ["black_population_ratio", "hispanic_population_ratio", 
+                   "asian_population_ratio", "white_population_ratio",
+                   "median_household_income", "percapita_income_total",
+                   "edu_hs_or_more", "edu_bachelor_or_more",
+                   "households_with_subscription", "households_with_computer",
+                   "households_no_internet"]
 for field in underlay_fields:
     cbg_gdf = load_cbg_underlay(field)
     cbg_gdf = cbg_gdf.set_index('GEOID')

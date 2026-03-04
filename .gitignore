@@ -3,3 +3,5 @@ __pycache__/
 .DS_Store
 cache/
 ccd_sch_033_2324_l_1a_073124.csv
+survey_data/*.xlsx
+survey_data/*.csv
