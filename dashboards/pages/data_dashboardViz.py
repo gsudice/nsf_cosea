@@ -557,8 +557,8 @@ layout = html.Div([
                     ], className="faq-notice")
                 ]),
                 html.Div([
-                    html.H3("What does 'suppressed' mean?"),
-                    html.P("When you see 'suppressed' instead of a number, it means the value is between 1 and 4. We suppress these small numbers to protect student privacy and prevent identification of individual students."),
+                    html.H3("What does '< 5' mean?"),
+                    html.P("When you see '< 5' instead of a number, it means the value is between 1 and 4. We suppress these small numbers to protect student privacy and prevent identification of individual students."),
                 ], className="faq-item"),
 
                 html.Div([

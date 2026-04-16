@@ -12,6 +12,10 @@ import json
 import re
 
 
+SUPPRESSED_DISPLAY = "< 5"
+SUPPRESSED_DUE_TO_COMPONENT = "Suppressed"
+
+
 def suppress_value(val):
     if pd.isnull(val) or val is None:
         return 0
@@ -20,7 +24,7 @@ def suppress_value(val):
         if num_val == 0:
             return 0
         elif num_val < 5:
-            return "suppressed"
+            return SUPPRESSED_DISPLAY
         else:
             return num_val
     except Exception:
@@ -28,7 +32,7 @@ def suppress_value(val):
 
 
 def has_suppression(values):
-    return any(v == "suppressed" for v in values)
+    return any(v == SUPPRESSED_DISPLAY for v in values)
 
 
 def ratio_fmt(val):
@@ -132,7 +136,7 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
         total_students = row.get("Total Student Count", None)
         if pd.notnull(total_students):
             if has_suppression(total_demographics_displays):
-                total_student_display = "suppressed"
+                total_student_display = SUPPRESSED_DUE_TO_COMPONENT
             else:
                 total_student_display = suppress_value(total_students)
             total_race_vals_list.append(
@@ -192,7 +196,7 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
 
         # If any CS demographic is suppressed, suppress CS Total
         if has_suppression(cs_demographics_displays):
-            cs_total = "suppressed"
+            cs_total = SUPPRESSED_DUE_TO_COMPONENT
         else:
             cs_total = suppress_value(row.get('CS_Enrollment', 0))
 
@@ -240,7 +244,7 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
         total_students = row.get("Total Student Count", None)
         if pd.notnull(total_students):
             if has_suppression(total_demographics_displays):
-                total_students_display = "suppressed"
+                total_students_display = SUPPRESSED_DUE_TO_COMPONENT
             else:
                 total_students_display = suppress_value(total_students)
             total_race_vals_list.append(
@@ -280,7 +284,7 @@ def build_unified_hover(row, template, disparity_col=None, ri_cols=None):
 
             # If any CS demographic is suppressed, suppress CS Total
             if has_suppression(cs_demographics_displays):
-                cs_total = "suppressed"
+                cs_total = SUPPRESSED_DUE_TO_COMPONENT
             else:
                 cs_total = suppress_value(drow.get('CS_Enrollment', 0))
 
