@@ -3,6 +3,10 @@ from dash import Dash, html, dcc, Input, Output
 import os
 from argparse import ArgumentParser
 from flask_caching import Cache
+from flask import Response
+import json
+
+import data_dashboard.data_loader as data_loader
 
 
 app = Dash(
@@ -45,6 +49,20 @@ app.layout = html.Div([
         dash.page_container
     ])
 ])
+
+
+@app.server.route("/cbg-underlay/<field>")
+def cbg_underlay_geojson(field):
+    field_data = data_loader.CBGDATA.get(field)
+    if not field_data:
+        return Response("{}", status=404, mimetype="application/json")
+
+    response = Response(
+        json.dumps(field_data.get("geojson", {}), separators=(",", ":")),
+        mimetype="application/json"
+    )
+    response.headers["Cache-Control"] = "public, max-age=86400"
+    return response
 
 
 @app.callback(

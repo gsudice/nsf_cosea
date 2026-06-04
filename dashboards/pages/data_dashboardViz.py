@@ -247,10 +247,15 @@ def get_county_traces():
     )
 
 
+def get_underlay_geojson_url(underlay_dropdown):
+    return f"/cbg-underlay/{underlay_dropdown}"
+
+
 layout = html.Div([
     html.Div([
         dcc.Loading(
             id="map-loading",
+            overlay_style={"visibility": "hidden"},
             custom_spinner=html.Div([
                 html.Div(className="loading-spinner"),
                 html.Div(id="loading-message")
@@ -386,7 +391,7 @@ layout = html.Div([
                     ], style={'flex': '1'}),
                     html.Div([
                         html.Strong([
-                            "Modality",
+                            "Course Modality",
                             html.Span(
                                 "i",
                                 title="Indicates how CS courses are offered at the school.",
@@ -946,9 +951,10 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
 
     # Add underlay if selected
     if underlay_dropdown != DEFAULT_UNDERLAY_OPTION:
-        geojson = data_loader.CBGDATA[underlay_dropdown]['geojson']
-        locations = data_loader.CBGDATA[underlay_dropdown]['locations']
-        z_values = data_loader.CBGDATA[underlay_dropdown]['z_values']
+        underlay_state = data_loader.CBGDATA[underlay_dropdown]
+        geojson = get_underlay_geojson_url(underlay_dropdown)
+        locations = underlay_state['locations']
+        z_values = underlay_state['z_values']
         fig.add_trace(go.Choroplethmapbox(
             geojson=geojson,
             locations=locations,

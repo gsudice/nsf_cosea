@@ -10,6 +10,7 @@ from sqlalchemy import create_engine
 import pandas as pd
 import json
 import re
+import threading
 
 
 SUPPRESSED_DISPLAY = "< 5"
@@ -781,6 +782,15 @@ def load_geodata():
     }
 
 
+def _serialize_cbg_underlay(cbg_gdf):
+    cbg_gdf = cbg_gdf.set_index('GEOID')
+    return {
+        'geojson': json.loads(cbg_gdf.to_json()),
+        'locations': cbg_gdf.index.tolist(),
+        'z_values': cbg_gdf['underlay_bin'].fillna(-1).tolist()
+    }
+
+
 def load_cbg_underlay(selected_field, bins=5):
     """
     Load block group geometries and ACS data for the selected field.
@@ -792,10 +802,6 @@ def load_cbg_underlay(selected_field, bins=5):
     )
     block_groups = gpd.read_postgis(block_query, engine, geom_col='geom')
     block_groups['GEOID'] = block_groups['GEOID'].astype(str).str.zfill(12)
-
-    # Simplify geometries to reduce complexity for faster rendering
-    block_groups['geom'] = block_groups['geom'].simplify(
-        tolerance=0.0001, preserve_topology=True)
 
     # Load ACS data for selected field
     if selected_field == "black_population_ratio":
@@ -937,11 +943,8 @@ underlay_fields = ["black_population_ratio", "hispanic_population_ratio",
                    "households_no_internet"]
 for field in underlay_fields:
     cbg_gdf = load_cbg_underlay(field)
-    cbg_gdf = cbg_gdf.set_index('GEOID')
     CBGDATA[field] = {
-        'geojson': json.loads(cbg_gdf.to_json()),
-        'locations': cbg_gdf.index.tolist(),
-        'z_values': cbg_gdf['underlay_bin'].fillna(-1).tolist()
+        **_serialize_cbg_underlay(cbg_gdf)
     }
 
 print("Data loading complete.")
