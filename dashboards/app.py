@@ -45,7 +45,24 @@ app.layout = html.Div([
                 value="/",
                 className="dropdown-header"
             )
-        )
+        ),
+        html.Div(className="header-logo-group", children=[
+            html.A(
+                html.Img(src="/assets/images/gsulogo.jpg", className="header-logo-image header-logo-gsu", alt="Georgia State University logo"),
+                href="https://csds.gsu.edu/",
+                target="_blank",
+                rel="noopener noreferrer",
+                title="Georgia State University"
+            ),
+            html.A(
+                html.Img(src="/assets/images/chailogo.png", className="header-logo-image header-logo-chai", alt="CS Higher-level Alliance Institute logo"),
+                href="https://chai.gsu.edu/",
+                target="_blank",
+                rel="noopener noreferrer",
+                title="CS Higher-level Alliance Institute"
+            ),
+            html.Div(className="header-logo-placeholder header-logo-placeholder-last"),
+        ]),
     ]),
 
     html.Div(id="app-container", children=[
