@@ -11,6 +11,8 @@ import pandas as pd
 import json
 import re
 import threading
+from functools import lru_cache
+import time
 
 
 SUPPRESSED_DISPLAY = "< 5"
@@ -791,6 +793,16 @@ def _serialize_cbg_underlay(cbg_gdf):
     }
 
 
+@lru_cache(maxsize=None)
+def get_cbg_underlay(field):
+    start_time = time.perf_counter()
+    print(f"[data_loader] Building CBG underlay for {field}...", flush=True)
+    serialized = _serialize_cbg_underlay(load_cbg_underlay(field))
+    elapsed = time.perf_counter() - start_time
+    print(f"[data_loader] Built CBG underlay for {field} in {elapsed:.2f}s", flush=True)
+    return serialized
+
+
 def load_cbg_underlay(selected_field, bins=5):
     """
     Load block group geometries and ACS data for the selected field.
@@ -929,22 +941,17 @@ def load_cbg_underlay(selected_field, bins=5):
     return block_groups
 
 
-print("Loading school data...")
+print("[data_loader] Loading school data...", flush=True)
+_school_start = time.perf_counter()
 SCHOOLDATA = load_all_school_data()
-print("Loading geo data...")
-GEODATA = load_geodata()
-print("Loading CBG underlay data...")
-CBGDATA = {}
-underlay_fields = ["black_population_ratio", "hispanic_population_ratio", 
-                   "asian_population_ratio", "white_population_ratio",
-                   "median_household_income", "percapita_income_total",
-                   "edu_hs_or_more", "edu_bachelor_or_more",
-                   "households_with_subscription", "households_with_computer",
-                   "households_no_internet"]
-for field in underlay_fields:
-    cbg_gdf = load_cbg_underlay(field)
-    CBGDATA[field] = {
-        **_serialize_cbg_underlay(cbg_gdf)
-    }
+print(f"[data_loader] Loaded school data in {time.perf_counter() - _school_start:.2f}s", flush=True)
 
-print("Data loading complete.")
+print("[data_loader] Loading geo data...", flush=True)
+_geo_start = time.perf_counter()
+GEODATA = load_geodata()
+print(f"[data_loader] Loaded geo data in {time.perf_counter() - _geo_start:.2f}s", flush=True)
+
+print("[data_loader] CBG underlay data will load lazily on first request.", flush=True)
+CBGDATA = {}
+
+print("[data_loader] Data loading complete.", flush=True)

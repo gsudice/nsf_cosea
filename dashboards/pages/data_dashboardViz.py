@@ -951,7 +951,7 @@ def update_map(map_options, school, dots_dropdown, underlay_dropdown, selected_s
 
     # Add underlay if selected
     if underlay_dropdown != DEFAULT_UNDERLAY_OPTION:
-        underlay_state = data_loader.CBGDATA[underlay_dropdown]
+        underlay_state = data_loader.get_cbg_underlay(underlay_dropdown)
         geojson = get_underlay_geojson_url(underlay_dropdown)
         locations = underlay_state['locations']
         z_values = underlay_state['z_values']

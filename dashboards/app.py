@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 from flask_caching import Cache
 from flask import Response
 import json
+import time
 
 import data_dashboard.data_loader as data_loader
 
@@ -53,15 +54,16 @@ app.layout = html.Div([
 
 @app.server.route("/cbg-underlay/<field>")
 def cbg_underlay_geojson(field):
-    field_data = data_loader.CBGDATA.get(field)
-    if not field_data:
-        return Response("{}", status=404, mimetype="application/json")
+    start_time = time.perf_counter()
+    print(f"[app] Serving CBG underlay geojson for {field}...", flush=True)
+    field_data = data_loader.get_cbg_underlay(field)
 
     response = Response(
         json.dumps(field_data.get("geojson", {}), separators=(",", ":")),
         mimetype="application/json"
     )
     response.headers["Cache-Control"] = "public, max-age=86400"
+    print(f"[app] Served CBG underlay geojson for {field} in {time.perf_counter() - start_time:.2f}s", flush=True)
     return response
 
 
