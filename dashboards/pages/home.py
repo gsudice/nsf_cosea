@@ -23,11 +23,12 @@ def build_tool_row(title, image_src, image_alt, description, href, reverse=False
 
     card_children = []
     if featured:
-        card_children.append(html.Div("New!", className="home-eyebrow tool-row-eyebrow"))
+        card_children.append(
+            html.Div("New!", className="home-eyebrow tool-row-eyebrow"))
     card_children.append(html.Div([
-            html.Div(media_children, className="tool-row-media"),
-            html.Div(content_children, className="tool-row-content"),
-        ], className=row_class))
+        html.Div(media_children, className="tool-row-media"),
+        html.Div(content_children, className="tool-row-content"),
+    ], className=row_class))
     if tags:
         card_children.append(html.Div([
             html.Span(tag, className="tool-row-tag") for tag in tags
@@ -48,8 +49,14 @@ def build_tool_row(title, image_src, image_alt, description, href, reverse=False
 def build_help_video_card(title, description, label="Coming soon"):
     return html.Div([
         html.Div([
+            html.Video(
+                src="/assets/demo-subs.mp4",
+                controls=True,
+                preload="metadata",
+                className="help-video-player",
+                title=title,
+            ),
             html.Div(label, className="help-video-badge"),
-            html.Div(className="help-video-play"),
         ], className="help-video-preview"),
         html.Div([
             html.H3(title, className="help-video-title"),
@@ -71,9 +78,11 @@ def build_help_faq_item(title, body):
 
 
 def build_help_details(summary_title, summary_text, content_children, section_class):
-    summary_children = [html.Div(summary_title, className="help-summary-title")]
+    summary_children = [
+        html.Div(summary_title, className="help-summary-title")]
     if summary_text:
-        summary_children.append(html.Div(summary_text, className="help-summary-text"))
+        summary_children.append(
+            html.Div(summary_text, className="help-summary-text"))
 
     return html.Details(
         [
@@ -82,6 +91,7 @@ def build_help_details(summary_title, summary_text, content_children, section_cl
         ],
         className="help-details",
     )
+
 
 layout = html.Div([
     html.Div([
@@ -98,7 +108,8 @@ layout = html.Div([
                 href="/data-dashboard",
                 reverse=False,
                 featured=True,
-                tags=["School and district views", "Course and modality filters", "Geography-aware analysis"],
+                tags=["School and district views",
+                      "Course and modality filters", "Geography-aware analysis"],
             ),
             # build_tool_row(
             #     title="Location Modeling",
@@ -117,8 +128,8 @@ layout = html.Div([
                     html.Div([
                         build_help_video_card(
                             title="Dashboard walkthrough video",
-                            description="A short walkthrough video will show how to explore schools, filters, and access patterns in the dashboard.",
-                            label="Video placeholder",
+                            description="A short walkthrough video shows how to explore schools, filters, and access patterns in the dashboard. Use the player controls to view it and open fullscreen.",
+                            label="Demo video",
                         ),
                     ], className="help-video-grid"),
                 ],
@@ -160,34 +171,45 @@ layout = html.Div([
                         build_help_faq_item(
                             "How does the Courses Offered filter work?",
                             [
-                                html.P("The courses listed are the approved CS courses at each school, based on Georgia State Bill 108. Select one or more courses and choose a filter mode:"),
+                                html.P(
+                                    "The courses listed are the approved CS courses at each school, based on Georgia State Bill 108. Select one or more courses and choose a filter mode:"),
                                 html.Ul([
-                                    html.Li([html.Strong("All"), " (default): Shows schools that offer ALL of the selected courses"]),
-                                    html.Li([html.Strong("Any"), ": Shows schools that offer at least ONE of the selected courses"]),
-                                    html.Li([html.Strong("None"), ": Shows schools that do NOT offer any of the selected courses"]),
+                                    html.Li([html.Strong(
+                                        "All"), " (default): Shows schools that offer ALL of the selected courses"]),
+                                    html.Li([html.Strong(
+                                        "Any"), ": Shows schools that offer at least ONE of the selected courses"]),
+                                    html.Li([html.Strong(
+                                        "None"), ": Shows schools that do NOT offer any of the selected courses"]),
                                 ]),
-                                html.P("A course is counted as offered if it is available either virtually or in-person (or both)."),
+                                html.P(
+                                    "A course is counted as offered if it is available either virtually or in-person (or both)."),
                             ]
                         ),
                         build_help_faq_item(
                             "Where does the data come from?",
                             html.Ul([
                                 html.Li([
-                                    html.Strong("Georgia Department of Education (GaDOE)"),
+                                    html.Strong(
+                                        "Georgia Department of Education (GaDOE)"),
                                     ": School-level enrollment and CS course demographics. ",
-                                    html.A("Data Requests", href="https://georgiainsights.gadoe.org/contact-request-data/", target="_blank", rel="noopener noreferrer")
+                                    html.A("Data Requests", href="https://georgiainsights.gadoe.org/contact-request-data/",
+                                           target="_blank", rel="noopener noreferrer")
                                 ]),
                                 html.Li([
-                                    html.Strong("National Center for Education Statistics (NCES)"),
+                                    html.Strong(
+                                        "National Center for Education Statistics (NCES)"),
                                     ": District characteristics and locale classifications. ",
-                                    html.A("DataLab", href="https://nces.ed.gov/datalab/", target="_blank", rel="noopener noreferrer")
+                                    html.A("DataLab", href="https://nces.ed.gov/datalab/",
+                                           target="_blank", rel="noopener noreferrer")
                                 ]),
                                 html.Li([
                                     html.Strong("U.S. Census Bureau"),
                                     ": Demographic, income, and educational data from the ",
-                                    html.A("American Community Survey", href="https://www.census.gov/programs-surveys/acs.html", target="_blank", rel="noopener noreferrer"),
+                                    html.A("American Community Survey", href="https://www.census.gov/programs-surveys/acs.html",
+                                           target="_blank", rel="noopener noreferrer"),
                                     " and geographic boundaries from ",
-                                    html.A("TIGER/Line shapefiles", href="https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html", target="_blank", rel="noopener noreferrer")
+                                    html.A("TIGER/Line shapefiles", href="https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html",
+                                           target="_blank", rel="noopener noreferrer")
                                 ])
                             ])
                         ),

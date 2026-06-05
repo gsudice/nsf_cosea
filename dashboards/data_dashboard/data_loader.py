@@ -419,17 +419,27 @@ def get_gender_color(val, color_bins):
     return None
 
 
-engine = create_engine(DATABASE_URL)
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+
+
+def _read_sql(query):
+    with engine.connect() as connection:
+        return pd.read_sql(query, connection)
+
+
+def _read_postgis(query, geom_col='geom'):
+    with engine.connect() as connection:
+        return gpd.read_postgis(query, connection, geom_col=geom_col)
 
 
 def load_all_school_data():
-    gadoe = pd.read_sql('SELECT * FROM "census"."gadoe2024_389"', engine)
+    gadoe = _read_sql('SELECT * FROM "census"."gadoe2024_389"')
 
-    course_logic = pd.read_sql(
-        'SELECT * FROM "census"."course_logic_2024_389"', engine)
+    course_logic = _read_sql(
+        'SELECT * FROM "census"."course_logic_2024_389"')
 
-    approved_all = pd.read_sql(
-        'SELECT * FROM "allhsgrades24"."tbl_approvedschools"', engine)
+    approved_all = _read_sql(
+        'SELECT * FROM "allhsgrades24"."tbl_approvedschools"')
 
     approved_logic = course_logic[(course_logic["approved_flag"] == True) & (
         course_logic["certified_flag"] == True)]
@@ -483,7 +493,7 @@ def load_all_school_data():
     all_cols = ri_cols + extra_cols
     disparity_query = f'SELECT "UNIQUESCHOOLID", {', '.join([f'"{col}"' for col in all_cols])
                                                   } FROM census.gadoe2024_389'
-    disparity = pd.read_sql(disparity_query, engine)
+    disparity = _read_sql(disparity_query)
 
     gender_query = (
         'SELECT s."UNIQUESCHOOLID", s.lat, s.lon, g."RI_Female" '
@@ -491,7 +501,7 @@ def load_all_school_data():
         'JOIN census.gadoe2024_389 g ON s."UNIQUESCHOOLID" = g."UNIQUESCHOOLID" '
         'WHERE s.lat IS NOT NULL AND s.lon IS NOT NULL'
     )
-    gender = pd.read_sql(gender_query, engine)
+    gender = _read_sql(gender_query)
 
     # Load courses data
     approved_courses = course_logic[course_logic['approved_flag_2'] == 1]
@@ -813,82 +823,82 @@ def load_cbg_underlay(selected_field, bins=5):
     block_query = (
         'SELECT "GEOID", ST_Transform(cbgpolygeom, 4326) AS geom FROM "allhsgrades24"."tbl_cbg_finalassignment" '
     )
-    block_groups = gpd.read_postgis(block_query, engine, geom_col='geom')
+    block_groups = _read_postgis(block_query, geom_col='geom')
     block_groups['GEOID'] = block_groups['GEOID'].astype(str).str.zfill(12)
 
     # Load ACS data for selected field
     if selected_field == "black_population_ratio":
         acs_query = 'SELECT geoid, "black_alone_non_hispanic", "total_population" FROM census.acs2023_combined'
-        acs_df = pd.read_sql(acs_query, engine)
+        acs_df = _read_sql(acs_query)
         acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
         acs_df[selected_field] = acs_df['black_alone_non_hispanic'] / \
             acs_df['total_population']
     elif selected_field == "hispanic_population_ratio":
         acs_query = 'SELECT geoid, "hispanic_or_latino", "total_population" FROM census.acs2023_combined'
-        acs_df = pd.read_sql(acs_query, engine)
+        acs_df = _read_sql(acs_query)
         acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
         acs_df[selected_field] = pd.to_numeric(acs_df['hispanic_or_latino'], errors='coerce') / \
             pd.to_numeric(acs_df['total_population'], errors='coerce')
     elif selected_field == "asian_population_ratio":
         acs_query = 'SELECT geoid, "asian_alone_non_hispanic", "total_population" FROM census.acs2023_combined'
-        acs_df = pd.read_sql(acs_query, engine)
+        acs_df = _read_sql(acs_query)
         acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
         acs_df[selected_field] = pd.to_numeric(acs_df['asian_alone_non_hispanic'], errors='coerce') / \
             pd.to_numeric(acs_df['total_population'], errors='coerce')
     elif selected_field == "white_population_ratio":
         acs_query = 'SELECT geoid, "white_alone_non_hispanic", "total_population" FROM census.acs2023_combined'
-        acs_df = pd.read_sql(acs_query, engine)
+        acs_df = _read_sql(acs_query)
         acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
         acs_df[selected_field] = pd.to_numeric(acs_df['white_alone_non_hispanic'], errors='coerce') / \
             pd.to_numeric(acs_df['total_population'], errors='coerce')
     elif selected_field == "median_household_income":
         acs_query = 'SELECT geoid, median_household_income FROM census.acs2023_combined'
-        acs_df = pd.read_sql(acs_query, engine)
+        acs_df = _read_sql(acs_query)
         acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
         acs_df[selected_field] = pd.to_numeric(
             acs_df[selected_field], errors='coerce')
     elif selected_field == "percapita_income_total":
         acs_query = 'SELECT geoid, percapita_income_total FROM census.acs2023_combined'
-        acs_df = pd.read_sql(acs_query, engine)
+        acs_df = _read_sql(acs_query)
         acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
         acs_df[selected_field] = pd.to_numeric(
             acs_df[selected_field], errors='coerce')
     elif selected_field == "edu_hs_or_more":
         acs_query = 'SELECT geoid, pct_hs_or_more FROM census.acs2023_combined'
-        acs_df = pd.read_sql(acs_query, engine)
+        acs_df = _read_sql(acs_query)
         acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
         acs_df[selected_field] = pd.to_numeric(
             acs_df['pct_hs_or_more'], errors='coerce')
     elif selected_field == "edu_bachelor_or_more":
         acs_query = 'SELECT geoid, pct_bachelor_or_more FROM census.acs2023_combined'
-        acs_df = pd.read_sql(acs_query, engine)
+        acs_df = _read_sql(acs_query)
         acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
         acs_df[selected_field] = pd.to_numeric(
             acs_df['pct_bachelor_or_more'], errors='coerce')
     elif selected_field == "households_with_subscription":
         acs_query = 'SELECT geoid, households_with_subscription, total_households_internet FROM census.acs2023_combined'
-        acs_df = pd.read_sql(acs_query, engine)
+        acs_df = _read_sql(acs_query)
         acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
         # Calculate percentage of households with internet subscription
         acs_df[selected_field] = (pd.to_numeric(acs_df['households_with_subscription'], errors='coerce') /
                                   pd.to_numeric(acs_df['total_households_internet'], errors='coerce')) * 100
     elif selected_field == "households_with_computer":
         acs_query = 'SELECT geoid, households_with_computer, total_households_devices FROM census.acs2023_combined'
-        acs_df = pd.read_sql(acs_query, engine)
+        acs_df = _read_sql(acs_query)
         acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
         # Calculate percentage of households with computer
         acs_df[selected_field] = (pd.to_numeric(acs_df['households_with_computer'], errors='coerce') /
                                   pd.to_numeric(acs_df['total_households_devices'], errors='coerce')) * 100
     elif selected_field == "households_no_internet":
         acs_query = 'SELECT geoid, households_no_internet, total_households_internet FROM census.acs2023_combined'
-        acs_df = pd.read_sql(acs_query, engine)
+        acs_df = _read_sql(acs_query)
         acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
         # Calculate percentage of households with no internet
         acs_df[selected_field] = (pd.to_numeric(acs_df['households_no_internet'], errors='coerce') /
                                   pd.to_numeric(acs_df['total_households_internet'], errors='coerce')) * 100
     else:
         acs_query = f'SELECT geoid, "{selected_field}" FROM census.acs2023_combined'
-        acs_df = pd.read_sql(acs_query, engine)
+        acs_df = _read_sql(acs_query)
         acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
 
     # Merge ACS data into block groups

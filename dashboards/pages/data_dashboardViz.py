@@ -549,12 +549,19 @@ layout = html.Div([
             html.Div([
                 html.Div([
                     html.Div([
-                        html.Div("Walkthrough", className="faq-video-badge"),
-                        html.Div(className="faq-video-play"),
+                        html.Video(
+                            src="/assets/demo-subs.mp4",
+                            controls=True,
+                            preload="metadata",
+                            className="faq-video-player",
+                            title="Dashboard walkthrough video",
+                        ),
+                        html.Div("Demo video", className="faq-video-badge"),
                     ], className="faq-video-preview"),
                     html.Div([
                         html.H3("Dashboard walkthrough video"),
-                        html.P("A short walkthrough video will live here to show how to explore schools, filters, and access patterns in the dashboard."),
+                        html.P(
+                            "A short walkthrough video shows how to explore schools, filters, and access patterns in the dashboard. Use the player controls to view it and open fullscreen."),
                     ], className="faq-video-copy"),
                 ], className="faq-video-card"),
 
@@ -612,7 +619,8 @@ layout = html.Div([
                     html.H3("Where does the data come from?"),
                     html.Ul([
                         html.Li([
-                            html.Strong("Georgia Department of Education (GaDOE)"),
+                            html.Strong(
+                                "Georgia Department of Education (GaDOE)"),
                             ": School-level enrollment and CS course demographics. ",
                             html.A("Data Requests", href="https://georgiainsights.gadoe.org/contact-request-data/",
                                    target="_blank", rel="noopener noreferrer")

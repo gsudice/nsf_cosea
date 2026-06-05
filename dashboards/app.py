@@ -14,7 +14,19 @@ app = Dash(
     __name__,
     use_pages=True,
     assets_folder=os.path.join(os.path.dirname(__file__), "assets"),
-    assets_url_path="assets"
+    assets_url_path="assets",
+    title="Who Has Access to and Who Participates in Computer Science Across Georgia? A Data Dashboard for Action",
+    update_title="Loading...",
+    meta_tags=[
+        {
+            "name": "description",
+            "content": "Explore which Georgia schools offer computer science courses, how participation compares to enrollment, where teacher capacity may limit access, and how patterns differ across rural, town, suburban, and city schools.",
+        },
+        {
+            "name": "keywords",
+            "content": "Georgia computer science dashboard, CS access, CS participation, school planning, district planning, teacher capacity, course offerings, rural schools, town schools, suburban schools, city schools, CTAE alignment, family engagement, community engagement, school data visualization",
+        },
+    ]
 )
 
 # Configure filesystem-based caching for server deployment
@@ -48,20 +60,23 @@ app.layout = html.Div([
         ),
         html.Div(className="header-logo-group", children=[
             html.A(
-                html.Img(src="/assets/images/gsulogo.jpg", className="header-logo-image header-logo-gsu", alt="Georgia State University logo"),
+                html.Img(src="/assets/images/gsulogo.jpg",
+                         className="header-logo-image header-logo-gsu", alt="Georgia State University logo"),
                 href="https://csds.gsu.edu/",
                 target="_blank",
                 rel="noopener noreferrer",
                 title="Georgia State University"
             ),
             html.A(
-                html.Img(src="/assets/images/chailogo.png", className="header-logo-image header-logo-chai", alt="CS Higher-level Alliance Institute logo"),
+                html.Img(src="/assets/images/chailogo.png", className="header-logo-image header-logo-chai",
+                         alt="CS Higher-level Alliance Institute logo"),
                 href="https://chai.gsu.edu/",
                 target="_blank",
                 rel="noopener noreferrer",
                 title="CS Higher-level Alliance Institute"
             ),
-            html.Div(className="header-logo-placeholder header-logo-placeholder-last"),
+            html.Div(
+                className="header-logo-placeholder header-logo-placeholder-last"),
         ]),
     ]),
 
