@@ -63,7 +63,8 @@ def cbg_underlay_geojson(field):
         mimetype="application/json"
     )
     response.headers["Cache-Control"] = "public, max-age=86400"
-    print(f"[app] Served CBG underlay geojson for {field} in {time.perf_counter() - start_time:.2f}s", flush=True)
+    print(
+        f"[app] Served CBG underlay geojson for {field} in {time.perf_counter() - start_time:.2f}s", flush=True)
     return response
 
 

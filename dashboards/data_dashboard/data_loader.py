@@ -799,7 +799,8 @@ def get_cbg_underlay(field):
     print(f"[data_loader] Building CBG underlay for {field}...", flush=True)
     serialized = _serialize_cbg_underlay(load_cbg_underlay(field))
     elapsed = time.perf_counter() - start_time
-    print(f"[data_loader] Built CBG underlay for {field} in {elapsed:.2f}s", flush=True)
+    print(
+        f"[data_loader] Built CBG underlay for {field} in {elapsed:.2f}s", flush=True)
     return serialized
 
 
@@ -869,21 +870,21 @@ def load_cbg_underlay(selected_field, bins=5):
         acs_df = pd.read_sql(acs_query, engine)
         acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
         # Calculate percentage of households with internet subscription
-        acs_df[selected_field] = (pd.to_numeric(acs_df['households_with_subscription'], errors='coerce') / 
+        acs_df[selected_field] = (pd.to_numeric(acs_df['households_with_subscription'], errors='coerce') /
                                   pd.to_numeric(acs_df['total_households_internet'], errors='coerce')) * 100
     elif selected_field == "households_with_computer":
         acs_query = 'SELECT geoid, households_with_computer, total_households_devices FROM census.acs2023_combined'
         acs_df = pd.read_sql(acs_query, engine)
         acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
         # Calculate percentage of households with computer
-        acs_df[selected_field] = (pd.to_numeric(acs_df['households_with_computer'], errors='coerce') / 
+        acs_df[selected_field] = (pd.to_numeric(acs_df['households_with_computer'], errors='coerce') /
                                   pd.to_numeric(acs_df['total_households_devices'], errors='coerce')) * 100
     elif selected_field == "households_no_internet":
         acs_query = 'SELECT geoid, households_no_internet, total_households_internet FROM census.acs2023_combined'
         acs_df = pd.read_sql(acs_query, engine)
         acs_df['geoid'] = acs_df['geoid'].astype(str).str.zfill(12)
         # Calculate percentage of households with no internet
-        acs_df[selected_field] = (pd.to_numeric(acs_df['households_no_internet'], errors='coerce') / 
+        acs_df[selected_field] = (pd.to_numeric(acs_df['households_no_internet'], errors='coerce') /
                                   pd.to_numeric(acs_df['total_households_internet'], errors='coerce')) * 100
     else:
         acs_query = f'SELECT geoid, "{selected_field}" FROM census.acs2023_combined'
@@ -944,12 +945,14 @@ def load_cbg_underlay(selected_field, bins=5):
 print("[data_loader] Loading school data...", flush=True)
 _school_start = time.perf_counter()
 SCHOOLDATA = load_all_school_data()
-print(f"[data_loader] Loaded school data in {time.perf_counter() - _school_start:.2f}s", flush=True)
+print(
+    f"[data_loader] Loaded school data in {time.perf_counter() - _school_start:.2f}s", flush=True)
 
 print("[data_loader] Loading geo data...", flush=True)
 _geo_start = time.perf_counter()
 GEODATA = load_geodata()
-print(f"[data_loader] Loaded geo data in {time.perf_counter() - _geo_start:.2f}s", flush=True)
+print(
+    f"[data_loader] Loaded geo data in {time.perf_counter() - _geo_start:.2f}s", flush=True)
 
 print("[data_loader] CBG underlay data will load lazily on first request.", flush=True)
 CBGDATA = {}

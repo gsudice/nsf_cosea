@@ -96,36 +96,30 @@
 .legend-title {
   font-weight: bold;
   font-size: 15px;
-  .legend-combined-row {
-    display: flex;
-    flex-direction: row;
-    gap: 16px;
-    align-items: flex-start;
-    width: auto; /* Adjusted to allow flex items to size correctly */
-  }
-  .legend-flex-8 {
-    flex: 8 1 0%;
-    min-width: 0;
-  }
-  .legend-flex-2 {
-    flex: 2 1 0%;
-    min-width: 0;
-  }
-  .legend-flex-8 {
-    max-width: 100%;
-    display: flex;
-  }
-  .legend-flex-2 {
-    max-width: 100%;
-    display: flex;
-  }
-  .legend-full-width {
-    display: flex;
-  }
-  .legend-full-width {
-    width: 100%;
-  }
   margin-bottom: 2px;
+}
+.legend-combined-row {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  align-items: flex-start;
+  width: auto;
+}
+.legend-flex-8 {
+  flex: 8 1 0%;
+  min-width: 0;
+  max-width: 100%;
+  display: flex;
+}
+.legend-flex-2 {
+  flex: 2 1 0%;
+  min-width: 0;
+  max-width: 100%;
+  display: flex;
+}
+.legend-full-width {
+  width: 100%;
+  display: flex;
 }
 .legend-dot-row-wrap {
   display: flex;
