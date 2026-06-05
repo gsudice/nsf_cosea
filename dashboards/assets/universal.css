@@ -1,3 +1,7 @@
+@import url("https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;0,700;0,900&display=swap");
+
+/* =================== GLOBAL =================== */
+
 /* Info hover icon style for sidebar (matches #0039a6 theme) */
 .sidebar-info-icon {
   color: #0039a6 !important;
@@ -22,8 +26,6 @@
 .sidebar-info-icon:hover {
   background: #e6f0ff;
 }
-/* =================== GLOBAL =================== */
-@import url("https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;0,700;0,900&display=swap");
 
 /* Universal Reset & Font */
 * {

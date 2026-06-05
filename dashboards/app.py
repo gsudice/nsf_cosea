@@ -12,7 +12,9 @@ import data_dashboard.data_loader as data_loader
 
 app = Dash(
     __name__,
-    use_pages=True
+    use_pages=True,
+    assets_folder=os.path.join(os.path.dirname(__file__), "assets"),
+    assets_url_path="assets"
 )
 
 # Configure filesystem-based caching for server deployment

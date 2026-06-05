@@ -208,7 +208,7 @@ def get_georgia_outline_trace():
         opacity=1.0,
         name="Georgia Outline", showlegend=False, visible=True,
         hoverinfo="skip"
-    )
+    ).to_plotly_json()
 
 
 @lru_cache(maxsize=1)
@@ -226,7 +226,7 @@ def get_highway_traces():
         opacity=1.0,
         name="Highways", showlegend=True, visible=True,
         hoverinfo="skip"
-    )
+    ).to_plotly_json()
 
 
 @lru_cache(maxsize=1)
@@ -244,7 +244,7 @@ def get_county_traces():
         opacity=0.8,
         name="County Lines", showlegend=True, visible=True,
         hoverinfo="skip"
-    )
+    ).to_plotly_json()
 
 
 def get_underlay_geojson_url(underlay_dropdown):
