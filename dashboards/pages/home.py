@@ -108,8 +108,8 @@ layout = html.Div([
                 href="/data-dashboard",
                 reverse=False,
                 featured=True,
-                tags=["School and district views",
-                      "Course and modality filters", "Geography-aware analysis"],
+                tags=["School-level CS access",
+                      "Course offerings", "Course delivery modes", "Geography-aware analysis"],
             ),
             # build_tool_row(
             #     title="Location Modeling",

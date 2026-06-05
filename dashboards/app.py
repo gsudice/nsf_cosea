@@ -24,7 +24,7 @@ app = Dash(
         },
         {
             "name": "keywords",
-            "content": "Georgia computer science dashboard, CS access, CS participation, school planning, district planning, teacher capacity, course offerings, rural schools, town schools, suburban schools, city schools, CTAE alignment, family engagement, community engagement, school data visualization",
+            "content": "Georgia computer science dashboard, school-level CS access, CS enrollment trends, CS participation, course offerings, teacher capacity, geography-aware analysis, school demographics, access gaps, rural schools, town schools, suburban schools, city schools, equity in computing, school data visualization",
         },
     ]
 )
